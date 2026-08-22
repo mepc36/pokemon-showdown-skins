@@ -1,3 +1,9 @@
+// ==UserScript==
+// @name        PS Fullscreen Battle
+// @match       *://play.pokemonshowdown.com/*
+// @run-at      document-idle
+// ==/UserScript==
+
 (() => {
   const css = `
 /* hide chat + userlist */
