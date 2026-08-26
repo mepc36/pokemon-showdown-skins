@@ -1,7 +1,8 @@
 // ==UserScript==
-// @name        PS Fullscreen Battle (Mac + iPad)
+// @name        PS Fullscreen Battle + Gamepad (Mac + iPad)
 // @match       *://play.pokemonshowdown.com/*
 // @run-at      document-idle
+// @grant       none
 // ==/UserScript==
 
 (() => {
@@ -11,7 +12,7 @@
 .ps-room .battle-log-add,
 .ps-room .battle-userlist,
 .battle-chat-toggle { display: none !important; }
- 
+
 /* battle room takes the FULL window (kills the right-hand Home/chat pane) */
 .ps-room[id^="room-battle-"] {
   left: 0 !important;
@@ -20,14 +21,14 @@
   background: #EEF2F5;
   z-index: 15;
 }
- 
+
 /* stretch battle edge-to-edge (centered when stretch-capped) */
 .ps-room .battle {
   transform: scale(var(--gen2-sx, 1), var(--gen2-sy, 1)) !important;
   top: 0 !important;
   left: var(--gen2-left, 0px) !important;
 }
- 
+
 /* controls pinned below the stretched battle */
 .ps-room .battle-controls {
   top: var(--gen2-ctrl-top, 370px) !important;
@@ -35,7 +36,7 @@
   width: 100% !important;
   box-sizing: border-box;
 }
- 
+
 /* ---- centered, bigger controls ---- */
 .battle-controls .controls { text-align: center; }
 .battle-controls .whatdo {
@@ -60,7 +61,7 @@
   padding-top: 10px;
 }
 .movebutton small { font-size: 10pt; }
- 
+
 /* switch buttons: bigger, with bigger pokemon icons */
 .switchmenu button, .allyparty button {
   float: none !important;
@@ -75,13 +76,13 @@
   transform-origin: center;
   margin: -2px 12px -2px 8px;
 }
- 
+
 /* Attack / Switch headers */
 .moveselect button, .switchselect button, .shiftselect button {
   margin: 0 auto;
   font-size: 14pt;
 }
- 
+
 /* Terastallize box */
 .megaevo-box { padding-top: 6px; }
 .megaevo {
@@ -94,7 +95,7 @@
   margin-left: 8px;
   vertical-align: -2px;
 }
- 
+
 /* ---- end-of-battle / message buttons: one centered row, bigger ---- */
 .battle-controls .controls > p {
   display: flex;
@@ -114,7 +115,7 @@
   padding: 10px 20px;
 }
 .battle-controls .controls > p button small { font-size: 9pt; }
- 
+
 /* ---- touch devices (iPad): vertically compact controls so the
         battle gets more height and stretches less ---- */
 @media (pointer: coarse) {
@@ -134,37 +135,42 @@
   }
   .movemenu, .switchmenu, .allyparty { gap: 10px 14px; }
   .movebutton {
-    width: 170px;
-    height: 44px;
-    font-size: 10pt;
-    padding-top: 5px;
+    width: 185px;
+    height: 56px;
+    font-size: 12pt;
+    padding-top: 8px;
   }
-  .movebutton small { font-size: 8pt; }
+  .movebutton small { font-size: 9pt; }
   .switchmenu button, .allyparty button {
-    width: 160px;
-    min-height: 40px;
-    font-size: 10pt;
-    padding: 4px 6px 6px 6px;
+    width: 165px;
+    min-height: 50px;
+    font-size: 11pt;
+    padding: 6px 4px 8px 4px;
   }
   .switchmenu button .picon, .allyparty button .picon {
-    transform: scale(1.2);
-    margin: -4px 6px -4px 2px;
+    transform: scale(1.45);
+    margin: -3px 9px -3px 4px;
   }
-  .megaevo-box { padding-top: 2px; }
-  .megaevo { width: 200px; font-size: 10pt; padding: 4px 6px; }
-  .megaevo img { transform: scale(1.1); margin-left: 4px; }
+  /* Terastallize shares the move row instead of wrapping to its own */
+  .megaevo-box {
+    display: inline-block;
+    padding-top: 0;
+    vertical-align: top;
+  }
+  .megaevo { width: 200px; font-size: 12pt; padding: 7px 6px; }
+  .megaevo img { transform: scale(1.3); margin-left: 6px; }
   .battle-controls .controls > p { gap: 8px; }
   .battle-controls .controls > p button,
   .battle-controls .controls > p a.button { font-size: 11pt; padding: 6px 12px; }
 }
- 
+
 /* iPad landscape: controls float over the battle, pinned to the
    real bottom edge (iOS innerHeight is unreliable) */
 @media (pointer: coarse) and (orientation: landscape) {
   .ps-room .battle-controls {
     top: auto !important;
     bottom: 0 !important;
-    background: rgba(238, 242, 245, 0.88) !important;
+    background: #EEF2F5 !important; /* opaque: hides the battle's bottom edge cleanly */
   }
   /* slim the overlay: drop the decorative Attack/Switch headers */
   .moveselect, .switchselect, .shiftselect { display: none !important; }
@@ -240,4 +246,182 @@
   });
   window.__gen2obs.observe(document.body, { childList: true, subtree: true });
   gen2fit();
+})();
+
+/* ============================================================
+ * GAMEPAD LAYER (SN30 Pro+, X-input mode)
+ * D-pad navigate | A confirm | B cancel | X close tab/forfeit
+ * R1 info tooltip | Start Terastallize | Select timer
+ * ============================================================ */
+(() => {
+  if (window.__gpStop) window.__gpStop();
+
+  let st = document.getElementById('gen2-gamepad-style');
+  if (!st) { st = document.createElement('style'); st.id = 'gen2-gamepad-style'; document.head.appendChild(st); }
+  st.textContent = '.gen2-gp-sel { outline: 4px solid #d02860 !important; outline-offset: -2px; }';
+
+  const q = (s) => Array.from(document.querySelectorAll(s));
+  const vis = (el) => el && el.offsetParent !== null;
+  const isDisabled = (el) => el.disabled || el.classList.contains('disabled');
+
+  /* page-context shim: unsafeWindow if a userscript sandbox exists */
+  const W = (typeof unsafeWindow !== 'undefined') ? unsafeWindow : window;
+  const battleObj = () => {
+    try { return (W.app && W.app.curRoom && W.app.curRoom.battle) || null; } catch (e) { return null; }
+  };
+  const zoneAlive = (el) => {
+    const id = el.getAttribute('data-id') || '';
+    const m = id.match(/^p(\d)([a-c])$/);
+    if (!m) return true;
+    const b = battleObj();
+    if (!b) return true;
+    const side = b['p' + m[1]];
+    const poke = side && side.active && side.active[m[2].charCodeAt(0) - 97];
+    return !!(poke && !poke.fainted && poke.hp !== 0);
+  };
+
+  const popupBox = () => { const p = q('.ps-popup').filter(vis); return p.length ? p[p.length - 1] : null; };
+  const popupRow = () => {
+    const p = popupBox();
+    if (!p) return null;
+    return Array.from(p.querySelectorAll('button, input[type="checkbox"]')).filter(vis);
+  };
+  const movesRow = () => {
+    const row = q('.movemenu button.movebutton').filter(vis);
+    const tera = document.querySelector('.megaevo');
+    if (vis(tera)) row.push(tera);
+    return row;
+  };
+  const switchRow = () => q('.switchmenu button').filter(vis);
+  const fieldRow = () => q('.battle .has-tooltip')
+    .filter(el => vis(el) && zoneAlive(el))
+    .sort((a, b) => (a.getAttribute('data-id') || '').localeCompare(b.getAttribute('data-id') || ''));
+  const endRow = () => q('.battle-controls .controls button, .battle-controls .controls a.button')
+    .filter(el => vis(el) && el.name !== 'openTimer');
+  const homeRow = () => q('button[name="search"]').filter(vis);
+
+  function currentRows() {
+    const p = popupRow();
+    if (p) return [p];
+    const m = movesRow(), s = switchRow();
+    if (m.length || s.length) return [m, s, fieldRow()];
+    const e = endRow();
+    if (e.length) return [e, fieldRow()];
+    return [homeRow()];
+  }
+
+  let row = 0, idx = 0, active = false, lastDir = 1;
+  let tipOn = false, tipEl = null;
+
+  function items() { return currentRows()[row] || []; }
+  function clearSel() { q('.gen2-gp-sel').forEach(el => el.classList.remove('gen2-gp-sel')); }
+
+  function mouse(el, type) {
+    el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window }));
+  }
+  function showTip(el) { mouse(el, 'mouseover'); tipOn = true; tipEl = el; }
+  function hideTip() { if (tipEl) mouse(tipEl, 'mouseout'); tipOn = false; tipEl = null; }
+
+  function paint() {
+    clearSel();
+    const R = currentRows().length;
+    row = ((row % R) + R) % R;
+    let tries = 0;
+    while (!items().length && tries < R) { row = ((row + lastDir) % R + R) % R; tries++; }
+    const list = items();
+    if (!list.length) { active = false; hideTip(); return; }
+    idx = ((idx % list.length) + list.length) % list.length;
+    list[idx].classList.add('gen2-gp-sel');
+    if (tipOn) { hideTip(); showTip(list[idx]); }
+  }
+  function nav(drow, didx) {
+    if (!active) { active = true; row = 0; idx = 0; lastDir = 1; paint(); return; }
+    const R = currentRows().length;
+    if (drow) { lastDir = drow > 0 ? 1 : -1; row = ((row + drow) % R + R) % R; idx = Math.min(idx, Math.max(0, items().length - 1)); }
+    if (didx) idx += didx;
+    paint();
+  }
+  function confirm() {
+    if (!active) return;
+    const el = items()[idx];
+    if (!el) return;
+    const tooltipOnly =
+      (el.classList.contains('has-tooltip') && !el.matches('button')) ||
+      (el.matches('.switchmenu button') && isDisabled(el));
+    if (el.tagName === 'INPUT' || el.classList.contains('megaevo')) {
+      hideTip();
+      const c = el.tagName === 'INPUT' ? el : el.querySelector('input');
+      if (c) c.click();
+      paint();
+    } else if (tooltipOnly) {
+      if (el.matches('button')) {
+        if (tipOn && tipEl === el) hideTip(); else { hideTip(); showTip(el); }
+      } else {
+        el.click();
+      }
+    } else {
+      hideTip();
+      el.click();
+      active = false; clearSel();
+    }
+  }
+  function cancel() {
+    hideTip();
+    const p = popupBox();
+    if (p) {
+      const c = Array.from(p.querySelectorAll('button'))
+        .find(b => b.name === 'close' || /^\s*Cancel\s*$/.test(b.textContent));
+      if (c) c.click();
+    } else {
+      const btn = q('.battle-controls button').find(b => /^\s*Cancel\s*$/.test(b.textContent));
+      if (btn) btn.click();
+    }
+    active = false; clearSel();
+  }
+  function info() {
+    if (!active) return;
+    const el = items()[idx];
+    if (!el) return;
+    if (tipOn && tipEl === el) { hideTip(); return; }
+    hideTip();
+    showTip(el);
+  }
+  function closeTab() {
+    const x = document.querySelector('.tabbar a.button.cur + .closebutton')
+      || document.querySelector('.tabbar a.button.cur .closebutton');
+    if (x) x.click();
+  }
+
+  const ACTIONS = {
+    14: () => nav(0, -1),
+    15: () => nav(0, 1),
+    12: () => nav(-1, 0),
+    13: () => nav(1, 0),
+    1: () => confirm(),
+    0: () => cancel(),
+    3: () => closeTab(),
+    5: () => info(),
+    9: () => { const c = document.querySelector('.megaevo input'); if (c) c.click(); },
+    8: () => { const t = document.querySelector('button[name="openTimer"]'); if (t) t.click(); }
+  };
+
+  const held = {};
+  let run = true;
+  window.__gpStop = () => { run = false; };
+  function loop() {
+    if (!run) return;
+    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    const gp = Array.from(pads).find(p => p);
+    if (gp) {
+      gp.buttons.forEach((b, i) => {
+        const p = b.pressed;
+        if (p && !held[i]) {
+          if (ACTIONS[i]) ACTIONS[i]();
+        }
+        held[i] = p;
+      });
+    }
+    requestAnimationFrame(loop);
+  }
+  loop();
 })();
