@@ -164,6 +164,38 @@
   .battle-controls .controls > p a.button { font-size: 11pt; padding: 6px 12px; }
 }
 
+/* ---- ALWAYS exactly two rows: moves+tera, then the 6 pokemon ----
+   nowrap + flexible widths: buttons shrink to fit instead of wrapping */
+.movemenu, .switchmenu, .allyparty {
+  flex-wrap: nowrap !important;
+}
+.movebutton {
+  flex: 1 1 0 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 230px;
+  overflow: hidden;
+}
+.megaevo-box {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  max-width: 250px;
+  display: block !important;
+  padding: 0 !important;
+}
+.megaevo {
+  width: 100% !important;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.switchmenu button, .allyparty button {
+  flex: 1 1 0 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 210px;
+  overflow: hidden;
+}
+
 /* iPad landscape: controls float over the battle, pinned to the
    real bottom edge (iOS innerHeight is unreliable) */
 @media (pointer: coarse) and (orientation: landscape) {
@@ -407,9 +439,7 @@
 
   const held = {};
   let run = true;
-  window.__gpStop = () => { run = false; };
-  function loop() {
-    if (!run) return;
+  function poll() {
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
     const gp = Array.from(pads).find(p => p);
     if (gp) {
@@ -421,7 +451,19 @@
         held[i] = p;
       });
     }
+  }
+  window.__gpStop = () => {
+    run = false;
+    if (window.__gpInt) { clearInterval(window.__gpInt); window.__gpInt = null; }
+  };
+  /* dual polling: rAF for responsiveness + interval watchdog, because
+     iPad Safari starves rAF for seconds at a time (animations, low power) */
+  function loop() {
+    if (!run) return;
+    poll();
     requestAnimationFrame(loop);
   }
+  if (window.__gpInt) clearInterval(window.__gpInt);
+  window.__gpInt = setInterval(function () { if (run) poll(); }, 60);
   loop();
 })();
