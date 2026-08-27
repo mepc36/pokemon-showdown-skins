@@ -196,6 +196,27 @@
   overflow: hidden;
 }
 
+/* ---- end-of-battle: ALL buttons on one row ----
+   (they live in two <p>s; flatten both into one nowrap flex row) */
+.battle-controls .controls:has(button[name="saveReplay"]) {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+.battle-controls .controls:has(button[name="saveReplay"]) > p {
+  display: contents;
+}
+.battle-controls .controls:has(button[name="saveReplay"]) button,
+.battle-controls .controls:has(button[name="saveReplay"]) a.button {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 11pt;
+  padding: 8px 10px;
+}
+
 /* iPad landscape: controls float over the battle, pinned to the
    real bottom edge (iOS innerHeight is unreliable) */
 @media (pointer: coarse) and (orientation: landscape) {
@@ -282,8 +303,8 @@
 
 /* ============================================================
  * GAMEPAD LAYER (SN30 Pro+, X-input mode)
- * D-pad navigate | A confirm | B cancel | X close tab/forfeit
- * R3 (right stick click) info | Start Terastallize | Select timer
+ * D-pad navigate | A confirm | B cancel | X Terastallize
+ * R3 (right stick click) info | Start forfeit menu | Select timer
  * (R1 unbound: iPadOS reserves it as a system button)
  * ============================================================ */
 (() => {
