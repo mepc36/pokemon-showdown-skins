@@ -432,11 +432,11 @@
     13: () => nav(1, 0),
     1: () => confirm(),
     0: () => cancel(),
-    3: () => closeTab(),
+    3: () => { const c = document.querySelector('.megaevo input'); if (c) c.click(); },  // X = Terastallize
     /* R1 (5) is reserved by iPadOS as a system button — do not bind it.
        Info lives on R3 (right stick click) instead. */
     11: () => info(),
-    9: () => { const c = document.querySelector('.megaevo input'); if (c) c.click(); },
+    9: () => closeTab(),  // Start = forfeit menu (close battle tab)
     8: () => { const t = document.querySelector('button[name="openTimer"]'); if (t) t.click(); }
   };
 
