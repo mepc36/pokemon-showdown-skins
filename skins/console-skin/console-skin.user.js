@@ -217,6 +217,27 @@
   padding: 8px 10px;
 }
 
+/* ---- replay playback controls: all on one row ----
+   (these <p>s sit directly in .battle-controls, no .controls wrapper) */
+.ps-room .battle-controls:has(button[name="rewindTurn"]) {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+.ps-room .battle-controls:has(button[name="rewindTurn"]) > p {
+  display: contents;
+}
+.ps-room .battle-controls:has(button[name="rewindTurn"]) button {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 11pt;
+  padding: 8px 12px;
+  margin: 0 !important;
+}
+
 /* iPad landscape: controls float over the battle, pinned to the
    real bottom edge (iOS innerHeight is unreliable) */
 @media (pointer: coarse) and (orientation: landscape) {
@@ -350,7 +371,7 @@
   const fieldRow = () => q('.battle .has-tooltip')
     .filter(el => vis(el) && zoneAlive(el))
     .sort((a, b) => (a.getAttribute('data-id') || '').localeCompare(b.getAttribute('data-id') || ''));
-  const endRow = () => q('.battle-controls .controls button, .battle-controls .controls a.button')
+  const endRow = () => q('.battle-controls button, .battle-controls a.button')
     .filter(el => vis(el) && el.name !== 'openTimer');
   const homeRow = () => q('button[name="search"]').filter(vis);
 
