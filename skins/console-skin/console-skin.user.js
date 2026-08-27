@@ -283,7 +283,8 @@
 /* ============================================================
  * GAMEPAD LAYER (SN30 Pro+, X-input mode)
  * D-pad navigate | A confirm | B cancel | X close tab/forfeit
- * R1 info tooltip | Start Terastallize | Select timer
+ * R3 (right stick click) info | Start Terastallize | Select timer
+ * (R1 unbound: iPadOS reserves it as a system button)
  * ============================================================ */
 (() => {
   if (window.__gpStop) window.__gpStop();
@@ -432,7 +433,9 @@
     1: () => confirm(),
     0: () => cancel(),
     3: () => closeTab(),
-    5: () => info(),
+    /* R1 (5) is reserved by iPadOS as a system button — do not bind it.
+       Info lives on R3 (right stick click) instead. */
+    11: () => info(),
     9: () => { const c = document.querySelector('.megaevo input'); if (c) c.click(); },
     8: () => { const t = document.querySelector('button[name="openTimer"]'); if (t) t.click(); }
   };
@@ -446,7 +449,8 @@
       gp.buttons.forEach((b, i) => {
         const p = b.pressed;
         if (p && !held[i]) {
-          if (ACTIONS[i]) ACTIONS[i]();
+          /* armor: one throwing action must never kill the input loop */
+          try { if (ACTIONS[i]) ACTIONS[i](); } catch (e) { }
         }
         held[i] = p;
       });
