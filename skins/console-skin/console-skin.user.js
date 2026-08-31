@@ -532,3 +532,36 @@
   window.__gpInt = setInterval(function () { if (run) poll(); }, 60);
   loop();
 })();
+
+/* ============================================================
+ * iOS AUDIO UNLOCK: any screen tap revives blocked battle music
+ * (iOS only grants audio permission inside a real touch; controller
+ * presses never count, so one tap is the minimum Apple allows)
+ * ============================================================ */
+(() => {
+  const W = (typeof unsafeWindow !== 'undefined') ? unsafeWindow : window;
+  let last = 0;
+  function onTouch() {
+    const now = Date.now();
+    if (now - last < 1000) return;  /* at most once per second */
+    last = now;
+    try {
+      const BS = W.BattleSound;
+      /* replay the manual off/on toggle inside the gesture:
+         restarts any bgm that iOS silently blocked */
+      if (BS && !BS.muted && BS.setMute) {
+        BS.setMute(true);
+        BS.setMute(false);
+      }
+    } catch (e) { }
+    try {
+      /* bank page-level media permission with a silent clip */
+      const a = new Audio(
+        'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA='
+      );
+      const p = a.play();
+      if (p && p.catch) p.catch(() => { });
+    } catch (e) { }
+  }
+  document.addEventListener('touchend', onTouch, true);
+})();
