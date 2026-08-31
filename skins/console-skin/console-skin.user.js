@@ -449,6 +449,7 @@
       const c = Array.from(p.querySelectorAll('button'))
         .find(b => b.name === 'close' || /^\s*Cancel\s*$/.test(b.textContent));
       if (c) c.click();
+      else { try { if (W.app && W.app.closePopup) W.app.closePopup(); } catch (e) { } }
     } else {
       const btn = q('.battle-controls button').find(b => /^\s*Cancel\s*$/.test(b.textContent));
       if (btn) btn.click();
@@ -469,6 +470,22 @@
     if (x) x.click();
   }
 
+  function openSoundMenu() {
+    const b = document.querySelector('button[name="openSounds"]');
+    if (!b) return;
+    b.click();
+    /* land the cursor on the Mute sounds checkbox once the popup renders */
+    setTimeout(() => {
+      const p = popupRow();
+      if (p && p.length) {
+        active = true; row = 0;
+        const mi = p.findIndex(el => el.name === 'muted');
+        idx = mi >= 0 ? mi : 0;
+        paint();
+      }
+    }, 120);
+  }
+
   const ACTIONS = {
     14: () => nav(0, -1),
     15: () => nav(0, 1),
@@ -481,7 +498,7 @@
        Info lives on R3 (right stick click) instead. */
     11: () => info(),
     9: () => closeTab(),  // Start = forfeit menu (close battle tab)
-    8: () => { const t = document.querySelector('button[name="openTimer"]'); if (t) t.click(); }
+    8: () => openSoundMenu()  // Select = sound menu, cursor on Mute sounds
   };
 
   const held = {};
