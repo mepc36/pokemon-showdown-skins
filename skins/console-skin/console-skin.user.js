@@ -365,6 +365,8 @@
     const row = q('.movemenu button.movebutton').filter(vis);
     const tera = document.querySelector('.megaevo');
     if (vis(tera)) row.push(tera);
+    const t = q('.battle-controls button[name="openTimer"]').filter(vis)[0];
+    if (t) row.push(t);   /* timer rides at the end of the moves row */
     return row;
   };
   const switchRow = () => q('.switchmenu button').filter(vis);
