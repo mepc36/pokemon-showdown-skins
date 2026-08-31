@@ -396,6 +396,14 @@
   function mouse(el, type) {
     el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window }));
   }
+  /* popup buttons need the page's jQuery to fire their delegated handler —
+   a native (0,0) click can read as an outside-click and just close the popup */
+  function fire(el) {
+    try {
+      if (W.$) { W.$(el).trigger('click'); return; }
+    } catch (e) { }
+    el.click();
+  }
   function showTip(el) { mouse(el, 'mouseover'); tipOn = true; tipEl = el; }
   function hideTip() { if (tipEl) mouse(tipEl, 'mouseout'); tipOn = false; tipEl = null; }
 
@@ -438,7 +446,8 @@
       }
     } else {
       hideTip();
-      el.click();
+      const pb = popupBox();
+      if (pb && pb.contains(el)) fire(el); else el.click();
       active = false; clearSel();
     }
   }
