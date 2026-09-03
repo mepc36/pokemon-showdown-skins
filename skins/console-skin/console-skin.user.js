@@ -580,11 +580,16 @@ function prime() {
     try {
       const s = BS.getSound(u);
       if (s && s.play) {
-        const v = s.volume;
-        s.volume = 0;
+        s.muted = true;
+        let finished = false;
+        const done = () => {
+          if (finished) return;
+          finished = true;
+          s.pause(); s.currentTime = 0; s.muted = false;
+        };
         const p = s.play();
-        if (p && p.then) p.then(() => { s.pause(); s.volume = v; }).catch(() => { s.volume = v; });
-        else { s.pause(); s.volume = v; }
+        if (p && p.then) p.then(done).catch(done); else done();
+        setTimeout(done, 3000);
       }
     } catch (e) {}
   });
