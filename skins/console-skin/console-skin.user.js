@@ -6,7 +6,7 @@
 // ==/UserScript==
 
 (() => {
-const css = `
+  const css = `
 /* hide chat + userlist */
 .ps-room .battle-log,
 .ps-room .battle-log-add,
@@ -252,74 +252,74 @@ const css = `
   .battle-controls .controls p { margin: 1px 0 3px 0; }
 }
 `;
-let el = document.getElementById('gen2-skin');
-if (!el) { el = document.createElement('style'); el.id = 'gen2-skin'; document.head.appendChild(el); }
-el.textContent = css;
+  let el = document.getElementById('gen2-skin');
+  if (!el) { el = document.createElement('style'); el.id = 'gen2-skin'; document.head.appendChild(el); }
+  el.textContent = css;
 
-['--gen2-scale','--gen2-width','--gen2-left'].forEach(function(p){
-  document.documentElement.style.removeProperty(p);
-});
+  ['--gen2-scale', '--gen2-width', '--gen2-left'].forEach(function (p) {
+    document.documentElement.style.removeProperty(p);
+  });
 
-function gen2fit() {
-  var HEADER_H = 56;
-  /* measure the real height of the controls panel, but keep the LARGEST
-     height seen so far — otherwise the battle jumps in size every time
-     the panel changes (waiting vs. move select vs. battle end) */
-  var c = document.querySelector('.ps-room .battle-controls');
-  var measured = (c && c.scrollHeight > 40) ? c.scrollHeight + 16 : 0;
-  window.__gen2max = Math.max(window.__gen2max || 0, measured, 265);
-  var controlsH = window.__gen2max;
-  /* iOS Safari's innerHeight over-reports with toolbars visible —
-     visualViewport is the truth */
-  var vw = (window.visualViewport && window.visualViewport.width) || window.innerWidth;
-  var vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
-  var sx = Math.max(1, vw / 640);
-  var sy, ctrlTop;
-  var coarse = window.matchMedia && matchMedia('(pointer: coarse)').matches;
-  var portrait = vh > vw;
-  if (coarse && !portrait) {
-    /* iPad landscape: battle overlaps only HALF the control panel,
-       so the player's own Pokemon stays visible above it
-       (panel itself is bottom-pinned via CSS) */
-    sy = Math.max(1, (vh - HEADER_H - controlsH * 0.5) / 360);
-    sy = Math.min(sy, sx * 1.25);
-    sx = Math.min(sx, sy * 1.25);
-    ctrlTop = vh - HEADER_H - controlsH;
-  } else {
-    /* portrait (tight 10% stretch cap) and desktop (35%) — controls below */
-    sy = Math.max(1, (vh - HEADER_H - controlsH) / 360);
-    var cap = coarse ? 1.10 : 1.35;
-    sy = Math.min(sy, sx * cap);
-    sx = Math.min(sx, sy * cap);
-    ctrlTop = 360 * sy + 8;
+  function gen2fit() {
+    var HEADER_H = 56;
+    /* measure the real height of the controls panel, but keep the LARGEST
+       height seen so far — otherwise the battle jumps in size every time
+       the panel changes (waiting vs. move select vs. battle end) */
+    var c = document.querySelector('.ps-room .battle-controls');
+    var measured = (c && c.scrollHeight > 40) ? c.scrollHeight + 16 : 0;
+    window.__gen2max = Math.max(window.__gen2max || 0, measured, 265);
+    var controlsH = window.__gen2max;
+    /* iOS Safari's innerHeight over-reports with toolbars visible —
+       visualViewport is the truth */
+    var vw = (window.visualViewport && window.visualViewport.width) || window.innerWidth;
+    var vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    var sx = Math.max(1, vw / 640);
+    var sy, ctrlTop;
+    var coarse = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+    var portrait = vh > vw;
+    if (coarse && !portrait) {
+      /* iPad landscape: battle overlaps only HALF the control panel,
+         so the player's own Pokemon stays visible above it
+         (panel itself is bottom-pinned via CSS) */
+      sy = Math.max(1, (vh - HEADER_H - controlsH * 0.5) / 360);
+      sy = Math.min(sy, sx * 1.25);
+      sx = Math.min(sx, sy * 1.25);
+      ctrlTop = vh - HEADER_H - controlsH;
+    } else {
+      /* portrait (tight 10% stretch cap) and desktop (35%) — controls below */
+      sy = Math.max(1, (vh - HEADER_H - controlsH) / 360);
+      var cap = coarse ? 1.10 : 1.35;
+      sy = Math.min(sy, sx * cap);
+      sx = Math.min(sx, sy * cap);
+      ctrlTop = 360 * sy + 8;
+    }
+    /* if width got capped, center the battle instead of leaving a side gap */
+    var left = Math.max(0, (vw - 640 * sx) / 2);
+    var r = document.documentElement.style;
+    r.setProperty('--gen2-sx', sx);
+    r.setProperty('--gen2-sy', sy);
+    r.setProperty('--gen2-left', left + 'px');
+    r.setProperty('--gen2-ctrl-top', ctrlTop + 'px');
   }
-  /* if width got capped, center the battle instead of leaving a side gap */
-  var left = Math.max(0, (vw - 640 * sx) / 2);
-  var r = document.documentElement.style;
-  r.setProperty('--gen2-sx', sx);
-  r.setProperty('--gen2-sy', sy);
-  r.setProperty('--gen2-left', left + 'px');
-  r.setProperty('--gen2-ctrl-top', ctrlTop + 'px');
-}
-if (window.__gen2fit) window.removeEventListener('resize', window.__gen2fit);
-window.__gen2fit = function () {
-  window.__gen2max = 0;  /* re-measure from scratch after rotate/resize */
+  if (window.__gen2fit) window.removeEventListener('resize', window.__gen2fit);
+  window.__gen2fit = function () {
+    window.__gen2max = 0;  /* re-measure from scratch after rotate/resize */
+    gen2fit();
+  };
+  window.addEventListener('resize', window.__gen2fit);
+  if (window.visualViewport) {
+    if (window.__gen2vv) window.visualViewport.removeEventListener('resize', window.__gen2vv);
+    window.__gen2vv = window.__gen2fit;
+    window.visualViewport.addEventListener('resize', window.__gen2vv);
+  }
+  /* re-fit whenever the controls change (new turn, switch menu, battle end) */
+  if (window.__gen2obs) window.__gen2obs.disconnect();
+  window.__gen2obs = new MutationObserver(function () {
+    clearTimeout(window.__gen2t);
+    window.__gen2t = setTimeout(gen2fit, 100);
+  });
+  window.__gen2obs.observe(document.body, { childList: true, subtree: true });
   gen2fit();
-};
-window.addEventListener('resize', window.__gen2fit);
-if (window.visualViewport) {
-  if (window.__gen2vv) window.visualViewport.removeEventListener('resize', window.__gen2vv);
-  window.__gen2vv = window.__gen2fit;
-  window.visualViewport.addEventListener('resize', window.__gen2vv);
-}
-/* re-fit whenever the controls change (new turn, switch menu, battle end) */
-if (window.__gen2obs) window.__gen2obs.disconnect();
-window.__gen2obs = new MutationObserver(function () {
-  clearTimeout(window.__gen2t);
-  window.__gen2t = setTimeout(gen2fit, 100);
-});
-window.__gen2obs.observe(document.body, { childList: true, subtree: true });
-gen2fit();
 })();
 
 /* ============================================================
@@ -329,286 +329,292 @@ gen2fit();
  * (R1 unbound: iPadOS reserves it as a system button)
  * ============================================================ */
 (() => {
-if (window.__gpStop) window.__gpStop();
+  if (window.__gpStop) window.__gpStop();
 
-let st = document.getElementById('gen2-gamepad-style');
-if (!st) { st = document.createElement('style'); st.id = 'gen2-gamepad-style'; document.head.appendChild(st); }
-st.textContent = '.gen2-gp-sel { outline: 4px solid #d02860 !important; outline-offset: -2px; }';
+  let st = document.getElementById('gen2-gamepad-style');
+  if (!st) { st = document.createElement('style'); st.id = 'gen2-gamepad-style'; document.head.appendChild(st); }
+  st.textContent = '.gen2-gp-sel { outline: 4px solid #d02860 !important; outline-offset: -2px; }';
 
-const q = (s) => Array.from(document.querySelectorAll(s));
-const vis = (el) => el && el.offsetParent !== null;
-const isDisabled = (el) => el.disabled || el.classList.contains('disabled');
+  const q = (s) => Array.from(document.querySelectorAll(s));
+  const vis = (el) => el && el.offsetParent !== null;
+  const isDisabled = (el) => el.disabled || el.classList.contains('disabled');
 
-/* page-context shim: unsafeWindow if a userscript sandbox exists */
-const W = (typeof unsafeWindow !== 'undefined') ? unsafeWindow : window;
-const battleObj = () => {
-  try { return (W.app && W.app.curRoom && W.app.curRoom.battle) || null; } catch (e) { return null; }
-};
-const zoneAlive = (el) => {
-  const id = el.getAttribute('data-id') || '';
-  const m = id.match(/^p(\d)([a-c])$/);
-  if (!m) return true;
-  const b = battleObj();
-  if (!b) return true;
-  const side = b['p' + m[1]];
-  const poke = side && side.active && side.active[m[2].charCodeAt(0) - 97];
-  return !!(poke && !poke.fainted && poke.hp !== 0);
-};
+  /* page-context shim: unsafeWindow if a userscript sandbox exists */
+  const W = (typeof unsafeWindow !== 'undefined') ? unsafeWindow : window;
+  const battleObj = () => {
+    try { return (W.app && W.app.curRoom && W.app.curRoom.battle) || null; } catch (e) { return null; }
+  };
+  const zoneAlive = (el) => {
+    const id = el.getAttribute('data-id') || '';
+    const m = id.match(/^p(\d)([a-c])$/);
+    if (!m) return true;
+    const b = battleObj();
+    if (!b) return true;
+    const side = b['p' + m[1]];
+    const poke = side && side.active && side.active[m[2].charCodeAt(0) - 97];
+    return !!(poke && !poke.fainted && poke.hp !== 0);
+  };
 
-const popupBox = () => { const p = q('.ps-popup').filter(vis); return p.length ? p[p.length - 1] : null; };
-const popupRow = () => {
-  const p = popupBox();
-  if (!p) return null;
-  return Array.from(p.querySelectorAll('button, input[type="checkbox"]')).filter(vis);
-};
-const movesRow = () => {
-  const row = q('.movemenu button.movebutton').filter(vis);
-  const tera = document.querySelector('.megaevo');
-  if (vis(tera)) row.push(tera);
-  return row;
-};
-const switchRow = () => q('.switchmenu button').filter(vis);
-const fieldRow = () => q('.battle .has-tooltip')
-  .filter(el => vis(el) && zoneAlive(el))
-  .sort((a, b) => (a.getAttribute('data-id') || '').localeCompare(b.getAttribute('data-id') || ''));
-const endRow = () => q('.battle-controls button, .battle-controls a.button')
-  .filter(el => vis(el) && el.name !== 'openTimer');
-const homeRow = () => q('button[name="search"]').filter(vis);
+  const popupBox = () => { const p = q('.ps-popup').filter(vis); return p.length ? p[p.length - 1] : null; };
+  const popupRow = () => {
+    const p = popupBox();
+    if (!p) return null;
+    return Array.from(p.querySelectorAll('button, input[type="checkbox"]')).filter(vis);
+  };
+  const movesRow = () => {
+    const row = q('.movemenu button.movebutton').filter(vis);
+    const tera = document.querySelector('.megaevo');
+    if (vis(tera)) row.push(tera);
+    return row;
+  };
+  const switchRow = () => q('.switchmenu button').filter(vis);
+  const fieldRow = () => q('.battle .has-tooltip')
+    .filter(el => vis(el) && zoneAlive(el))
+    .sort((a, b) => (a.getAttribute('data-id') || '').localeCompare(b.getAttribute('data-id') || ''));
+  const endRow = () => q('.battle-controls button, .battle-controls a.button')
+    .filter(el => vis(el) && el.name !== 'openTimer');
+  const homeRow = () => q('button[name="search"]').filter(vis);
 
-function currentRows() {
-  const p = popupRow();
-  if (p) return [p];
-  const m = movesRow(), s = switchRow();
-  if (m.length || s.length) return [m, s, fieldRow()];
-  const e = endRow();
-  if (e.length) return [e, fieldRow()];
-  return [homeRow()];
-}
+  function currentRows() {
+    const p = popupRow();
+    if (p) return [p];
+    const m = movesRow(), s = switchRow();
+    if (m.length || s.length) return [m, s, fieldRow()];
+    const e = endRow();
+    if (e.length) return [e, fieldRow()];
+    return [homeRow()];
+  }
 
-let row = 0, idx = 0, active = false, lastDir = 1;
-let tipOn = false, tipEl = null;
+  let row = 0, idx = 0, active = false, lastDir = 1;
+  let tipOn = false, tipEl = null;
 
-function items() { return currentRows()[row] || []; }
-function clearSel() { q('.gen2-gp-sel').forEach(el => el.classList.remove('gen2-gp-sel')); }
+  function items() { return currentRows()[row] || []; }
+  function clearSel() { q('.gen2-gp-sel').forEach(el => el.classList.remove('gen2-gp-sel')); }
 
-function mouse(el, type) {
-  el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window }));
-}
-/* popup buttons need the page's jQuery to fire their delegated handler —
-   a native (0,0) click can read as an outside-click and just close the popup */
-function fire(el) {
-  try {
-    if (W.$) { W.$(el).trigger('click'); return; }
-  } catch (e) {}
-  el.click();
-}
-function showTip(el) { mouse(el, 'mouseover'); tipOn = true; tipEl = el; }
-function hideTip() { if (tipEl) mouse(tipEl, 'mouseout'); tipOn = false; tipEl = null; }
+  function mouse(el, type) {
+    el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window }));
+  }
+  /* popup buttons need the page's jQuery to fire their delegated handler —
+     a native (0,0) click can read as an outside-click and just close the popup */
+  function fire(el) {
+    try {
+      if (W.$) { W.$(el).trigger('click'); return; }
+    } catch (e) { }
+    el.click();
+  }
+  function showTip(el) { mouse(el, 'mouseover'); tipOn = true; tipEl = el; }
+  function hideTip() { if (tipEl) mouse(tipEl, 'mouseout'); tipOn = false; tipEl = null; }
 
-function paint() {
-  clearSel();
-  const R = currentRows().length;
-  row = ((row % R) + R) % R;
-  let tries = 0;
-  while (!items().length && tries < R) { row = ((row + lastDir) % R + R) % R; tries++; }
-  const list = items();
-  if (!list.length) { active = false; hideTip(); return; }
-  idx = ((idx % list.length) + list.length) % list.length;
-  list[idx].classList.add('gen2-gp-sel');
-  if (tipOn) { hideTip(); showTip(list[idx]); }
-}
-function nav(drow, didx) {
-  if (!active) { active = true; row = 0; idx = 0; lastDir = 1; paint(); return; }
-  const R = currentRows().length;
-  if (drow) { lastDir = drow > 0 ? 1 : -1; row = ((row + drow) % R + R) % R; idx = Math.min(idx, Math.max(0, items().length - 1)); }
-  if (didx) idx += didx;
-  paint();
-}
-function confirm() {
-  if (!active) return;
-  const el = items()[idx];
-  if (!el) return;
-  const tooltipOnly =
-    (el.classList.contains('has-tooltip') && !el.matches('button')) ||
-    (el.matches('.switchmenu button') && isDisabled(el));
-  if (el.tagName === 'INPUT' || el.classList.contains('megaevo')) {
-    hideTip();
-    const c = el.tagName === 'INPUT' ? el : el.querySelector('input');
-    if (c) c.click();
+  function paint() {
+    clearSel();
+    const R = currentRows().length;
+    row = ((row % R) + R) % R;
+    let tries = 0;
+    while (!items().length && tries < R) { row = ((row + lastDir) % R + R) % R; tries++; }
+    const list = items();
+    if (!list.length) { active = false; hideTip(); return; }
+    idx = ((idx % list.length) + list.length) % list.length;
+    list[idx].classList.add('gen2-gp-sel');
+    if (tipOn) { hideTip(); showTip(list[idx]); }
+  }
+  function nav(drow, didx) {
+    if (!active) { active = true; row = 0; idx = 0; lastDir = 1; paint(); return; }
+    const R = currentRows().length;
+    if (drow) { lastDir = drow > 0 ? 1 : -1; row = ((row + drow) % R + R) % R; idx = Math.min(idx, Math.max(0, items().length - 1)); }
+    if (didx) idx += didx;
     paint();
-  } else if (tooltipOnly) {
-    if (el.matches('button')) {
-      if (tipOn && tipEl === el) hideTip(); else { hideTip(); showTip(el); }
+  }
+  function confirm() {
+    if (!active) return;
+    const el = items()[idx];
+    if (!el) return;
+    const tooltipOnly =
+      (el.classList.contains('has-tooltip') && !el.matches('button')) ||
+      (el.matches('.switchmenu button') && isDisabled(el));
+    if (el.tagName === 'INPUT' || el.classList.contains('megaevo')) {
+      hideTip();
+      const c = el.tagName === 'INPUT' ? el : el.querySelector('input');
+      if (c) c.click();
+      paint();
+    } else if (tooltipOnly) {
+      if (el.matches('button')) {
+        if (tipOn && tipEl === el) hideTip(); else { hideTip(); showTip(el); }
+      } else {
+        el.click();
+      }
     } else {
-      el.click();
+      hideTip();
+      const pb = popupBox();
+      if (pb && pb.contains(el)) fire(el); else el.click();
+      active = false; clearSel();
     }
-  } else {
+  }
+  function cancel() {
     hideTip();
-    const pb = popupBox();
-    if (pb && pb.contains(el)) fire(el); else el.click();
+    const p = popupBox();
+    if (p) {
+      const c = Array.from(p.querySelectorAll('button'))
+        .find(b => b.name === 'close' || /^\s*Cancel\s*$/.test(b.textContent));
+      if (c) c.click();
+      else { try { if (W.app && W.app.closePopup) W.app.closePopup(); } catch (e) { } }
+    } else {
+      const btn = q('.battle-controls button').find(b => /^\s*Cancel\s*$/.test(b.textContent));
+      if (btn) btn.click();
+    }
     active = false; clearSel();
   }
-}
-function cancel() {
-  hideTip();
-  const p = popupBox();
-  if (p) {
-    const c = Array.from(p.querySelectorAll('button'))
-      .find(b => b.name === 'close' || /^\s*Cancel\s*$/.test(b.textContent));
-    if (c) c.click();
-    else { try { if (W.app && W.app.closePopup) W.app.closePopup(); } catch (e) {} }
-  } else {
-    const btn = q('.battle-controls button').find(b => /^\s*Cancel\s*$/.test(b.textContent));
-    if (btn) btn.click();
+  function info() {
+    if (!active) return;
+    const el = items()[idx];
+    if (!el) return;
+    if (tipOn && tipEl === el) { hideTip(); return; }
+    hideTip();
+    showTip(el);
   }
-  active = false; clearSel();
-}
-function info() {
-  if (!active) return;
-  const el = items()[idx];
-  if (!el) return;
-  if (tipOn && tipEl === el) { hideTip(); return; }
-  hideTip();
-  showTip(el);
-}
-function closeTab() {
-  const x = document.querySelector('.tabbar a.button.cur + .closebutton')
-         || document.querySelector('.tabbar a.button.cur .closebutton');
-  if (x) x.click();
-}
-function openTimerMenu() {
-  const b = document.querySelector('button[name="openTimer"]');
-  if (!b) return;
-  b.click();
-  /* land the cursor on the popup's button (Start/Stop timer) */
-  setTimeout(() => {
-    const p = popupRow();
-    if (p && p.length) { active = true; row = 0; idx = 0; paint(); }
-  }, 120);
-}
-function openSoundMenu() {
-  const b = document.querySelector('button[name="openSounds"]');
-  if (!b) return;
-  b.click();
-  /* land the cursor on the Mute sounds checkbox once the popup renders */
-  setTimeout(() => {
-    const p = popupRow();
-    if (p && p.length) {
-      active = true; row = 0;
-      const mi = p.findIndex(el => el.name === 'muted');
-      idx = mi >= 0 ? mi : 0;
-      paint();
-    }
-  }, 120);
-}
-
-const ACTIONS = {
-  14: () => nav(0, -1),
-  15: () => nav(0, 1),
-  12: () => nav(-1, 0),
-  13: () => nav(1, 0),
-  1:  () => confirm(),
-  0:  () => cancel(),
-  3:  () => { const c = document.querySelector('.megaevo input'); if (c) c.click(); },  // X = Terastallize
-  /* R1 (5) is reserved by iPadOS as a system button — do not bind it.
-     Info lives on R3 (right stick click) instead. */
-  11: () => info(),
-  10: () => openTimerMenu(), // L3 (left stick click) = timer menu
-  9:  () => closeTab(),      // Start = forfeit menu (close battle tab)
-  8:  () => openSoundMenu()  // Select = sound menu, cursor on Mute sounds
-};
-
-const held = {};
-let run = true;
-function poll() {
-  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-  const gp = Array.from(pads).find(p => p);
-  if (gp) {
-    gp.buttons.forEach((b, i) => {
-      const p = b.pressed;
-      if (p && !held[i]) {
-        /* armor: one throwing action must never kill the input loop */
-        try { if (ACTIONS[i]) ACTIONS[i](); } catch (e) {}
+  function closeTab() {
+    const x = document.querySelector('.tabbar a.button.cur + .closebutton')
+      || document.querySelector('.tabbar a.button.cur .closebutton');
+    if (x) x.click();
+  }
+  function openTimerMenu() {
+    const b = document.querySelector('button[name="openTimer"]');
+    if (!b) return;
+    b.click();
+    /* land the cursor on the popup's button (Start/Stop timer) */
+    setTimeout(() => {
+      const p = popupRow();
+      if (p && p.length) { active = true; row = 0; idx = 0; paint(); }
+    }, 120);
+  }
+  function openSoundMenu() {
+    const b = document.querySelector('button[name="openSounds"]');
+    if (!b) return;
+    b.click();
+    /* land the cursor on the Mute sounds checkbox once the popup renders */
+    setTimeout(() => {
+      const p = popupRow();
+      if (p && p.length) {
+        active = true; row = 0;
+        const mi = p.findIndex(el => el.name === 'muted');
+        idx = mi >= 0 ? mi : 0;
+        paint();
       }
-      held[i] = p;
-    });
+    }, 120);
   }
-}
-window.__gpStop = () => {
-  run = false;
-  if (window.__gpInt) { clearInterval(window.__gpInt); window.__gpInt = null; }
-};
-/* dual polling: rAF for responsiveness + interval watchdog, because
-   iPad Safari starves rAF for seconds at a time (animations, low power) */
-function loop() {
-  if (!run) return;
-  poll();
-  requestAnimationFrame(loop);
-}
-if (window.__gpInt) clearInterval(window.__gpInt);
-window.__gpInt = setInterval(function () { if (run) poll(); }, 60);
-loop();
+
+  const ACTIONS = {
+    14: () => nav(0, -1),
+    15: () => nav(0, 1),
+    12: () => nav(-1, 0),
+    13: () => nav(1, 0),
+    1: () => confirm(),
+    0: () => cancel(),
+    3: () => { const c = document.querySelector('.megaevo input'); if (c) c.click(); },  // X = Terastallize
+    /* R1 (5) is reserved by iPadOS as a system button — do not bind it.
+       Info lives on R3 (right stick click) instead. */
+    11: () => info(),
+    10: () => openTimerMenu(), // L3 (left stick click) = timer menu
+    9: () => closeTab(),      // Start = forfeit menu (close battle tab)
+    8: () => openSoundMenu()  // Select = sound menu, cursor on Mute sounds
+  };
+
+  const held = {};
+  let run = true;
+  function poll() {
+    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    const gp = Array.from(pads).find(p => p);
+    if (gp) {
+      gp.buttons.forEach((b, i) => {
+        const p = b.pressed;
+        if (p && !held[i]) {
+          /* armor: one throwing action must never kill the input loop */
+          try { if (ACTIONS[i]) ACTIONS[i](); } catch (e) { }
+        }
+        held[i] = p;
+      });
+    }
+  }
+  window.__gpStop = () => {
+    run = false;
+    if (window.__gpInt) { clearInterval(window.__gpInt); window.__gpInt = null; }
+  };
+  /* dual polling: rAF for responsiveness + interval watchdog, because
+     iPad Safari starves rAF for seconds at a time (animations, low power) */
+  function loop() {
+    if (!run) return;
+    poll();
+    requestAnimationFrame(loop);
+  }
+  if (window.__gpInt) clearInterval(window.__gpInt);
+  window.__gpInt = setInterval(function () { if (run) poll(); }, 60);
+  loop();
 })();
 
 /* ============================================================
- * iOS AUDIO UNLOCK: first tap primes ALL bgm tracks for the
- * session (client caches one audio element per URL, and iOS
- * blesses elements played during a real touch). Any later tap
- * also revives the current battle's blocked music.
+ * iOS AUDIO UNLOCK: primes only the CURRENT battle's own bgm
+ * track (read straight off battle.scene.bgm, whatever track the
+ * client already picked) instead of every possible track — that
+ * was the bug: priming all 19 at once made several become
+ * audible together. Also means nothing plays until a battle
+ * actually exists, so a tap on the home screen does nothing.
  * ============================================================ */
 (() => {
-const W = (typeof unsafeWindow !== 'undefined') ? unsafeWindow : window;
-/* every bgm track the client can roll (from battle-animations.js) */
-const TRACKS = [
-  'audio/bw2-homika-dogars.mp3', 'audio/xd-miror-b.mp3',
-  'audio/colosseum-miror-b.mp3', 'audio/dpp-trainer.mp3',
-  'audio/dpp-rival.mp3', 'audio/hgss-johto-trainer.mp3',
-  'audio/hgss-kanto-trainer.mp3', 'audio/bw-trainer.mp3',
-  'audio/bw-rival.mp3', 'audio/bw-subway-trainer.mp3',
-  'audio/bw2-kanto-gym-leader.mp3', 'audio/bw2-rival.mp3',
-  'audio/xy-trainer.mp3', 'audio/xy-rival.mp3',
-  'audio/oras-trainer.mp3', 'audio/oras-rival.mp3',
-  'audio/sm-trainer.mp3', 'audio/spl-elite4.mp3',
-  'audio/sm-rival.mp3'
-];
-let primed = false;
-let last = 0;
-function prime() {
-  const BS = W.BattleSound;
-  if (!BS || !BS.getSound) return;
-  TRACKS.forEach(u => {
-    try {
-      const s = BS.getSound(u);
-      if (s && s.play) {
-        s.muted = true;
-        let finished = false;
-        const done = () => {
-          if (finished) return;
-          finished = true;
-          s.pause(); s.currentTime = 0; s.muted = false;
-        };
-        const p = s.play();
-        if (p && p.then) p.then(done).catch(done); else done();
-        setTimeout(done, 3000);
-      }
-    } catch (e) {}
-  });
-  primed = true;
-}
-function onTouch() {
-  const now = Date.now();
-  if (now - last < 1000) return;  /* at most once per second */
-  last = now;
-  if (!primed) prime();
-  try {
+  const W = (typeof unsafeWindow !== 'undefined') ? unsafeWindow : window;
+  let last = 0;
+  function currentBgm() {
+    try { return W.app.curRoom.battle.scene.bgm; } catch (e) { return null; }
+  }
+  /* Showdown only stops a battle's bgm when its room is destroyed, not
+     when you merely switch away — so a backgrounded battle keeps playing
+     forever. Pause every other registered track so just one survives. */
+  function enforceSoloBgm(keep) {
     const BS = W.BattleSound;
-    /* replay the manual off/on toggle inside the gesture:
-       restarts any bgm that iOS silently blocked */
-    if (BS && !BS.muted && BS.setMute) {
-      BS.setMute(true);
-      BS.setMute(false);
-    }
-  } catch (e) {}
-}
-document.addEventListener('touchend', onTouch, true);
+    if (!BS || !keep) return;
+    BS.bgm.forEach(b => { if (b !== keep && b.isPlaying) b.pause(); });
+  }
+  function primeUrl(url) {
+    const BS = W.BattleSound;
+    if (!BS || !BS.getSound) return;
+    try {
+      const s = BS.getSound(url);
+      if (!s || !s.play) return;
+      s.muted = true;
+      let finished = false;
+      const done = () => {
+        if (finished) return;
+        finished = true;
+        s.pause(); s.currentTime = 0; s.muted = false;
+      };
+      const p = s.play();
+      if (p && p.then) p.then(done).catch(done); else done();
+      setTimeout(done, 3000);
+    } catch (e) { }
+  }
+  function onTouch() {
+    const now = Date.now();
+    if (now - last < 1000) return;  /* at most once per second */
+    last = now;
+    const bgm = currentBgm();
+    enforceSoloBgm(bgm);
+    if (bgm) primeUrl(bgm.url);
+    try {
+      const BS = W.BattleSound;
+      /* replay the manual off/on toggle inside the gesture:
+         restarts this battle's bgm if iOS silently blocked it */
+      if (BS && !BS.muted && BS.setMute) {
+        BS.setMute(true);
+        BS.setMute(false);
+      }
+    } catch (e) { }
+  }
+  document.addEventListener('touchend', onTouch, true);
+
+  /* also enforce on every DOM change (room switches, battle end/start)
+     so a background track dies even if you never tap in the new battle */
+  let obsTimer;
+  const obs = new MutationObserver(() => {
+    clearTimeout(obsTimer);
+    obsTimer = setTimeout(() => enforceSoloBgm(currentBgm()), 200);
+  });
+  obs.observe(document.body, { childList: true, subtree: true });
 })();
