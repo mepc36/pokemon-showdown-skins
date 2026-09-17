@@ -608,13 +608,4 @@
     } catch (e) { }
   }
   document.addEventListener('touchend', onTouch, true);
-
-  /* also enforce on every DOM change (room switches, battle end/start)
-     so a background track dies even if you never tap in the new battle */
-  let obsTimer;
-  const obs = new MutationObserver(() => {
-    clearTimeout(obsTimer);
-    obsTimer = setTimeout(() => enforceSoloBgm(currentBgm()), 200);
-  });
-  obs.observe(document.body, { childList: true, subtree: true });
 })();
