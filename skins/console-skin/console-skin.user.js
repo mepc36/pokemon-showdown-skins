@@ -551,14 +551,30 @@
 })();
 
 /* ============================================================
- * iOS AUDIO UNLOCK: revives only the CURRENT battle's own bgm
- * (read straight off battle.scene.bgm) instead of touching every
- * possible track — that was the bug: priming all 19 at once made
- * several become audible together. Also means nothing plays until
- * a battle actually exists, so a tap on the home screen does nothing.
+ * iOS AUDIO UNLOCK: on the very first tap, bless every possible
+ * bgm track (iOS allows a specific <audio> element to autoplay
+ * forever once it's been played during a real touch — this is
+ * per-ELEMENT, not per-page, so each of the 19 possible tracks
+ * needs its own blessing). Done once, fully synchronously (no
+ * awaiting the play() promise), so nothing races and nothing is
+ * ever audible. After that, every future battle's own automatic
+ * bgm start already targets a blessed element and just works.
  * ============================================================ */
 (() => {
   const W = (typeof unsafeWindow !== 'undefined') ? unsafeWindow : window;
+  const TRACKS = [
+    'audio/bw2-homika-dogars.mp3', 'audio/xd-miror-b.mp3',
+    'audio/colosseum-miror-b.mp3', 'audio/dpp-trainer.mp3',
+    'audio/dpp-rival.mp3', 'audio/hgss-johto-trainer.mp3',
+    'audio/hgss-kanto-trainer.mp3', 'audio/bw-trainer.mp3',
+    'audio/bw-rival.mp3', 'audio/bw-subway-trainer.mp3',
+    'audio/bw2-kanto-gym-leader.mp3', 'audio/bw2-rival.mp3',
+    'audio/xy-trainer.mp3', 'audio/xy-rival.mp3',
+    'audio/oras-trainer.mp3', 'audio/oras-rival.mp3',
+    'audio/sm-trainer.mp3', 'audio/spl-elite4.mp3',
+    'audio/sm-rival.mp3'
+  ];
+  let primed = false;
   let last = 0;
   function currentBgm() {
     try { return W.app.curRoom.battle.scene.bgm; } catch (e) { return null; }
@@ -571,10 +587,27 @@
     if (!BS || !keep) return;
     BS.bgm.forEach(b => { if (b !== keep && b.isPlaying) b.pause(); });
   }
+  function primeAllTracks() {
+    const BS = W.BattleSound;
+    if (!BS || !BS.getSound) return;
+    TRACKS.forEach(url => {
+      try {
+        const s = BS.getSound(url);
+        if (!s || !s.play) return;
+        s.muted = true;
+        s.play();
+        s.pause();
+        s.currentTime = 0;
+        s.muted = false;
+      } catch (e) { }
+    });
+    primed = true;
+  }
   function onTouch() {
     const now = Date.now();
     if (now - last < 1000) return;  /* at most once per second */
     last = now;
+    if (!primed) primeAllTracks();
     const bgm = currentBgm();
     enforceSoloBgm(bgm);
     /* if iOS silently blocked bgm's first auto-play attempt (before this
