@@ -551,12 +551,11 @@
 })();
 
 /* ============================================================
- * iOS AUDIO UNLOCK: primes only the CURRENT battle's own bgm
- * track (read straight off battle.scene.bgm, whatever track the
- * client already picked) instead of every possible track — that
- * was the bug: priming all 19 at once made several become
- * audible together. Also means nothing plays until a battle
- * actually exists, so a tap on the home screen does nothing.
+ * iOS AUDIO UNLOCK: revives only the CURRENT battle's own bgm
+ * (read straight off battle.scene.bgm) instead of touching every
+ * possible track — that was the bug: priming all 19 at once made
+ * several become audible together. Also means nothing plays until
+ * a battle actually exists, so a tap on the home screen does nothing.
  * ============================================================ */
 (() => {
   const W = (typeof unsafeWindow !== 'undefined') ? unsafeWindow : window;
@@ -572,31 +571,16 @@
     if (!BS || !keep) return;
     BS.bgm.forEach(b => { if (b !== keep && b.isPlaying) b.pause(); });
   }
-  function primeUrl(url) {
-    const BS = W.BattleSound;
-    if (!BS || !BS.getSound) return;
-    try {
-      const s = BS.getSound(url);
-      if (!s || !s.play) return;
-      s.muted = true;
-      let finished = false;
-      const done = () => {
-        if (finished) return;
-        finished = true;
-        s.pause(); s.currentTime = 0; s.muted = false;
-      };
-      const p = s.play();
-      if (p && p.then) p.then(done).catch(done); else done();
-      setTimeout(done, 3000);
-    } catch (e) { }
-  }
   function onTouch() {
     const now = Date.now();
     if (now - last < 1000) return;  /* at most once per second */
     last = now;
     const bgm = currentBgm();
     enforceSoloBgm(bgm);
-    if (bgm) primeUrl(bgm.url);
+    /* if iOS silently blocked bgm's first auto-play attempt (before this
+       tap), Showdown still thinks it's playing and never retries —
+       clear that stale flag so the toggle below actually restarts it */
+    if (bgm) bgm.isActuallyPlaying = false;
     try {
       const BS = W.BattleSound;
       /* replay the manual off/on toggle inside the gesture:
