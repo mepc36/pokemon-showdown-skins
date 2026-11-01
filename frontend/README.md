@@ -10,11 +10,14 @@ The implemented live path is connect → authorize on Showdown → confirm ident
 
 ## Hosted testing
 
-Initial hosted example: https://showdown-controller-mepc36.almondearth2048.chatgpt.site
+Main deployment: https://mepc36.github.io/pokemon-showdown-skins/
 
 1. Open it in Safari on the iPad and tap the page once for music.
 2. Try the D-pad, A, B, and X in the offline fixture.
 3. Open **Controller check** and press each button. Save any button numbers the app should ignore.
+4. Open **Display** to compare the userscript-style **Wide field** with **Original proportions**. The choice is saved on this device.
+
+The light controls, pink focus outline, type colors, enlarged icons, HP strips, and Grumpig/Landorus preview follow the supplied userscript and screenshot. **More controls** expands the timer, music, undo, Tera, info, skip and forfeit buttons; collapsing them reserves more space for the field. All six of your Pokémon can receive focus, including active or fainted slots; A opens details when switching is unavailable, and R3 opens details for the focused slot. Opponent slot navigation is still a later step. See [the component map](docs/showdown-components.md) for the inspected official HTML and its equivalents here.
 
 The fixture is deliberately small. It does not simulate a battle or prove live login, reconnect, iPad audio, or hardware mapping.
 
@@ -44,11 +47,11 @@ This follows the actual mappings in `console-skin.user.js`, not the stale header
 | 3 | Toggle Terastallize (X) |
 | 8 | Music on / off (Select) |
 | 9 | Forfeit confirmation (Start) |
-| 10 | Timer on (L3); Timer off is also navigable |
-| 11 | Your team information (R3) |
+| 10 | Reveal controls and focus Timer on (L3); A confirms, right reaches Timer off |
+| 11 | Focused Pokémon information, or the whole team (R3) |
 | 5 | Unbound (R1) |
 
-Arrow keys and Enter work too. Escape cancels; X toggles Tera; M toggles music; T enables timer; I opens information. Directional inputs repeat; confirm acts once per press. The diagnostics screen reports received keys, button edges, and stick directions. Ignoring a button only disables **this app's** reaction; it cannot suppress iPadOS-reserved actions.
+Arrow keys and Enter work too. Escape cancels; X toggles Tera and reveals its state; M toggles music; T reveals the timer controls; I opens information. Directional inputs repeat; confirm acts once per press. The diagnostics screen reports received keys, button edges, and stick directions. Ignoring a button only disables **this app's** reaction; it cannot suppress iPadOS-reserved actions.
 
 ## Reconnect behavior
 
@@ -75,7 +78,7 @@ For a standalone source ZIP, run the commands from the extracted directory and o
 
 `npm run build` creates `dist/`, including a downloadable source archive. `npm ci` downloads exact upstream revisions and checks their SHA-256 hashes. Downloads are skipped when the checked files already exist. `package-lock.json` pins npm dependencies.
 
-In the existing skins repository, the app lives under `frontend/`; the original userscripts remain in `skins/`. The Pages workflow belongs at the repository root as `.github/workflows/controller-frontend.yml`. It tests PRs and uploads a static-build artifact. After merge, enable **Settings → Pages → GitHub Actions**, run **Controller frontend**, and select the deploy input. Private-repository Pages availability depends on the GitHub plan; do not make the repository public merely to enable hosting without deciding to do so. The same `dist/` can be hosted by the existing martinconnor.com pipeline.
+In the existing skins repository, the app lives under `frontend/`; the original userscripts remain in `skins/`. The Pages workflow belongs at the repository root as `.github/workflows/controller-frontend.yml`. It tests PRs and uploads a static-build artifact. Frontend changes merged into `main` are tested, built, and deployed to Pages automatically. Manual **Controller frontend → Run workflow → deploy** remains available. Pages is already enabled through **Settings → Pages → GitHub Actions**, and the owner made this repository public. The same `dist/` can be hosted by the existing martinconnor.com pipeline.
 
 ## Acceptance test on the actual iPad
 

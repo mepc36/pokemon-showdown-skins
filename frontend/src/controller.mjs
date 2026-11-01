@@ -41,7 +41,7 @@ export function navigate(direction) {
   const buttons = [...scope.querySelectorAll('[data-nav]')].filter(el => !el.disabled && el.getClientRects().length);
   if (!buttons.length) return;
   const focused = buttons.includes(document.activeElement) ? document.activeElement : null;
-  if (!focused) { buttons[0].focus(); return; }
+  if (!focused) { (buttons.find(el => el.dataset.row === 'moves') || buttons[0]).focus(); return; }
   const rows = [...new Set(buttons.map(el => el.dataset.row))];
   const row = buttons.filter(el => el.dataset.row === focused.dataset.row);
   let target;
