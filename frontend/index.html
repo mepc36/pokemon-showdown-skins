@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="referrer" content="no-referrer"><meta name="theme-color" content="#152525">
+  <title>Showdown · Controller example</title>
+  <link rel="stylesheet" href="./vendor/battle.css"><link rel="stylesheet" href="./vendor/sim-types.css">
+</head>
+<body>
+  <div id="app">
+    <header><div><span class="eyebrow">POKÉMON SHOWDOWN / CONTROLLER EXAMPLE</span><h1>Random Battle<span class="version">MVE 01</span></h1></div><button id="setup" data-nav data-row="header">Setup</button></header>
+    <main>
+      <section class="session-bar" aria-label="Connection"><div><span id="connection-dot" class="dot"></span><span id="connection">Loading the battle engine…</span><small id="account">mepc36363636 · Gen 9 singles</small></div><div class="actions"><button id="primary" class="primary" data-nav data-row="connection" disabled>Connect to Showdown</button><button id="reconnect" data-nav data-row="connection" hidden>Reconnect</button></div></section>
+      <div class="arena-card"><div class="arena-top"><span id="mode">OFFLINE DISPLAY FIXTURE</span><span>Registered bots blocked in live searches</span></div><div id="arena-wrap"><div id="arena" class="battle" aria-label="Battle animation"></div></div><div id="hidden-log" hidden></div></div>
+      <section class="command-panel" aria-label="Battle choices"><div class="command-heading"><h2 id="prompt">Try the controls</h2><span id="turn-label">No live match</span></div><p id="notice" role="status" aria-live="polite">This fixture checks the display and controller. It does not play a match.</p><div id="choices"></div><div id="utility"></div><p id="timer-status"></p></section>
+      <div class="controller-bar"><span><kbd>D-pad</kbd> Move focus</span><span><kbd>A</kbd> Choose</span><span><kbd>B</kbd> Undo / back</span><span><kbd>X</kbd> Tera</span><span><kbd>Select</kbd> Music</span><button id="diagnostics" data-nav data-row="footer">Controller check</button></div>
+    </main>
+    <footer>Independent frontend · Official battle renderer · Chat hidden <a href="./source.zip" download>Source & setup guide</a></footer>
+  </div>
+  <dialog id="modal" aria-labelledby="modal-title"><div class="modal-header"><h2 id="modal-title"></h2><button id="modal-close" data-nav data-row="modal-header" aria-label="Close dialog">×</button></div><div id="modal-body"></div></dialog>
+  <script src="./vendor/html-sanitizer-minified.js"></script><script src="./vendor/html-css-sanitizer-minified.js"></script><script src="./vendor/battle-log-misc.js"></script>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

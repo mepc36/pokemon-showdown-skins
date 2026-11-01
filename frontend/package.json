@@ -1,0 +1,19 @@
+{
+  "name": "showdown-controller-mve",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "postinstall": "node scripts/fetch-vendor.mjs",
+    "build": "node scripts/source-archive.mjs && vite build",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@pkmn/dex": "0.10.11",
+    "jquery": "3.7.1"
+  },
+  "devDependencies": {
+    "vite": "8.2.0"
+  }
+}
