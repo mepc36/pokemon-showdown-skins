@@ -103,7 +103,7 @@ Once a client ID is registered:
 
 `src/session.mjs` owns the wire protocol. `src/auth.mjs` handles authorization. `src/controller.mjs` handles focus and button edges. `src/renderer.js` is the small boundary around the pinned upstream renderer. `src/main.js` and the stylesheet own the UI. The full official frontend is not embedded or forked.
 
-`vendor/manifest.json` records exact file URLs and checksums; `vendor/upstream.json` records repository revisions. Two tiny local bridge modules supply renderer configuration. A Vite transform defers circular animation aliases for ESM. Copied battle CSS uses absolute official asset URLs. These are the only integration adaptations; there are no selectors aimed at the live Showdown client.
+`vendor/manifest.json` records exact file URLs and checksums; `vendor/upstream.json` records repository revisions. Two tiny local bridge modules supply renderer configuration. A Vite transform defers circular animation aliases for ESM and removes Node-only global exports from the browser build. Copied battle CSS uses absolute official asset URLs. These are the only integration adaptations; there are no selectors aimed at the live Showdown client.
 
 Useful primary references: [wire protocol](https://github.com/smogon/pokemon-showdown/blob/master/PROTOCOL.md), [simulator protocol](https://github.com/smogon/pokemon-showdown/blob/master/sim/SIM-PROTOCOL.md), [official client](https://github.com/smogon/pokemon-showdown-client), and [login protocol](https://github.com/smogon/pokemon-showdown-loginserver/blob/master/OAUTH.md).
 
