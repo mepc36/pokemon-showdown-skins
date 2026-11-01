@@ -7,7 +7,7 @@ execFileSync('python3', ['-c', `
 import pathlib, zipfile
 root = pathlib.Path('.')
 with zipfile.ZipFile(root/'public/source.zip', 'w', zipfile.ZIP_DEFLATED) as out:
- for name in ['src','test','scripts','vendor','public','index.html','package.json','package-lock.json','vite.config.js','README.md','LICENSE','THIRD_PARTY_NOTICES.md','.github','.gitignore']:
+ for name in ['src','test','scripts','docs','vendor','public','index.html','package.json','package-lock.json','vite.config.js','README.md','LICENSE','THIRD_PARTY_NOTICES.md','.github','.gitignore']:
   path=root/name
   files=path.rglob('*') if path.is_dir() else [path]
   for f in files:

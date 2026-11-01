@@ -9,11 +9,14 @@ BattleSound.setMute(true);
 export class Arena {
   constructor(frame, log) {
     this.frame = frame; this.log = log;
+    this.fit = 'wide';
     this.observer = new ResizeObserver(() => this.resize());
     this.observer.observe(frame.parentElement);
-    this.observer.observe(document.querySelector('.command-panel'));
+    for (const selector of ['.app-header', '.arena-top', '.command-panel', '.controller-bar', 'footer']) this.observer.observe(document.querySelector(selector));
     window.addEventListener('resize', () => this.resize());
+    window.visualViewport?.addEventListener('resize', () => this.resize());
   }
+  setFit(fit) { this.fit = fit === 'original' ? 'original' : 'wide'; this.resize(); }
   reset(room) {
     this.battle?.destroy();
     this.room = room;
@@ -25,11 +28,16 @@ export class Arena {
     const parent = this.frame.parentElement;
     const width = parent.clientWidth;
     const below = ['.command-panel', '.controller-bar', 'footer'].reduce((sum, selector) => sum + document.querySelector(selector).offsetHeight, 0);
-    const available = Math.max(220, window.innerHeight - (parent.getBoundingClientRect().top + window.scrollY) - below - 45);
-    const scale = Math.min(width / 640, width >= 760 ? available / 360 : Infinity);
-    this.frame.style.transform = `scale(${scale})`;
-    this.frame.style.left = `${(width - 640 * scale) / 2}px`;
-    parent.style.height = `${360 * scale}px`;
+    // visualViewport follows Safari's toolbars. Reserve measured controls, never
+    // cover the player's Pokémon with the dock or retain a stale maximum height.
+    const viewportHeight = window.visualViewport?.height || window.innerHeight;
+    const safeBottom = parseFloat(getComputedStyle(document.getElementById('app')).paddingBottom) || 0;
+    const available = Math.max(160, viewportHeight - (parent.getBoundingClientRect().top + window.scrollY) - below - safeBottom);
+    const scaleY = Math.min(width / 640, width >= 600 ? available / 360 : Infinity);
+    const scaleX = Math.min(width / 640, scaleY * (this.fit === 'wide' ? 1.25 : 1));
+    this.frame.style.transform = `scale(${scaleX}, ${scaleY})`;
+    this.frame.style.left = `${(width - 640 * scaleX) / 2}px`;
+    parent.style.height = `${360 * scaleY}px`;
   }
   receive({room, lines, snapshot, request}) {
     if (snapshot || !this.battle || this.room !== room) this.reset(room);

@@ -12,6 +12,8 @@ const escape = text => String(text ?? '').replace(/[&<>"']/g, char => ({'&': '&a
 const btn = (id, label, row, disabled = false, extra = '') => `<button id="${id}" data-nav data-row="${row}" ${disabled ? 'disabled' : ''} ${extra}>${label}</button>`;
 let arena, session, auth, config, state = {}, fixture = true, tera = false, lastRequest, selectedRequest, localNotice = '', ignoreButtons = new Set();
 let diagnosticLines = [];
+let modalReturnFocus = '', displayFit = 'wide';
+try { if (localStorage.getItem('ps-mve-display-fit') === 'original') displayFit = 'original'; } catch {}
 const modal = $('modal');
 const music = new Music(() => updateMusic());
 const safe = fn => { try { fn(); } catch (error) { localNotice = error.message; render(); } };
@@ -22,11 +24,34 @@ function updateMusic() {
 }
 
 function showModal(title, content) {
+  if (!modal.open) modalReturnFocus = document.activeElement?.id || '';
   $('modal-title').textContent = title; $('modal-body').innerHTML = content;
   if (!modal.open) modal.showModal();
   $('modal-close').focus();
 }
 $('modal-close').onclick = () => modal.close();
+modal.addEventListener('close', () => $(modalReturnFocus)?.focus({preventScroll: true}));
+
+function displaySettings() {
+  showModal('Battlefield display', `<p>Choose how the battlefield fits above the controls. This preference is saved on this device.</p>
+    <div class="modal-actions">${btn('fit-wide', 'Wide field', 'display-options', false, `aria-pressed="${displayFit === 'wide'}"`)}${btn('fit-original', 'Original proportions', 'display-options', false, `aria-pressed="${displayFit === 'original'}"`)}</div>
+    <p class="small">Wide field allows up to 25% horizontal stretching, like your console skin. Original proportions keeps the sprites at their native shape. Both keep the controls below the battlefield.</p>`);
+  for (const value of ['wide', 'original']) $(`fit-${value}`).onclick = () => {
+    displayFit = value;
+    try { localStorage.setItem('ps-mve-display-fit', value); } catch {}
+    arena.setFit(value);
+    for (const option of ['wide', 'original']) $(`fit-${option}`).setAttribute('aria-pressed', String(option === value));
+  };
+}
+$('display').onclick = displaySettings;
+
+function showTools(open, focusId) {
+  $('utility').hidden = !open;
+  $('toggle-tools').setAttribute('aria-expanded', String(open));
+  $('toggle-tools').textContent = open ? 'Fewer controls' : 'More controls';
+  if (focusId) $(focusId)?.focus({preventScroll: true});
+}
+$('toggle-tools').onclick = () => showTools($('utility').hidden);
 
 function setup() {
   showModal('Connect your account', `<p>This example uses Showdown’s own sign-in page. Your password stays on Showdown.</p>
@@ -56,9 +81,13 @@ function diagnostics() {
 }
 $('diagnostics').onclick = diagnostics;
 
-function info() {
+function info(index) {
   const team = (fixture ? demoRequest : lastRequest)?.side?.pokemon || [];
-  showModal('Your team', team.length ? `<div class="team-info">${team.map(p => `<article><strong>${escape(p.details.split(',')[0])}</strong><p>${escape(p.condition)} · ${escape(p.baseAbility || p.ability)} · ${escape(p.item || 'No item')}</p><p>${escape(p.moves?.join(' · '))}</p><small>Tera: ${escape(p.teraType || 'Unknown')}</small></article>`).join('')}</div>` : '<p>Your team will appear when a battle starts.</p>');
+  const focused = Number(document.activeElement?.id?.match(/^switch-(\d+)$/)?.[1]);
+  const selected = Number.isInteger(index) ? index : focused;
+  const pokemon = team[selected - 1];
+  const entries = pokemon ? [pokemon] : team;
+  showModal(pokemon ? pokemon.details.split(',')[0] : 'Your team', entries.length ? `<div class="team-info">${entries.map(p => `<article><strong>${escape(p.details.split(',')[0])}</strong><p>${escape(p.condition)} · ${escape(p.baseAbility || p.ability)} · ${escape(p.item || 'No item')}</p><p>${escape(p.moves?.map(id => window.BattleMovedex[id]?.name || id).join(' · '))}</p><small>Tera: ${escape(p.teraType || 'Unknown')}</small></article>`).join('')}</div>` : '<p>Your team will appear when a battle starts.</p>');
 }
 
 function forfeit() {
@@ -71,7 +100,11 @@ function forfeit() {
 }
 
 function choose(kind, index) {
-  if (fixture) { localNotice = `Controller check: ${kind} ${index}${tera && kind === 'move' ? ' + Terastallize' : ''} selected. Nothing was sent to Showdown.`; render(); return; }
+  if (fixture) {
+    const name = kind === 'move' ? demoRequest.active[0].moves[index - 1].move : demoRequest.side.pokemon[index - 1].details.split(',')[0];
+    localNotice = `${name}${tera && kind === 'move' ? ' + Tera' : ''} selected. Offline preview; nothing was sent.`;
+    render(); return;
+  }
   safe(() => { localNotice = ''; session.choose(kind, index, kind === 'move' && tera); });
 }
 
@@ -82,23 +115,31 @@ function render() {
   if (request !== selectedRequest) { selectedRequest = request; tera = false; }
   const choices = availableChoices(request);
   const disabled = !fixture && (!state.authenticated || state.pending || state.recovering || state.ended || !request || request.wait);
-  $('connection').textContent = fixture ? 'Offline display fixture' : state.status;
+  $('connection').textContent = fixture ? 'Offline preview' : state.status;
   $('connection-dot').classList.toggle('online', !!state.authenticated);
   $('account').textContent = `${config?.username || 'mepc36363636'} · Gen 9 singles`;
-  $('mode').textContent = fixture ? 'OFFLINE DISPLAY FIXTURE' : state.room || 'LIVE CONNECTION';
-  $('turn-label').textContent = fixture ? 'No live match' : state.room ? 'Server controls turn availability' : 'Ready when you are';
-  $('prompt').textContent = fixture ? 'Try the controls' : state.ended ? 'Battle complete' : state.recovering ? 'Restoring your battle…' : state.pending || request?.wait ? 'Waiting for the next turn' : request?.forceSwitch ? 'Choose a Pokémon' : request ? 'Choose your move' : state.searching ? 'Finding an opponent…' : 'Let’s play';
-  $('notice').textContent = localNotice || state.notice || (fixture ? 'This fixture checks the display and controller. It does not play a match.' : !auth?.clientId ? 'Open Setup to add your registered Showdown application ID.' : state.recovering ? 'Restoring server history and the latest choice. Nothing will be resubmitted.' : state.searching ? 'Searching the official ladder with registered bots blocked.' : '');
+  const activePokemon = request?.side?.pokemon?.find(p => p.active);
+  $('mode').textContent = fixture ? 'OFFLINE PREVIEW' : state.room || 'LIVE CONNECTION';
+  $('turn-label').textContent = activePokemon ? `HP ${activePokemon.condition}` : '';
+  $('prompt').textContent = fixture ? `What will ${activePokemon.details.split(',')[0]} do?` : state.ended ? 'Battle complete' : state.recovering ? 'Restoring your battle…' : state.pending || request?.wait ? 'Waiting for the next turn' : request?.forceSwitch ? 'Choose a Pokémon' : activePokemon ? `What will ${activePokemon.details.split(',')[0]} do?` : state.searching ? 'Finding an opponent…' : 'Let’s play';
+  $('notice').textContent = localNotice || state.notice || (fixture ? 'Try the D-pad and A. No match is running.' : !auth?.clientId ? 'Open Setup to add your registered Showdown application ID.' : state.recovering ? 'Restoring your battle. No choice will be resubmitted.' : state.searching ? 'Searching with registered bots blocked.' : '');
   const primary = $('primary');
   primary.disabled = false;
   primary.textContent = fixture || session?.stopped ? 'Connect to Showdown' : !state.authenticated ? 'Sign in with Showdown' : state.searching ? 'Cancel search' : 'Find Random Battle';
   if (!fixture && !session?.stopped) primary.disabled = !state.authenticated ? !state.challenge : !!state.room && !state.ended;
   $('reconnect').hidden = fixture || session?.stopped;
+  const team = (request?.side?.pokemon || lastRequest?.side?.pokemon || []).map((pokemon, i) => ({...pokemon, index: i + 1, enabled: choices.switches.some(p => p.index === i + 1 && p.enabled)}));
   $('choices').innerHTML = `<div class="moves" role="group" aria-label="Moves">${choices.moves.map(move => {
     const type = window.BattleMovedex[move.id]?.type || '';
     return btn(`move-${move.index}`, `<strong>${escape(move.move)}</strong><small>${escape(type)} <span>${escape(move.pp ?? '—')} / ${escape(move.maxpp ?? '—')} PP</span></small>`, 'moves', disabled || !move.enabled, `data-type="${escape(type)}"`);
   }).join('')}</div>
-    <div class="team" role="group" aria-label="Switch Pokémon">${choices.switches.map(p => btn(`switch-${p.index}`, `<span class="picon" style="${escape(arena.icon(p.details.split(',')[0]))}"></span><strong>${escape(p.details.split(',')[0])}</strong><small>${p.active ? 'ACTIVE · ' : ''}${escape(p.condition)}</small>`, 'team', disabled || !p.enabled)).join('')}</div>`;
+    <div class="team" role="group" aria-label="Your six Pokémon">${team.map(p => {
+      const name = p.details.split(',')[0], fainted = /fnt/.test(p.condition), canSwitch = !disabled && p.enabled;
+      const health = p.condition.match(/^(\d+)\/(\d+)/);
+      const percent = fainted ? 0 : health ? Math.max(0, Math.min(100, Number(health[1]) / Number(health[2]) * 100)) : 100;
+      const status = fainted ? 'Fainted' : `${p.active ? 'Active · ' : ''}${p.condition}`;
+      return btn(`switch-${p.index}`, `<span class="picon" aria-hidden="true" style="${escape(arena.icon(name))}"></span><strong>${escape(name)}</strong><small>${escape(status)}</small><span class="team-hp" aria-hidden="true" data-health="${percent <= 20 ? 'critical' : percent <= 50 ? 'low' : 'healthy'}"><span style="width:${percent}%"></span></span>`, 'team', false, `data-unavailable="${!canSwitch}" data-fainted="${fainted}" aria-label="${escape(name)}, ${escape(status)}. ${canSwitch ? 'Switch Pokémon' : 'View details'}"`);
+    }).join('')}</div>`;
   const inBattle = fixture || !!state.room && !state.ended;
   $('utility').innerHTML = `${btn('tera', tera ? '✓ Tera selected' : 'Terastallize', 'tools', disabled || !choices.tera, `aria-pressed="${tera}"`)}
     ${btn('undo', 'Undo choice', 'tools', !fixture && (!state.pending || !request || request.noCancel || !state.authenticated))}
@@ -107,10 +148,10 @@ function render() {
     ${btn('music', 'Tap for music', 'tools')}${btn('forfeit', 'Forfeit…', 'tools', !inBattle || !fixture && !state.authenticated)}
     ${state.ended ? btn('replay', 'Watch this battle again', 'tools') : ''}`;
   for (const move of choices.moves) $(`move-${move.index}`).onclick = () => choose('move', move.index);
-  for (const p of choices.switches) $(`switch-${p.index}`).onclick = () => choose('switch', p.index);
+  for (const p of team) $(`switch-${p.index}`).onclick = () => disabled || !p.enabled ? info(p.index) : choose('switch', p.index);
   $('tera').onclick = () => { tera = !tera; render(); };
   $('undo').onclick = () => fixture ? (localNotice = 'Controller check: undo.', render()) : safe(() => session.undo());
-  $('info').onclick = info; $('skip').onclick = () => arena.skip(); $('music').onclick = () => music.toggle(); $('forfeit').onclick = forfeit;
+  $('info').onclick = () => info(); $('skip').onclick = () => arena.skip(); $('music').onclick = () => music.toggle(); $('forfeit').onclick = forfeit;
   for (const toggle of ['on', 'off']) $(`timer-${toggle}`).onclick = () => fixture ? (localNotice = `Controller check: timer ${toggle}.`, render()) : safe(() => session.roomCommand(`/timer ${toggle}`));
   if ($('replay')) $('replay').onclick = () => arena.replay();
   $('timer-status').textContent = state.timer || '';
@@ -140,6 +181,7 @@ async function init() {
   try { ignoreButtons = new Set(JSON.parse(localStorage.getItem('ps-mve-ignored') || '[]')); } catch {}
   const {Arena} = await import('./renderer.js');
   arena = new Arena($('arena'), $('hidden-log'));
+  arena.setFit(displayFit);
   arena.receive({room: 'battle-gen9randombattle-0', lines: demoLines, snapshot: true, request: demoRequest});
   session = new ShowdownSession({url: config.server, username: config.username, auth, storage: localStorage,
     onState(next) { state = next; music.update(!fixture && !!state.room && !state.ended && state.authenticated); render(); },
@@ -159,7 +201,7 @@ async function init() {
       return;
     }
     if (modal.open) return;
-    ({tera: () => $('tera')?.click(), music: () => music.toggle(), timer: () => $('timer-on')?.click(), menu: forfeit, info})[action]?.();
+    ({tera: () => { $('tera')?.click(); showTools(true); }, music: () => music.toggle(), timer: () => showTools(true, 'timer-on'), menu: forfeit, info})[action]?.();
   }});
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { music.update(false); return; }
