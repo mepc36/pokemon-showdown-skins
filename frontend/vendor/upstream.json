@@ -1,0 +1,37 @@
+{
+  "repository": "https://github.com/smogon/pokemon-showdown-client",
+  "commit": "02c67685cc09d0191a9be015de6db9dfaf5e4159",
+  "files": [
+    "play.pokemonshowdown.com/src/battle-animations-moves.ts",
+    "play.pokemonshowdown.com/src/battle-animations.ts",
+    "play.pokemonshowdown.com/src/battle-choices.ts",
+    "play.pokemonshowdown.com/src/battle-dex-data.ts",
+    "play.pokemonshowdown.com/src/battle-dex-search.ts",
+    "play.pokemonshowdown.com/src/battle-dex.ts",
+    "play.pokemonshowdown.com/src/battle-log.ts",
+    "play.pokemonshowdown.com/src/battle-scene-stub.ts",
+    "play.pokemonshowdown.com/src/battle-sound.ts",
+    "play.pokemonshowdown.com/src/battle-teams.ts",
+    "play.pokemonshowdown.com/src/battle-text-parser.ts",
+    "play.pokemonshowdown.com/src/battle-tooltips.ts",
+    "play.pokemonshowdown.com/src/battle.ts",
+    "play.pokemonshowdown.com/style/battle.css",
+    "play.pokemonshowdown.com/style/sim-types.css",
+    "play.pokemonshowdown.com/js/lib/html-sanitizer-minified.js",
+    "play.pokemonshowdown.com/js/lib/html-css-sanitizer-minified.js",
+    "play.pokemonshowdown.com/src/battle-log-misc.js"
+  ],
+  "text": {
+    "repository": "https://github.com/smogon/pokemon-showdown",
+    "commit": "5b01be81011ec12efa25dcfff49ea279a6029d6f",
+    "files": [
+      "data/text/default.ts",
+      "data/text/moves.ts",
+      "data/text/abilities.ts",
+      "data/text/items.ts",
+      "data/text/names.ts",
+      "data/text/pokedex.ts",
+      "data/text/tags.ts"
+    ]
+  }
+}
