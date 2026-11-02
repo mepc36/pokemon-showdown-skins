@@ -29,5 +29,12 @@ export const demoLines = [
   '|switch|p1a: Excadrill|Excadrill, L80|126/330',
   '|switch|p1a: Amoonguss|Amoonguss, L80|294/336',
   '|switch|p1a: Grumpig|Grumpig, L92, F|297/297',
+  // A few public reveals let the inspector exercise known, fainted and unknown slots.
+  '|switch|p2a: Landorus|Landorus, L76, M|100/100',
+  '|move|p2a: Landorus|Earth Power|p1a: Grumpig',
+  '|-ability|p2a: Landorus|Sheer Force', '|-item|p2a: Landorus|Life Orb',
+  '|switch|p2a: Corviknight|Corviknight, L80, M|100/100', '|faint|p2a: Corviknight',
+  '|switch|p2a: Rotom|Rotom-Wash, L80|34/100 par',
+  '|move|p2a: Rotom|Hydro Pump|p1a: Grumpig',
   '|switch|p2a: Landorus|Landorus, L76, M|31/100', '|turn|16',
 ];

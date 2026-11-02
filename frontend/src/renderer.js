@@ -2,13 +2,15 @@ import {Battle} from '../vendor/pokemon-showdown/battle';
 import {BattleSound} from '../vendor/pokemon-showdown/battle-sound';
 import {Dex} from '../vendor/pokemon-showdown/battle-dex';
 import {isBattleEvent} from './protocol.mjs';
+import {opponentSlots} from './information.mjs';
 
 // Audio is controlled through one primed media element in music.js.
 BattleSound.setMute(true);
 
 export class Arena {
-  constructor(frame, log) {
+  constructor(frame, log, onUpdate = () => {}) {
     this.frame = frame; this.log = log;
+    this.onUpdate = onUpdate;
     this.fit = 'wide';
     this.observer = new ResizeObserver(() => this.resize());
     this.observer.observe(frame.parentElement);
@@ -21,6 +23,7 @@ export class Arena {
     this.battle?.destroy();
     this.room = room;
     this.battle = new Battle({id: room, $frame: window.$(this.frame), $logFrame: window.$(this.log), paused: false, autoresize: false});
+    this.battle.subscribe(() => this.scheduleUpdate());
     this.battle.messageShownTime = 700;
     this.resize();
   }
@@ -56,7 +59,14 @@ export class Arena {
       this.battle.scene.updateSidebars();
     }
     this.battle.play();
+    this.scheduleUpdate();
   }
+  scheduleUpdate() {
+    if (this.updateQueued) return;
+    this.updateQueued = true;
+    queueMicrotask(() => { this.updateQueued = false; this.onUpdate(); });
+  }
+  opponents() { return opponentSlots(this.battle?.farSide); }
   replay() { if (this.battle) { this.battle.seekTurn(0); this.battle.play(); } }
   skip() { this.battle?.seekTurn(Infinity); }
   icon(name) { return Dex.getPokemonIcon(name); }
