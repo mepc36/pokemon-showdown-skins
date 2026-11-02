@@ -37,6 +37,15 @@ button[aria-pressed=true]{background:#fbe1eb;color:#961b43;border-color:var(--ac
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 /* Keep occasional actions reachable without taking a permanent third row. */
 .controller-bar button{margin-left:0}.controller-bar #toggle-tools{margin-left:auto}
+.command-heading #move-details{min-height:28px;padding:4px 10px;font-size:11px;margin-left:auto}
+.team-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;color:var(--muted);font-size:11px}
+.team-toolbar>div{display:flex;gap:5px}.team-toolbar button{min-height:28px;padding:4px 12px;font-size:11px}.team-toolbar+.team{margin-top:5px}
+.unknown-pokemon{grid-row:span 2;display:grid;place-items:center;width:40px;height:30px;color:#788593;font-size:22px;font-weight:bold}
+.info-kicker{font-weight:600;color:#536779;margin:16px 0 12px}.info-kicker[data-type]{display:inline-block;padding:3px 10px;border:1px solid var(--type-border);border-radius:5px;background:var(--type-tint)}
+.info-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}.info-facts>div{background:#fff;border:1px solid #d0d8df;border-radius:6px;padding:9px 12px;min-width:0}.info-facts dt{font-size:11px;color:var(--muted)}.info-facts dd{margin:2px 0 0;font-size:14px;font-weight:600;overflow-wrap:anywhere}
+.move-description{line-height:1.65}.info-warning{padding:8px 12px;background:#fff1da;border-radius:6px;color:#835b17}.info-moves{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px}.info-moves button{font-size:13px}.team-info button small{display:block;margin-top:4px;color:var(--muted)}#modal-body h3{font-size:14px;margin-bottom:4px}
+@media(pointer:coarse){.command-heading #move-details,.team-toolbar button{min-height:44px}}
+@media(max-width:480px){.info-facts{grid-template-columns:repeat(2,minmax(0,1fr))}.command-heading{justify-content:space-between}.command-heading #move-details{flex-shrink:0}.team-toolbar button{padding:5px 10px}}
 @media(min-width:600px) and (max-height:750px){
   .app-header{min-height:48px;padding:4px 12px}.brand h1{font-size:19px;margin:0}.brand small,.connection-copy small{display:none}
   .arena-top{min-height:25px;padding:4px 12px}#notice{font-size:11px}

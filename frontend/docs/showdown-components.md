@@ -22,7 +22,8 @@ On November 1, 2026, we inspected the generated HTML of the official homepage an
 | Timer menu | `button[name="openTimer"]` | `#timer-on`, `#timer-off` |
 | Sound menu | `button[name="openSounds"]` | `#music` |
 | Forfeit prompt | Current battle tab close button opens a popup | `#forfeit` opens our confirmation dialog |
-| Information hotspots | `.has-tooltip`, `data-tooltip` | R3 / `#info` and focusable team slots; rich opponent tooltips pending |
+| Information hotspots | `.has-tooltip`, `data-tooltip` | R3 / I inspects the focused move or Pokémon; `#move-details` is the touch entry point |
+| Opponent inspection | Sidebar Pokémon tooltips | `#view-own` / `#view-opponent` swap the shared `#roster`; `#opponent-1` through `#opponent-6` remain focusable even when unknown |
 | Replay / end controls | `instantReplay`, `rewindTurn`, `skipTurn`, `goToEnd`, `saveReplay` button names | `#replay` and `#skip`; publishing replay is not implemented |
 | Gamepad highlight | Userscript `.gen2-gp-sel` | Native focus outline in the same `#d02860` pink |
 
@@ -57,7 +58,7 @@ This is an abbreviated structural excerpt, with battle IDs, content, styles and 
 
 ## Dependency boundary
 
-These official selectors document how the reference works; our connection and controls do **not** query the live Showdown DOM or `window.app.curRoom`. We own the control IDs and use the wire protocol for state. Only the pinned renderer owns its internal battlefield classes. Upstream website layout changes therefore do not rename our move or team buttons. Renderer updates still need deliberate review.
+These official selectors document how the reference works; our connection and controls do **not** query the live Showdown DOM or `window.app.curRoom`. We own the control IDs and use the wire protocol for state. Only the pinned renderer owns its internal battlefield classes. Upstream website layout changes therefore do not rename our move or team buttons. Renderer updates still need deliberate review. Opponent details read the pinned renderer’s `farSide.pokemon` model and refresh on its subscription events, rather than querying the sidebar HTML. The adapter uses `moveTrack` for observed moves, never an inferred set or the player’s private request. Unknown information stays unknown. Move inspection uses the pinned `@pkmn/dex` reference data, with current PP supplied only for the player’s active request.
 
 Primary code references at our pinned client revision:
 

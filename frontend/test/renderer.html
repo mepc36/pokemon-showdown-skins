@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Opponent information integration check</title>
+<link rel="stylesheet" href="/vendor/battle.css">
+<style>
+  body{font:14px system-ui;margin:16px}pre{white-space:pre-wrap}.test-stage{height:380px;overflow:hidden}
+  #frame-wrap{position:relative;width:640px}#arena{position:absolute;transform-origin:top left;width:640px;height:360px}
+  iframe{display:block;border:1px solid #aaa;margin:16px 0;max-width:none}
+</style>
+<h1>Opponent information integration check</h1>
+<p>Offline fixtures only. No socket, sign-in or matchmaking.</p>
+<button id="run">Run renderer checks</button><pre id="results">Ready</pre>
+<div class="test-stage" id="app"><div class="app-header"></div><div class="arena-top"></div><div id="frame-wrap"><div id="arena" class="battle"></div></div><div class="command-panel"></div><div class="controller-bar"></div><footer></footer><div id="log" hidden></div></div>
+<h2>Responsive layout fixtures</h2>
+<iframe id="tablet" title="1024 by 650 layout" src="/" width="1024" height="650"></iframe>
+<iframe id="phone" title="390 by 720 layout" src="/" width="390" height="720"></iframe>
+<script src="/vendor/html-sanitizer-minified.js"></script>
+<script src="/vendor/html-css-sanitizer-minified.js"></script>
+<script src="/vendor/battle-log-misc.js"></script>
+<script type="module">
+import '/src/battle-data.ts';
+import {demoLines, demoRequest} from '/src/demo.mjs';
+const {Arena} = await import('/src/renderer.js');
+let updates = 0;
+const arena = new Arena(document.querySelector('#arena'), document.querySelector('#log'), () => updates++);
+const room = 'battle-gen9randombattle-offlinecheck';
+const flush = () => new Promise(resolve => queueMicrotask(resolve));
+document.querySelector('#run').onclick = async () => {
+  const results = document.querySelector('#results');
+  results.textContent = '';
+  const check = (condition, message) => {
+    if (!condition) throw new Error(message);
+    results.textContent += `PASS: ${message}\n`;
+  };
+  try {
+    arena.receive({room, lines: demoLines, snapshot: true, request: demoRequest});
+    await flush();
+    check(arena.opponents().filter(p => p.revealed).length === 3, 'Snapshot has three known and three unknown slots');
+    check(arena.opponents()[1].fainted, 'Fainted opponent remains inspectable');
+    const before = updates;
+    arena.receive({room, lines: ['|switch|p2a: Dragonite|Dragonite, L80, M|70/100', '|move|p2a: Dragonite|Extreme Speed|p1a: Grumpig', '|-terastallize|p2a: Dragonite|Normal', '|turn|17']});
+    arena.skip();
+    await flush();
+    const revealed = arena.opponents()[3];
+    check(updates > before && revealed.name === 'Dragonite', 'Incremental reveal notifies the UI');
+    check(revealed.active && revealed.teraType === 'Normal' && revealed.moves[0].id === 'extremespeed', 'Move and Tera reveals update from battle events');
+    arena.receive({room, lines: demoLines, snapshot: true, request: demoRequest});
+    await flush();
+    check(!arena.opponents()[3].revealed, 'Snapshot rebuild drops stale later information');
+    arena.receive({room, lines: demoLines, snapshot: true, request: {side: {id: 'p2', pokemon: [{ident: 'p2: Landorus', details: 'Landorus, L76, M', condition: '31/100', active: true}]}}});
+    await flush();
+    check(arena.opponents().some(p => p.name === 'Grumpig') && !arena.opponents().some(p => p.name === 'Landorus'), 'Player two sees player one as the opponent');
+    arena.receive({room: 'battle-gen9randombattle-nextcheck', lines: ['|gen|9', '|teamsize|p1|6', '|teamsize|p2|6'], snapshot: true});
+    await flush();
+    check(arena.opponents().every(p => !p.revealed), 'New room clears previous opponents');
+    results.textContent += 'All checks passed.';
+  } catch (error) { results.textContent += `FAIL: ${error.message}`; }
+};
+</script>
+</html>
