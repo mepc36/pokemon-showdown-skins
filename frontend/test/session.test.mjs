@@ -4,6 +4,7 @@ import {ShowdownSession} from '../src/session.mjs';
 import {choiceCommand, availableChoices, parsePacket, isBattleEvent} from '../src/protocol.mjs';
 import {risingEdges} from '../src/controller.mjs';
 import {demoRequest} from '../src/demo.mjs';
+import {ChoiceDraft} from '../src/choice-draft.mjs';
 
 const room = 'battle-gen9randombattle-12345';
 const request = () => structuredClone(demoRequest);
@@ -127,4 +128,59 @@ test('undo uses a command separator, unlocks locally, and respects noCancel', ()
   f.session.choose('move', 2); f.session.state.request.noCancel = true;
   const count = f.socket.sent.length; f.session.undo();
   assert.equal(f.socket.sent.length, count);
+});
+
+const context = session => ({request: session.state.request, room: session.state.room, epoch: session.epoch,
+  enabled: session.state.authenticated && !session.state.pending && !session.state.recovering && !session.state.ended && !session.stopped});
+
+test('selecting and cancelling a move never sends a choice or undo to the server', () => {
+  const f = fixture(); f.authenticate(); f.battle(); const draft = new ChoiceDraft();
+  const before = f.socket.sent.length;
+  f.session.state.request.noCancel = true; // Server undo restrictions do not affect local cancellation.
+  draft.stage(context(f.session), 'move', 1, true);
+  assert.equal(f.socket.sent.length, before); assert.equal(f.session.state.pending, false);
+  draft.cancel();
+  assert.equal(f.socket.sent.length, before);
+  assert.throws(() => draft.confirm(context(f.session), choice => f.session.choose(choice.kind, choice.index, choice.tera)));
+  assert.equal(f.socket.sent.length, before);
+});
+
+test('a revised local selection sends only once, after explicit confirmation', () => {
+  const f = fixture(); f.authenticate(); f.battle(); const draft = new ChoiceDraft();
+  draft.stage(context(f.session), 'move', 1); draft.cancel();
+  draft.stage(context(f.session), 'move', 2, true);
+  const before = f.socket.sent.length;
+  const send = choice => f.session.choose(choice.kind, choice.index, choice.tera);
+  draft.confirm(context(f.session), send);
+  assert.equal(f.socket.sent.length, before + 1);
+  assert.equal(f.socket.sent.at(-1), `${room}|/choose move 2 terastallize|1`);
+  assert.throws(() => draft.confirm(context(f.session), send));
+  assert.equal(f.socket.sent.length, before + 1);
+});
+
+test('same-rqid revisions, disconnects and pending choices invalidate an unconfirmed move', () => {
+  for (const change of [
+    f => f.socket.receive(`>${room}\n|request|${JSON.stringify(request())}`),
+    f => f.session.connect(),
+    f => f.socket.receive(`>${room}\n|sentchoice|move 3`),
+    f => f.socket.receive(`>${room}\n|win|mepc36363636`),
+  ]) {
+    const f = fixture(); f.authenticate(); f.battle(); const draft = new ChoiceDraft();
+    draft.stage(context(f.session), 'move', 1);
+    change(f);
+    const before = f.sockets.reduce((count, socket) => count + socket.sent.length, 0);
+    assert.equal(draft.matches(context(f.session)), false);
+    assert.throws(() => draft.confirm(context(f.session), choice => f.session.choose(choice.kind, choice.index)));
+    assert.equal(f.sockets.reduce((count, socket) => count + socket.sent.length, 0), before);
+  }
+});
+
+test('switches use the same local confirmation and server undo remains separate', () => {
+  const f = fixture(); f.authenticate(); f.battle(); const draft = new ChoiceDraft();
+  const before = f.socket.sent.length;
+  draft.stage(context(f.session), 'switch', 2);
+  assert.equal(f.socket.sent.length, before);
+  draft.confirm(context(f.session), choice => f.session.choose(choice.kind, choice.index));
+  assert.equal(f.socket.sent.at(-1), `${room}|/choose switch 2|1`);
+  f.session.undo(); assert.equal(f.socket.sent.at(-1), `${room}|/undo |1`);
 });
