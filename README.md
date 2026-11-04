@@ -2,6 +2,8 @@
 
 Custom reskins and input mods for [Pokémon Showdown](https://play.pokemonshowdown.com), built as userscripts. The main skin turns Showdown into a fullscreen, console-style experience: the battle fills the screen, chat is hidden, controls are large and centered, and the whole client is playable with a Bluetooth gamepad.
 
+The [independent controller prototype](skins/controller-client/README.md) launches the newer frontend using your existing Showdown session. It owns its UI and socket instead of rearranging the live client's elements. It is an alternative to the original console skin; disable the old scripts before testing it. PR builds are available as the **controller-userscript** workflow artifact.
+
 ## Features
 
 - Fullscreen battle: the 640×360 battle canvas scales to fill the window on desktop and iPad (portrait and landscape), with the chat pane and userlist hidden.
@@ -15,6 +17,8 @@ Custom reskins and input mods for [Pokémon Showdown](https://play.pokemonshowdo
 |---|---|
 | `skins/console-skin/console-skin.user.js` | The main skin + gamepad layer. Install this one. |
 | `skins/gamepad-debug/gamepad-debug.user.js` | Optional on-screen gamepad diagnostic overlay. Install only when debugging controller issues. |
+| `skins/controller-client/` | Independent controller launcher source and prototype installation instructions. |
+| `frontend/` | Shared controller app, tests, and static/userscript builds. |
 
 ## Requirements
 

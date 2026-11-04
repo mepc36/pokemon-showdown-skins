@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Userscript launcher check</title>
+<style>body{font:16px system-ui;margin:24px}button{padding:12px}pre{white-space:pre-wrap}</style>
+<h1>Userscript launcher check</h1>
+<p>Local fixture only. The bundled controller refuses Showdown session login on this origin.</p>
+<div id="unrelated-host-component" class="unrelated-host-class"><button id="host-control">Host page button</button><p id="host-status">Host clicks: 0</p></div>
+<button id="rename-host">Rename host classes and IDs</button><pre id="checks">Loading built app…</pre>
+<script type="module">
+import {installControllerLauncher} from '../../skins/controller-client/launcher.js';
+let clicks = 0;
+document.querySelector('#host-control').onclick = () => document.querySelector('#host-status').textContent = `Host clicks: ${++clicks}`;
+document.querySelector('#rename-host').onclick = () => {
+  const host = document.querySelector('div'); host.id = 'renamed-host'; host.className = 'new-host-class';
+  document.querySelector('#checks').textContent = 'Host classes and IDs changed. Open controller UI should still work.';
+};
+const response = await fetch('./generated/controller.html');
+if (!response.ok) throw new Error('Run npm run build:userscript first.');
+const html = await response.text();
+installControllerLauncher(html, {origin: location.origin});
+installControllerLauncher(html, {origin: location.origin});
+document.querySelector('#checks').textContent = `Launchers: ${document.querySelectorAll('#ps-independent-controller-launcher').length} (expected 1). Ready.`;
+</script>
+</html>

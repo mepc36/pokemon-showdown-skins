@@ -1,5 +1,7 @@
 node_modules/
 dist/
+userscript-dist/
+test/generated/
 .env.local
 .DS_Store
 public/source.zip

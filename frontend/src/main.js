@@ -1,7 +1,7 @@
 import './styles.css';
 import './battle-data.ts';
 import {ShowdownSession} from './session.mjs';
-import {ShowdownAuth} from './auth.mjs';
+import {ShowdownAuth, ShowdownSessionAuth} from './auth.mjs';
 import {availableChoices} from './protocol.mjs';
 import {startController, navigate} from './controller.mjs';
 import {Music} from './music.js';
@@ -63,6 +63,14 @@ function showTools(open, focusId) {
 $('toggle-tools').onclick = () => showTools($('utility').hidden);
 
 function setup() {
+  if (config.authMode === 'showdown-session') {
+    showModal('Use your Showdown session', `<p>Sign in as <strong>${escape(config.username)}</strong> on the normal Showdown screen, then open this controller.</p>
+      <p>This version uses that session to sign in. You do not enter a password here, and no OAuth application ID is needed.</p>
+      <div class="modal-actions">${btn('return-to-showdown', 'Back to Showdown', 'modal-actions')}${btn('retry-session', 'Try sign-in again', 'modal-actions', !!state.authenticated || state.status === 'Signing in…')}</div>`);
+    $('return-to-showdown').onclick = returnToShowdown;
+    $('retry-session').onclick = () => { closeModal(); if (fixture || session.stopped) startLive(); else void session.login(true); };
+    return;
+  }
   showModal('Connect your account', `<p>This example uses Showdown’s own sign-in page. Your password stays on Showdown.</p>
     <ol><li>Choose the public hosting address.</li><li><a href="https://forms.gle/VAoSjqHn4zwem7tp9" target="_blank" rel="noopener noreferrer">Register a Showdown application</a> for that origin.</li><li>Paste the public client ID below, then connect and sign in.</li></ol>
     <p class="setup-origin">This origin: <code>${escape(location.origin)}</code></p>
@@ -77,6 +85,12 @@ function setup() {
   $('sign-out').onclick = () => { session.stop(); auth.forget(); closeModal(); localNotice = 'Saved authorization cleared from this browser.'; render(); };
 }
 $('setup').onclick = setup;
+
+function returnToShowdown() {
+  session?.stop();
+  music.update(false);
+  window.parent.postMessage({type: 'ps-controller-close', nonce: config.launcherNonce}, globalThis.origin);
+}
 
 function diagnostics() {
   showModal('Controller check', `<p>Press each button once. The log shows what this browser receives. Mapping follows your userscript; SN30 connection modes can change button numbers.</p>
@@ -223,11 +237,11 @@ function render() {
   $('mode').textContent = fixture ? 'OFFLINE PREVIEW' : state.room || 'LIVE CONNECTION';
   $('turn-label').textContent = activePokemon ? `HP ${activePokemon.condition}` : '';
   $('prompt').textContent = fixture ? `What will ${activePokemon.details.split(',')[0]} do?` : state.ended ? 'Battle complete' : state.recovering ? 'Restoring your battle…' : state.pending || request?.wait ? 'Waiting for the next turn' : request?.forceSwitch ? 'Choose a Pokémon' : activePokemon ? `What will ${activePokemon.details.split(',')[0]} do?` : state.searching ? 'Finding an opponent…' : 'Let’s play';
-  $('notice').textContent = localNotice || state.notice || (fixture ? 'Try the D-pad and A. No match is running.' : !auth?.clientId ? 'Open Setup to add your registered Showdown application ID.' : state.recovering ? 'Restoring your battle. No choice will be resubmitted.' : state.searching ? 'Searching with registered bots blocked.' : '');
+  $('notice').textContent = localNotice || state.notice || (fixture ? 'Try the D-pad and A. No match is running.' : !auth?.configured ? 'Open Setup to add your registered Showdown application ID.' : state.recovering ? 'Restoring your battle. No choice will be resubmitted.' : state.searching ? 'Searching with registered bots blocked.' : '');
   const primary = $('primary');
   primary.disabled = false;
-  primary.textContent = fixture || session?.stopped ? 'Connect to Showdown' : !state.authenticated ? 'Sign in with Showdown' : state.searching ? 'Cancel search' : 'Find Random Battle';
-  if (!fixture && !session?.stopped) primary.disabled = !state.authenticated ? !state.challenge : !!state.room && !state.ended;
+  primary.textContent = fixture || session?.stopped ? 'Connect to Showdown' : state.status === 'Signing in…' ? 'Signing in…' : !state.authenticated ? 'Sign in with Showdown' : state.searching ? 'Cancel search' : 'Find Random Battle';
+  if (!fixture && !session?.stopped) primary.disabled = !state.authenticated ? !state.challenge || state.status === 'Signing in…' : !!state.room && !state.ended;
   $('reconnect').hidden = fixture || session?.stopped;
   $('move-details').disabled = !request?.active?.[0]?.moves?.length;
   $('choices').innerHTML = `<div class="moves" role="group" aria-label="Moves">${choices.moves.map(move => {
@@ -265,7 +279,7 @@ function startLive() {
 $('primary').onclick = () => safe(() => {
   localNotice = '';
   if (fixture || session.stopped) { startLive(); return; }
-  if (!state.authenticated) { if (!auth.clientId) setup(); else void session.login(true); }
+  if (!state.authenticated) { if (!auth.configured) setup(); else void session.login(true); }
   else if (state.searching) session.cancelSearch();
   else session.search();
 });
@@ -274,8 +288,15 @@ document.addEventListener('pointerdown', () => music.unlock(), {passive: true});
 document.addEventListener('keydown', event => { if (!event.repeat && event.isTrusted) music.unlock(); });
 
 async function init() {
-  config = await fetch('./config.json', {cache: 'no-store'}).then(response => response.json());
-  auth = new ShowdownAuth(localStorage.getItem('ps-mve-client-id') || config.clientId);
+  config = window.__SHOWDOWN_CONTROLLER_CONFIG__ || await fetch('./config.json', {cache: 'no-store'}).then(response => response.json());
+  auth = config.authMode === 'showdown-session' ? new ShowdownSessionAuth(config.username) :
+    new ShowdownAuth(localStorage.getItem('ps-mve-client-id') || config.clientId);
+  if (config.authMode === 'showdown-session') {
+    const back = document.createElement('button');
+    back.id = 'back-to-showdown'; back.textContent = 'Back to Showdown'; back.dataset.nav = ''; back.dataset.row = 'header';
+    back.onclick = returnToShowdown;
+    $('setup').after(back);
+  }
   try { ignoreButtons = new Set(JSON.parse(localStorage.getItem('ps-mve-ignored') || '[]')); } catch {}
   const {Arena} = await import('./renderer.js');
   arena = new Arena($('arena'), $('hidden-log'), () => {
@@ -316,5 +337,8 @@ async function init() {
     if (!fixture && !session.stopped && Date.now() - session.lastMessage > 30000) session.connect();
     music.update(!fixture && !!state.room && !state.ended && state.authenticated);
   });
+  if (config.authMode === 'showdown-session') {
+    window.parent.postMessage({type: 'ps-controller-ready', nonce: config.launcherNonce}, globalThis.origin);
+  }
 }
 init().catch(error => { $('connection').textContent = 'Could not start the example'; $('notice').textContent = error.message; });

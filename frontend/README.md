@@ -8,6 +8,8 @@ The app opens in a clearly labelled offline display fixture. It shows the offici
 
 The implemented live path is connect → authorize on Showdown → confirm identity → block registered bots → search → answer battle requests → finish → replay locally or search again. The live acceptance test is **not yet verified**: it needs the app's own Showdown client ID and testing on Martin's actual iPad and SN30 Pro+.
 
+An alternative [userscript prototype](../skins/controller-client/README.md) bundles this same app into a frame on Showdown's origin and obtains fresh assertions from the existing Showdown session. That build needs no OAuth ID or backend. It starts in the offline fixture and never searches automatically. The static GitHub Pages build continues using OAuth. Live account and physical iPad/controller testing remain outstanding for both paths.
+
 ## Hosted testing
 
 Main deployment: https://mepc36.github.io/pokemon-showdown-skins/
@@ -77,6 +79,8 @@ npm run dev
 ```
 
 For a standalone source ZIP, run the commands from the extracted directory and omit `cd frontend`.
+
+From a full repository checkout, `npm run build:userscript` also creates `userscript-dist/controller-client.user.js`. CI attaches that build to the PR as **controller-userscript** without publishing the PR to Pages. The launcher lives outside `frontend/`, so use the full repository for that build rather than the standalone frontend ZIP.
 
 For the real renderer integration checks and tablet/phone layout fixtures, open `/test/renderer.html` on the local dev server and press **Run renderer checks**. This test page is not included in the production app.
 

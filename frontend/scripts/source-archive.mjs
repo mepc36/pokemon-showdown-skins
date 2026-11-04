@@ -11,5 +11,5 @@ with zipfile.ZipFile(root/'public/source.zip', 'w', zipfile.ZIP_DEFLATED) as out
   path=root/name
   files=path.rglob('*') if path.is_dir() else [path]
   for f in files:
-   if f.is_file() and f.as_posix() != 'public/source.zip': out.write(f, f.as_posix())
+   if f.is_file() and f.as_posix() != 'public/source.zip' and not f.as_posix().startswith('test/generated/'): out.write(f, f.as_posix())
 `], {cwd: root, stdio: 'inherit'});
