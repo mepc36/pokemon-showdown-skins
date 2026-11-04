@@ -6,7 +6,9 @@ A static frontend for one **Gen 9 Random Battle** at a time, using the official 
 
 The app opens in a clearly labelled offline display fixture. It shows the official battlefield and sprites, four moves, six slots for either team, and the controller focus behavior. Selecting something in the fixture shows a local confirmation; **no opponent, battle, or matchmaking request is created**.
 
-The implemented live path is connect → authorize on Showdown → confirm identity → block registered bots → search → answer battle requests → finish → replay locally or search again. The live acceptance test is **not yet verified**: it needs the app's own Showdown client ID and testing on Martin's actual iPad and SN30 Pro+.
+The implemented live path is connect → authorize on Showdown → confirm identity → block registered bots → search → answer battle requests → finish → replay locally or search again. The live acceptance test is **not yet verified**: the owner confirmed OAuth login works on November 4, 2026; a complete controller battle and disconnect recovery still need acceptance testing.
+
+Authentication configuration and the documented [userscript fallback](docs/authentication.md) are described separately. OAuth remains the active approach; no userscript or backend is needed for it.
 
 ## Hosted testing
 
@@ -17,23 +19,24 @@ Main deployment: https://mepc36.github.io/pokemon-showdown-skins/
 3. Open **Controller check** and press each button. Save any button numbers the app should ignore.
 4. Open **Display** to compare the userscript-style **Wide field** with **Original proportions**. The choice is saved on this device.
 
-The light controls, pink focus outline, type colors, enlarged icons, HP strips, and Grumpig/Landorus preview follow the supplied userscript and screenshot. **More controls** expands the timer, music, undo, Tera, info, skip and forfeit buttons; collapsing them reserves more space for the field. All six of your Pokémon can receive focus, including active or fainted slots; A opens details when switching is unavailable, and R3 opens details for the focused slot. Use **Your team / Opponent** to change the six-slot row. Every opponent slot is navigable, including fainted and unrevealed Pokémon; A or R3 opens details. The inspector reads public reveals from the pinned renderer, stays in sync with playback, and resets when a battle is rebuilt or replaced. Unknown slots, moves, abilities, items and Tera types are not filled from random-team sets. See [the component map](docs/showdown-components.md) for the inspected official HTML and its equivalents here.
+The light controls, pink focus outline, type colors, enlarged icons, HP strips, and Grumpig/Landorus preview follow the supplied userscript and screenshot. The active Pokémon’s **Tera type** is always visible beside its HP, with a direct toggle when Terastallize is available. **Cancel** appears beside the move heading while a submitted choice can be cancelled. **More controls** expands the timer, music, info, skip and forfeit buttons; collapsing them reserves more space for the field. All six of your Pokémon can receive focus, including active or fainted slots; A opens details when switching is unavailable, and R3 opens details for the focused slot. Use **Your team / Opponent** to change the six-slot row. Every opponent slot is navigable, including fainted and unrevealed Pokémon; A or R3 opens details. The inspector reads public reveals from the pinned renderer, stays in sync with playback, and resets when a battle is rebuilt or replaced. Unknown slots, moves, abilities, items and Tera types are not filled from random-team sets. See [the component map](docs/showdown-components.md) for the inspected official HTML and its equivalents here.
 
 Highlight a move and press **R3 / I** for its type, category, base power, base accuracy, current PP, priority, target, contact and effect description. **Move info** gives touch users the same inspector and buttons to inspect each move. Pokémon detail cards also link to their moves; for opponents, only revealed moves appear. B / Escape goes back from a move to its Pokémon, then closes the inspector and restores focus. Inspecting information never submits a choice. Move reference values are labelled as baseline values, not battle-adjusted predictions; opponent moves show base PP, not an invented remaining count.
 
 The fixture is deliberately small. It does not simulate a battle or prove live login, reconnect, iPad audio, or hardware mapping.
 
-Validation completed: 19 automated protocol/input/information tests, a production build, browser checks of navigation and responsive layouts, and seven renderer integration checks for public reveals, fainting, snapshot rebuilds, player-two perspective and room resets. Earlier connection testing reached Showdown's anonymous login challenge. No authenticated battle or physical-controller test has been performed.
+Validation completed: 19 automated protocol/input/information tests, a production build, browser checks of navigation and responsive layouts, and seven renderer integration checks for public reveals, fainting, snapshot rebuilds, player-two perspective and room resets. Earlier connection testing reached Showdown's anonymous login challenge. The owner has confirmed OAuth login. A complete authenticated battle and physical-controller acceptance test have not been verified.
 
 ## Enable live login
 
 An existing Showdown player account is separate from an application's public client ID. Do not copy another application's ID, scrape login cookies, or put your password in this project.
 
-1. Pick the final public origin. For this hosted build it is the URL above. For GitHub Pages, use the origin GitHub actually assigns; a project path is not part of an origin.
-2. Request a public client ID using [Showdown's application form](https://forms.gle/VAoSjqHn4zwem7tp9). See the official [OAuth documentation](https://github.com/smogon/pokemon-showdown-loginserver/blob/master/OAUTH.md).
-3. Put the ID in `public/config.json`, or paste it into the app's **Setup** dialog. This is a public identifier, not a secret. The registered origin must match scheme, hostname, and port exactly.
-4. Press **Connect to Showdown**, then **Sign in with Showdown**. Keep the app tab open. Sign in to `mepc36363636` on Showdown's own page and authorize the app.
-5. Press **Find Random Battle**. This creates a real match on the official ladder; be ready to finish it.
+1. Use the approved ID `884f404fc4be81e1d3eb`. It is configured in this branch's `public/config.json`; on the current live site, paste it into **Setup → Public application ID → Save setup**. No merge is required for that browser-local setting.
+2. Press **Connect to Showdown**, then **Sign in with Showdown**. Keep the app tab open. Sign in to `mepc36363636` on Showdown's own page and authorize **showdown_skins**.
+3. Confirm **Signed in as mepc36363636**, then use **Reconnect** before matchmaking to check that authorization is reused.
+4. Press **Find Random Battle** only when ready to finish a real ladder match.
+
+Showdown's authorization page recognizes this ID as **showdown_skins by mepc36363636**, and its API permits the `https://mepc36.github.io` origin. This checks the registration; it does not prove an authenticated battle. The primary [OAuth documentation](https://github.com/smogon/pokemon-showdown-loginserver/blob/master/OAUTH.md) describes the callback and token flow.
 
 The callback is `auth-callback.html` beside `index.html`. Its query string is cleared immediately. The app verifies callback origin, popup source, and a random state value. Passwords never enter this app. An OAuth token is saved in this browser's local storage to reconnect and refresh authorization; **Clear saved sign-in** removes it locally. Tokens are not committed or logged. Showdown's authorization settings can revoke the authorization itself.
 
@@ -53,7 +56,13 @@ This follows the actual mappings in `console-skin.user.js`, not the stale header
 | 11 | Focused move or Pokémon information, or the whole team (R3) |
 | 5 | Unbound (R1) |
 
-Arrow keys and Enter work too. Escape cancels; X toggles Tera and reveals its state; M toggles music; T reveals the timer controls; I opens information. Directional inputs repeat; confirm acts once per press. The diagnostics screen reports received keys, button edges, and stick directions. Ignoring a button only disables **this app's** reaction; it cannot suppress iPadOS-reserved actions.
+Arrow keys and Enter work too. Escape cancels; X toggles the visible Tera control; M toggles music; T reveals the timer controls; I opens information. Directional inputs repeat; confirm acts once per press. The diagnostics screen reports received keys, button edges, and stick directions. Ignoring a button only disables **this app's** reaction; it cannot suppress iPadOS-reserved actions.
+
+## Cancel while waiting for the opponent
+
+Move and switch selections are submitted immediately, as on the official Showdown client. While a choice is pending and the request allows cancellation, **Cancel** is visible beside the move heading. Selecting a choice focuses Cancel; **A / Enter** on that button or **B / Escape** sends the existing Showdown `/undo` command with the current request ID. No extra confirmation step or local selection state is added.
+
+This uses Showdown's existing cancellation behavior: the choice has already been sent, but can be withdrawn before the turn proceeds if the server still permits it. The server may reject a late cancellation. Cancel is hidden when there is no pending choice, when `noCancel` applies, during recovery, or after battle end. Cancelling restores focus to the selected move where possible. The offline fixture never sends choices, so it has no live Cancel state.
 
 ## Reconnect behavior
 
@@ -78,6 +87,8 @@ npm run dev
 
 For a standalone source ZIP, run the commands from the extracted directory and omit `cd frontend`.
 
+For a local Cancel UI check, open `/test/cancel.html`, choose **Connect to Showdown**, select a move, then use **Cancel** or **B / Escape**. This explicitly labelled fixture replaces only the WebSocket transport with a simulation and displays the emitted `/choose` and `/undo` commands; it never opens a live match.
+
 For the real renderer integration checks and tablet/phone layout fixtures, open `/test/renderer.html` on the local dev server and press **Run renderer checks**. This test page is not included in the production app.
 
 `npm run build` creates `dist/`, including a downloadable source archive. `npm ci` downloads exact upstream revisions and checks their SHA-256 hashes. Downloads are skipped when the checked files already exist. `package-lock.json` pins npm dependencies.
@@ -86,7 +97,7 @@ In the existing skins repository, the app lives under `frontend/`; the original 
 
 ## Acceptance test on the actual iPad
 
-Once a client ID is registered:
+With the approved client ID configured:
 
 1. Log in as `mepc36363636`; verify the signed-in name.
 2. Start a Random Battle and complete it using the controller, including a normal move, switch, forced switch, and Terastallize when available.
