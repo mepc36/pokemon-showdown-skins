@@ -13,7 +13,7 @@ The frontend opens Showdown's authorization page, receives an assertion and toke
 
 The owner confirmed that OAuth login works on November 4, 2026. The existing live site can be tested before this configuration PR is merged: open **Setup**, paste the public ID, choose **Save setup**, then **Connect to Showdown → Sign in**. Sign in as the expected account on Showdown and authorize the app. Wait for **Signed in as mepc36363636** before starting a Random Battle. The Setup value is a per-browser override of the default in `config.json`.
 
-This PR does not deploy itself. It also adds visible Tera information and local move/switch confirmation; those UI changes require deploying the PR before they appear on the live site. PR checks run normally; Pages deployment remains limited to a push to main or an explicitly requested deployment.
+This PR does not deploy itself. It also adds visible Tera information and a visible Cancel button using Showdown's existing undo command; those UI changes require deploying the PR before they appear on the live site. PR checks run normally; Pages deployment remains limited to a push to main or an explicitly requested deployment.
 
 ## Userscript fallback (paused)
 
@@ -27,7 +27,7 @@ The UI, battle protocol and WebSocket remain independent of Showdown component I
 
 1. Confirm the signed-in account name on the iPad (OAuth login has already been reported working).
 2. Reconnect before matchmaking; confirm authorization is reused.
-3. Check the visible Tera type; select and cancel a move, then confirm another. Complete a Gen 9 Random Battle using the controller.
+3. Check the visible Tera type; submit a move, cancel while waiting for the opponent, then select another. Complete a Gen 9 Random Battle using the controller.
 4. During another battle, reconnect while waiting; recover the room and keep the submitted move pending without replaying it.
 5. Verify first-tap music, timer, Tera, switching, forfeit confirmation and end-of-battle controls.
 

@@ -5,7 +5,6 @@ import {ShowdownAuth} from './auth.mjs';
 import {availableChoices} from './protocol.mjs';
 import {startController, navigate} from './controller.mjs';
 import {Music} from './music.js';
-import {ChoiceDraft} from './choice-draft.mjs';
 import {demoLines, demoRequest} from './demo.mjs';
 import {moveInformation, effectName} from './information.mjs';
 
@@ -19,7 +18,6 @@ let rosterSide = 'own', selectedMoveId = '', infoPage = null;
 try { if (localStorage.getItem('ps-mve-display-fit') === 'original') displayFit = 'original'; } catch {}
 const modal = $('modal');
 const music = new Music(() => updateMusic());
-const choiceDraft = new ChoiceDraft();
 const safe = fn => { try { fn(); } catch (error) { localNotice = error.message; render(); } };
 
 function updateMusic() {
@@ -36,11 +34,6 @@ function showModal(title, content) {
   ($(previousFocus) || $('modal-close')).focus({preventScroll: true});
 }
 function closeModal() {
-  if (choiceDraft.value) {
-    choiceDraft.cancel();
-    localNotice = 'Selection cancelled. Nothing was sent.';
-    $('notice').textContent = localNotice;
-  }
   infoPage = null;
   modal.close();
   $(modalReturnFocus)?.focus({preventScroll: true});
@@ -207,38 +200,19 @@ function forfeit() {
   $('keep-playing').focus();
 }
 
-function choiceContext() {
-  const request = currentRequest();
-  return {request, room: fixture ? 'offline-preview' : state.room, epoch: fixture ? 0 : session?.epoch,
-    enabled: fixture || !!state.authenticated && !!state.room && !state.pending && !state.recovering && !state.ended && !!request && !request.wait};
-}
-
 function choose(kind, index) {
+  if (fixture) {
+    const name = kind === 'move' ? demoRequest.active[0].moves[index - 1].move : demoRequest.side.pokemon[index - 1].details.split(',')[0];
+    localNotice = `${name}${tera && kind === 'move' ? ' + Tera' : ''} selected. Offline preview; nothing was sent.`;
+    render(); return;
+  }
   safe(() => {
-    const draft = choiceDraft.stage(choiceContext(), kind, index, kind === 'move' && tera);
-    const active = draft.request.side.pokemon.find(p => p.active);
-    const name = kind === 'move' ? draft.request.active[0].moves[index - 1].move : draft.request.side.pokemon[index - 1].details.split(',')[0];
-    const teraType = draft.request.active?.[0]?.canTerastallize || active?.teraType || 'Unknown';
-    const label = `${kind === 'move' ? 'Use' : 'Switch to'} ${name}${draft.tera ? ` + Tera ${teraType}` : ''}`;
-    showModal(kind === 'move' ? 'Confirm move' : 'Confirm switch', `<p><strong>${escape(label)}</strong></p>
-      <p>Nothing has been sent. Press B / Escape or choose Change selection to go back.</p>
-      <div class="modal-actions">${btn('send-choice', fixture ? 'Confirm preview' : kind === 'move' ? 'Send move' : 'Send switch', 'modal-actions', false, 'class="primary"')}${btn('change-choice', 'Change selection', 'modal-actions')}</div>`);
-    $('change-choice').onclick = closeModal;
-    $('send-choice').onclick = () => safe(() => choiceDraft.confirm(choiceContext(), choice => {
-      closeModal(); localNotice = '';
-      if (fixture) { localNotice = `${label}. Offline preview; nothing was sent.`; render(); }
-      else session.choose(choice.kind, choice.index, choice.tera);
-    }));
-    $('send-choice').focus();
+    localNotice = ''; session.choose(kind, index, kind === 'move' && tera);
+    if (!$('undo').hidden && !$('undo').disabled) $('undo').focus({preventScroll: true});
   });
 }
 
 function render() {
-  if (choiceDraft.value && !choiceDraft.matches(choiceContext())) {
-    choiceDraft.cancel();
-    if (modal.open) closeModal();
-    localNotice = 'Selection cleared because the battle changed. Choose again when ready.';
-  }
   const focusId = document.activeElement?.id;
   const request = fixture ? demoRequest : state.request;
   if (request?.side) lastRequest = request;
@@ -255,6 +229,9 @@ function render() {
   $('tera').textContent = `Tera: ${teraType}${activePokemon?.terastallized ? ' · active' : tera ? ' · selected' : ''}`;
   $('tera').setAttribute('aria-pressed', String(tera));
   $('tera').title = choices.tera ? 'Toggle Terastallize for your next move (X)' : 'This Pokémon’s Tera type; Terastallize is unavailable right now.';
+  const canCancel = !fixture && state.pending && request && !request.noCancel && state.authenticated && !state.recovering && !state.ended;
+  $('undo').hidden = !canCancel;
+  $('undo').disabled = !canCancel;
   $('mode').textContent = fixture ? 'OFFLINE PREVIEW' : state.room || 'LIVE CONNECTION';
   $('turn-label').textContent = activePokemon ? `HP ${activePokemon.condition}` : '';
   $('prompt').textContent = fixture ? `What will ${activePokemon.details.split(',')[0]} do?` : state.ended ? 'Battle complete' : state.recovering ? 'Restoring your battle…' : state.pending || request?.wait ? 'Waiting for the next turn' : request?.forceSwitch ? 'Choose a Pokémon' : activePokemon ? `What will ${activePokemon.details.split(',')[0]} do?` : state.searching ? 'Finding an opponent…' : 'Let’s play';
@@ -274,14 +251,18 @@ function render() {
   for (const side of ['own', 'opponent']) $(`view-${side}`).onclick = () => { rosterSide = side; renderRoster(); };
   renderRoster();
   const inBattle = fixture || !!state.room && !state.ended;
-  $('utility').innerHTML = `${btn('undo', 'Undo sent choice', 'tools', !fixture && (!state.pending || !request || request.noCancel || !state.authenticated))}
+  $('utility').innerHTML = `
     ${btn('info', 'Team info', 'tools', !lastRequest && !fixture)}${btn('skip', 'Skip animation', 'tools', !inBattle)}
     ${btn('timer-on', 'Timer on', 'tools', !inBattle || !fixture && !state.authenticated)}${btn('timer-off', 'Timer off', 'tools', !inBattle || !fixture && !state.authenticated)}
     ${btn('music', 'Tap for music', 'tools')}${btn('forfeit', 'Forfeit…', 'tools', !inBattle || !fixture && !state.authenticated)}
     ${state.ended ? btn('replay', 'Watch this battle again', 'tools') : ''}`;
   for (const move of choices.moves) $(`move-${move.index}`).onclick = () => choose('move', move.index);
   $('tera').onclick = () => { tera = !tera; render(); };
-  $('undo').onclick = () => fixture ? (localNotice = 'Controller check: undo.', render()) : safe(() => session.undo());
+  $('undo').onclick = () => safe(() => {
+    localNotice = ''; session.undo();
+    const previous = choices.moves.find(move => move.id === selectedMoveId && move.enabled) || choices.moves.find(move => move.enabled);
+    if (previous) $(`move-${previous.index}`)?.focus({preventScroll: true});
+  });
   $('info').onclick = () => info(); $('skip').onclick = () => arena.skip(); $('music').onclick = () => music.toggle(); $('forfeit').onclick = forfeit;
   for (const toggle of ['on', 'off']) $(`timer-${toggle}`).onclick = () => fixture ? (localNotice = `Controller check: timer ${toggle}.`, render()) : safe(() => session.roomCommand(`/timer ${toggle}`));
   if ($('replay')) $('replay').onclick = () => arena.replay();

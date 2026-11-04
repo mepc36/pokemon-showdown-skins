@@ -19,13 +19,13 @@ Main deployment: https://mepc36.github.io/pokemon-showdown-skins/
 3. Open **Controller check** and press each button. Save any button numbers the app should ignore.
 4. Open **Display** to compare the userscript-style **Wide field** with **Original proportions**. The choice is saved on this device.
 
-The light controls, pink focus outline, type colors, enlarged icons, HP strips, and Grumpig/Landorus preview follow the supplied userscript and screenshot. The active Pokémon’s **Tera type** is always visible beside its HP, with a direct toggle when Terastallize is available. **More controls** expands the timer, music, undo, info, skip and forfeit buttons; collapsing them reserves more space for the field. All six of your Pokémon can receive focus, including active or fainted slots; A opens details when switching is unavailable, and R3 opens details for the focused slot. Use **Your team / Opponent** to change the six-slot row. Every opponent slot is navigable, including fainted and unrevealed Pokémon; A or R3 opens details. The inspector reads public reveals from the pinned renderer, stays in sync with playback, and resets when a battle is rebuilt or replaced. Unknown slots, moves, abilities, items and Tera types are not filled from random-team sets. See [the component map](docs/showdown-components.md) for the inspected official HTML and its equivalents here.
+The light controls, pink focus outline, type colors, enlarged icons, HP strips, and Grumpig/Landorus preview follow the supplied userscript and screenshot. The active Pokémon’s **Tera type** is always visible beside its HP, with a direct toggle when Terastallize is available. **Cancel** appears beside the move heading while a submitted choice can be cancelled. **More controls** expands the timer, music, info, skip and forfeit buttons; collapsing them reserves more space for the field. All six of your Pokémon can receive focus, including active or fainted slots; A opens details when switching is unavailable, and R3 opens details for the focused slot. Use **Your team / Opponent** to change the six-slot row. Every opponent slot is navigable, including fainted and unrevealed Pokémon; A or R3 opens details. The inspector reads public reveals from the pinned renderer, stays in sync with playback, and resets when a battle is rebuilt or replaced. Unknown slots, moves, abilities, items and Tera types are not filled from random-team sets. See [the component map](docs/showdown-components.md) for the inspected official HTML and its equivalents here.
 
 Highlight a move and press **R3 / I** for its type, category, base power, base accuracy, current PP, priority, target, contact and effect description. **Move info** gives touch users the same inspector and buttons to inspect each move. Pokémon detail cards also link to their moves; for opponents, only revealed moves appear. B / Escape goes back from a move to its Pokémon, then closes the inspector and restores focus. Inspecting information never submits a choice. Move reference values are labelled as baseline values, not battle-adjusted predictions; opponent moves show base PP, not an invented remaining count.
 
 The fixture is deliberately small. It does not simulate a battle or prove live login, reconnect, iPad audio, or hardware mapping.
 
-Validation completed: 23 automated protocol/input/information/selection tests, a production build, browser checks of navigation and responsive layouts, and seven renderer integration checks for public reveals, fainting, snapshot rebuilds, player-two perspective and room resets. Earlier connection testing reached Showdown's anonymous login challenge. The owner has confirmed OAuth login. A complete authenticated battle and physical-controller acceptance test have not been verified.
+Validation completed: 19 automated protocol/input/information tests, a production build, browser checks of navigation and responsive layouts, and seven renderer integration checks for public reveals, fainting, snapshot rebuilds, player-two perspective and room resets. Earlier connection testing reached Showdown's anonymous login challenge. The owner has confirmed OAuth login. A complete authenticated battle and physical-controller acceptance test have not been verified.
 
 ## Enable live login
 
@@ -58,11 +58,11 @@ This follows the actual mappings in `console-skin.user.js`, not the stale header
 
 Arrow keys and Enter work too. Escape cancels; X toggles the visible Tera control; M toggles music; T reveals the timer controls; I opens information. Directional inputs repeat; confirm acts once per press. The diagnostics screen reports received keys, button edges, and stick directions. Ignoring a button only disables **this app's** reaction; it cannot suppress iPadOS-reserved actions.
 
-## Review a selection before sending
+## Cancel while waiting for the opponent
 
-Choosing a move or switch opens a confirmation dialog. The choice remains entirely local: **B / Escape**, **Change selection** or closing the dialog cancels it without sending any command. The dialog shows the move or Pokémon and any selected Tera type. A second **A / Enter** confirms **Send move / Send switch**. Offline preview uses the same interaction with a **Confirm preview** button and never contacts matchmaking.
+Move and switch selections are submitted immediately, as on the official Showdown client. While a choice is pending and the request allows cancellation, **Cancel** is visible beside the move heading. Selecting a choice focuses Cancel; **A / Enter** on that button or **B / Escape** sends the existing Showdown `/undo` command with the current request ID. No extra confirmation step or local selection state is added.
 
-**Undo sent choice** remains a separate server request after submission. It depends on whether Showdown still allows cancellation; the local cancellation before confirmation works even when the battle request disallows server undo. A new request, disconnect, pending choice from another session or battle end clears an unconfirmed selection. It is never saved or replayed.
+This uses Showdown's existing cancellation behavior: the choice has already been sent, but can be withdrawn before the turn proceeds if the server still permits it. The server may reject a late cancellation. Cancel is hidden when there is no pending choice, when `noCancel` applies, during recovery, or after battle end. Cancelling restores focus to the selected move where possible. The offline fixture never sends choices, so it has no live Cancel state.
 
 ## Reconnect behavior
 
@@ -86,6 +86,8 @@ npm run dev
 ```
 
 For a standalone source ZIP, run the commands from the extracted directory and omit `cd frontend`.
+
+For a local Cancel UI check, open `/test/cancel.html`, choose **Connect to Showdown**, select a move, then use **Cancel** or **B / Escape**. This explicitly labelled fixture replaces only the WebSocket transport with a simulation and displays the emitted `/choose` and `/undo` commands; it never opens a live match.
 
 For the real renderer integration checks and tablet/phone layout fixtures, open `/test/renderer.html` on the local dev server and press **Run renderer checks**. This test page is not included in the production app.
 
