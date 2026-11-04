@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {ShowdownSessionAuth} from '../src/auth.mjs';
+import {ShowdownSessionAuth} from '../src/session-upkeep.mjs';
 import {ShowdownSession} from '../src/session.mjs';
 import {demoRequest} from '../src/demo.mjs';
 

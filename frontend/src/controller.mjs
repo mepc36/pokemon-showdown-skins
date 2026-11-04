@@ -2,7 +2,7 @@ export const BUTTONS = {0: 'cancel', 1: 'confirm', 3: 'tera', 8: 'music', 9: 'me
 export const risingEdges = (current, previous) => current.flatMap((pressed, index) => pressed && !previous[index] ? [index] : []);
 
 export function startController({action, diagnostic, ignored = () => new Set()}) {
-  let previous = [], device = '', repeatAt = 0, heldDirection = '';
+  let previous = [], device = '', repeatAt = 0, heldDirection = '', gamepadBlocked = false;
   const keys = {ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Enter: 'confirm', Escape: 'cancel', x: 'tera', m: 'music', t: 'timer', i: 'info'};
   document.addEventListener('keydown', event => {
     if (/INPUT|TEXTAREA|SELECT/.test(event.target.tagName)) return;
@@ -12,7 +12,12 @@ export function startController({action, diagnostic, ignored = () => new Set()})
     if (!event.repeat || ['up', 'down', 'left', 'right'].includes(keys[event.key])) action(keys[event.key]);
   });
   function poll(now) {
-    const gamepad = Array.from(navigator.getGamepads?.() || []).find(Boolean);
+    let gamepad;
+    try { gamepad = Array.from(navigator.getGamepads?.() || []).find(Boolean); }
+    catch {
+      if (!gamepadBlocked) diagnostic('Gamepad access is blocked by this browser; keyboard and touch still work.');
+      gamepadBlocked = true;
+    }
     if (!gamepad || document.hidden) { previous = []; device = ''; requestAnimationFrame(poll); return; }
     const current = gamepad.buttons.map(button => button.pressed || button.value > 0.5);
     if (gamepad.id !== device) {

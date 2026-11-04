@@ -1,48 +1,41 @@
-# Independent controller userscript — prototype
+# Independent controller userscript — paused backup
 
-This adds **Open controller UI** to `https://play.pokemonshowdown.com/`. It launches the existing controller frontend in a same-origin `srcdoc` frame, with its own DOM, CSS, JavaScript globals and WebSocket. It does not move official UI elements, query their classes/IDs, patch their socket, or access their application objects.
+**Status (November 4, 2026): OAuth approval arrived. Use the normal GitHub Pages frontend and the approved public client ID. This draft is retained as a fallback, not the current installation path. Nothing from this PR has been merged or deployed.**
 
-The frame asks Showdown's documented `/api/upkeep?challstr=…` endpoint for an assertion using the browser's existing session. It never reads `document.cookie`, handles a password, stores an assertion, or sends a credential to GitHub Pages. Each new socket challenge gets a fresh assertion. It accepts only `mepc36363636`. No OAuth app ID or backend is required.
+## Design
 
-The installed userscript contains a bundled copy of the app (several MiB). Only the launcher logic is small. It does not fetch executable application code from a moving branch or the live Pages site. Showdown still supplies sprites, music, login and battle services. Updating the app requires building and reinstalling the userscript.
+The checked-in `controller-client.user.js` is approximately 7.5 KiB. It adds **Open controller UI** on `https://play.pokemonshowdown.com/`, then opens a separately hosted copy of our frontend in a cross-origin iframe. The frontend owns its DOM, CSS, controls, pinned renderer and WebSocket. Neither side queries Showdown component IDs/classes or accesses its application objects.
 
-## Install the PR build on iPad
+The frontend requests an assertion through `postMessage`. The launcher calls the same-origin `/api/upkeep?challstr=…` endpoint using browser-managed Showdown session cookies. It sends only the assertion and expected username back to the frame; it never reads cookies or handles passwords. Both sides check the exact source window, origin, per-frame nonce and request ID. Returned assertions must match the current challenge and `mepc36363636`. Closing the frame aborts outstanding requests; reconnecting gets a fresh assertion. No moves or matchmaking searches are replayed automatically.
 
-1. Open this PR's **Controller frontend** workflow run and download its **controller-userscript** artifact. Unzip it in Files.
-2. Disable the old **console-skin** and **gamepad-debug** scripts for this test; their independent gamepad polling can trigger duplicate actions.
-3. Put `controller-client.user.js` in your Safari Userscripts app's selected folder. Enable Userscripts for `play.pokemonshowdown.com`.
-4. Open Showdown in Safari and sign in normally as **mepc36363636**. Tap **Open controller UI**.
-5. Tap inside the controller once for audio, then **Connect to Showdown**. Confirm the signed-in account. A battle starts only when you press **Find Random Battle**.
+No backend of our own or OAuth client ID is needed for this fallback. It still depends on Showdown's login API, battle protocol, browser support and trusted hosted frontend code. UI updates come from the static host; the small script only needs replacing when the launcher/bridge changes. Never configure the launcher to trust someone else's frontend origin.
 
-On desktop, import the same `.user.js` into Tampermonkey. `launcher.js` is build source, not the installable script.
+## Resume the backup only if needed
 
-## Test without starting a match
+1. Build and publish the bridge-enabled frontend to a separate static preview. The configured `showdown-controller-pr-preview.almondearth2048.chatgpt.site` address was reserved but **never published**; it is not currently an install-ready test URL. Leave the production Pages site untouched.
+2. Confirm the exact preview URL in `frontend/src/userscript-launcher.mjs`, run `npm run build:userscript` from `frontend/`, and commit the updated `skins/controller-client/controller-client.user.js`.
+3. Download that small `.user.js` directly from the PR branch. No Actions artifact or frontend build is needed on the iPad. Disable the old console-skin/gamepad-debug scripts, then install it using Safari Userscripts or Tampermonkey.
+4. Sign in normally on Showdown as `mepc36363636`; choose **Open controller UI → Connect to Showdown**. Verify the account and reconnect before explicitly searching for a match.
+5. Complete a real battle and check reconnection, audio and the physical controller on the iPad. Closing the controller disconnects its socket without forfeiting; battle time still passes.
 
-The controller initially shows the existing offline fixture. Try the D-pad, move/Pokémon info, **Display**, and **Controller check**. The parent Showdown page should remain unchanged when you choose **Back to Showdown**.
+## Development and verification
 
-After connecting, choose **Reconnect** before searching. It should authenticate the new connection as the same account using the session cookie. If logged out or signed in to a different account, it should remain locked and direct you back to Showdown's sign-in. Logging in on Showdown, then reopening the controller, retries without an OAuth ID.
+Source: `frontend/src/userscript-launcher.mjs`, `session-upkeep.mjs` and `session-bridge.mjs`. The generator only joins small JavaScript sources; it does not bundle the frontend into the installed file. CI checks that the committed script matches its sources and does not deploy PRs to Pages.
 
-To exercise recovery during a real battle, choose **Reconnect** while waiting for the opponent. The server history should restore the room, a submitted choice should remain pending, and no move or new search should be sent automatically. Finish any match you start. Closing the controller disconnects its socket and does not forfeit; the normal Showdown client remains available. A suspended iPad can still lose battle time.
-
-## Build locally
+From a complete repository checkout:
 
 ```sh
 cd frontend
 npm ci
 npm test
-npm run build:userscript
+npm run check:userscript
+npm run build
 ```
 
-Install `frontend/userscript-dist/controller-client.user.js` (relative to the repo root). PR CI uploads it as an artifact; it does not deploy the branch to Pages. The ordinary `npm run build` still produces the OAuth-based static frontend. Neither old userscript is modified.
+The local `/test/userscript.html` fixture uses only a local test parent; it cannot authenticate against a real Showdown session. The production bridge never accepts a parent origin from URL input. The static production output excludes these HTML fixtures.
 
-For local browser QA after building, run `npm run dev` and visit `/test/userscript.html`. That harness deliberately uses a non-Showdown origin, so real session login is refused. Authentication/reconnect fixtures run in `npm test`; they make no live account requests.
+Automated tests cover wrong origins/windows/nonces, stale or wrong-account assertions, timeout/close cleanup and reconnecting without resending a pending choice. Persistent storage denial falls back to memory, so preferences and room markers may be lost across reloads. iPad frame permissions may limit gamepad/audio access; actual-device testing remains necessary. The normal Showdown client keeps running underneath the frame.
 
-## Boundaries and remaining checks
+The earlier bundled prototype had browser fixture checks; the new hosted bridge has automated tests and a successful build, but its browser, authenticated-battle and physical-device acceptance checks were paused when OAuth approval arrived.
 
-- The frame isolates layout and globals, not security privileges. Only install userscripts you trust on your signed-in Showdown origin.
-- Showdown's login API, battle protocol, site policies and browser userscript/frame support can still change. The copied renderer is pinned; live site selector changes do not affect it.
-- The normal Showdown client continues running underneath. Mute its music if it competes with controller audio; this script does not reach into its audio internals.
-- The launcher ignores messages from other windows, unexpected origins, or an earlier frame. Assertions are never sent through `postMessage`.
-- A real authenticated battle and Safari/SN30 Pro+ test are still required. Browser and mocked protocol checks do not establish physical-device compatibility or successful live login.
-
-References: [Showdown protocol](https://github.com/smogon/pokemon-showdown/blob/master/PROTOCOL.md), [Safari Userscripts installation](https://github.com/quoid/userscripts#installation).
+References: [Showdown protocol](https://github.com/smogon/pokemon-showdown/blob/master/PROTOCOL.md), [Safari Userscripts](https://github.com/quoid/userscripts#installation).

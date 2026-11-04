@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="referrer" content="no-referrer"><meta name="theme-color" content="#b7cddd">
+  <title>Showdown · Controller client</title>
+  <link rel="stylesheet" href="../vendor/battle.css"><link rel="stylesheet" href="../vendor/sim-types.css">
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <div class="brand"><h1>Random Battle</h1><small>POKÉMON SHOWDOWN · CONTROLLER CLIENT</small></div>
+      <section class="session-bar" aria-label="Connection"><div class="connection-copy"><span id="connection-dot" class="dot"></span><span id="connection">Loading…</span><small id="account">mepc36363636 · Gen 9 singles</small></div><div class="actions"><button id="primary" class="primary" data-nav data-row="header" disabled>Connect to Showdown</button><button id="reconnect" data-nav data-row="header" hidden>Reconnect</button><button id="display" data-nav data-row="header">Display</button><button id="setup" data-nav data-row="header">Setup</button></div></section>
+    </header>
+    <main>
+      <div class="arena-card"><div class="arena-top"><span id="mode">OFFLINE PREVIEW</span><p id="notice" role="status" aria-live="polite">Try the controls. No match is running.</p></div><div id="arena-wrap"><div id="arena" class="battle" aria-label="Battle animation"></div></div><div id="hidden-log" hidden></div></div>
+      <section class="command-panel" aria-label="Battle choices"><div class="command-heading"><h2 id="prompt">Try the controls</h2><span id="turn-label">No live match</span><button id="move-details" data-nav data-row="move-info">Move info</button></div><div id="choices"></div><div id="utility" hidden></div><p id="timer-status"></p></section>
+      <div class="controller-bar"><span><kbd>D-pad</kbd> Navigate</span><span><kbd>A</kbd> Choose</span><span><kbd>B</kbd> Back</span><span><kbd>R3</kbd> Info</span><span class="extra-hint"><kbd>X</kbd> Tera</span><button id="toggle-tools" data-nav data-row="footer" aria-expanded="false" aria-controls="utility">More controls</button><button id="diagnostics" data-nav data-row="footer">Controller check</button><a href="./source.zip" download>Source</a></div>
+    </main>
+    <footer>Independent frontend · Official battle visuals · Chat hidden · Registered bots blocked in live searches</footer>
+  </div>
+  <dialog id="modal" aria-labelledby="modal-title"><div class="modal-header"><h2 id="modal-title"></h2><button id="modal-close" data-nav data-row="modal-header" aria-label="Close dialog">×</button></div><div id="modal-body"></div></dialog>
+  <script src="../vendor/html-sanitizer-minified.js"></script><script src="../vendor/html-css-sanitizer-minified.js"></script><script src="../vendor/battle-log-misc.js"></script>
+  <script>
+// Local fixture only. Production never accepts a parent origin from its URL.
+window.__SHOWDOWN_CONTROLLER_CONFIG__ = {authMode: 'showdown-session', username: 'mepc36363636',
+  server: 'wss://sim3.psim.us/showdown/websocket', parentOrigin: location.origin,
+  launcherNonce: new URLSearchParams(location.hash.slice(1)).get('ps-controller')};
+</script><script type="module" src="../src/main.js"></script>
+</body>
+</html>

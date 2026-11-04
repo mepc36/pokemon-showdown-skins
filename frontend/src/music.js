@@ -1,7 +1,10 @@
+import {createStorage} from './storage.mjs';
+const storage = createStorage();
+
 export class Music {
   constructor(onChange) {
     this.onChange = onChange;
-    this.enabled = localStorage.getItem('ps-mve-music') !== 'off';
+    this.enabled = storage.getItem('ps-mve-music') !== 'off';
     this.audio = new Audio('https://play.pokemonshowdown.com/audio/bw-trainer.mp3');
     this.audio.loop = true; this.audio.volume = 0.22; this.audio.preload = 'none';
     this.unlocked = false; this.active = false;
@@ -23,7 +26,7 @@ export class Music {
   }
   toggle() {
     this.enabled = !this.enabled;
-    localStorage.setItem('ps-mve-music', this.enabled ? 'on' : 'off');
+    storage.setItem('ps-mve-music', this.enabled ? 'on' : 'off');
     if (this.enabled) this.unlock();
     this.update(this.active); this.onChange();
   }

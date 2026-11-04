@@ -1,7 +1,10 @@
 import './styles.css';
 import './battle-data.ts';
 import {ShowdownSession} from './session.mjs';
-import {ShowdownAuth, ShowdownSessionAuth} from './auth.mjs';
+import {ShowdownAuth} from './auth.mjs';
+import {ShowdownBridgeAuth, sessionBridgeConfig, SHOWDOWN_ORIGIN} from './session-bridge.mjs';
+import {createStorage} from './storage.mjs';
+const storage = createStorage();
 import {availableChoices} from './protocol.mjs';
 import {startController, navigate} from './controller.mjs';
 import {Music} from './music.js';
@@ -15,7 +18,7 @@ let arena, session, auth, config, state = {}, fixture = true, tera = false, last
 let diagnosticLines = [];
 let modalReturnFocus = '', displayFit = 'wide';
 let rosterSide = 'own', selectedMoveId = '', infoPage = null;
-try { if (localStorage.getItem('ps-mve-display-fit') === 'original') displayFit = 'original'; } catch {}
+try { if (storage.getItem('ps-mve-display-fit') === 'original') displayFit = 'original'; } catch {}
 const modal = $('modal');
 const music = new Music(() => updateMusic());
 const safe = fn => { try { fn(); } catch (error) { localNotice = error.message; render(); } };
@@ -47,7 +50,7 @@ function displaySettings() {
     <p class="small">Wide field allows up to 25% horizontal stretching, like your console skin. Original proportions keeps the sprites at their native shape. Both keep the controls below the battlefield.</p>`);
   for (const value of ['wide', 'original']) $(`fit-${value}`).onclick = () => {
     displayFit = value;
-    try { localStorage.setItem('ps-mve-display-fit', value); } catch {}
+    try { storage.setItem('ps-mve-display-fit', value); } catch {}
     arena.setFit(value);
     for (const option of ['wide', 'original']) $(`fit-${option}`).setAttribute('aria-pressed', String(option === value));
   };
@@ -65,7 +68,7 @@ $('toggle-tools').onclick = () => showTools($('utility').hidden);
 function setup() {
   if (config.authMode === 'showdown-session') {
     showModal('Use your Showdown session', `<p>Sign in as <strong>${escape(config.username)}</strong> on the normal Showdown screen, then open this controller.</p>
-      <p>This version uses that session to sign in. You do not enter a password here, and no OAuth application ID is needed.</p>
+      <p>The installed userscript connects this independent frontend to your Showdown session. Open the controller through that script; no password or OAuth application ID is entered here.</p>
       <div class="modal-actions">${btn('return-to-showdown', 'Back to Showdown', 'modal-actions')}${btn('retry-session', 'Try sign-in again', 'modal-actions', !!state.authenticated || state.status === 'Signing in…')}</div>`);
     $('return-to-showdown').onclick = returnToShowdown;
     $('retry-session').onclick = () => { closeModal(); if (fixture || session.stopped) startLive(); else void session.login(true); };
@@ -80,7 +83,7 @@ function setup() {
   $('save-setup').onclick = () => {
     const value = $('client-id').value.trim();
     if (value !== auth.clientId) { auth.forget(); session.stop(); }
-    auth.clientId = value; localStorage.setItem('ps-mve-client-id', value); closeModal(); render();
+    auth.clientId = value; storage.setItem('ps-mve-client-id', value); closeModal(); render();
   };
   $('sign-out').onclick = () => { session.stop(); auth.forget(); closeModal(); localNotice = 'Saved authorization cleared from this browser.'; render(); };
 }
@@ -89,7 +92,9 @@ $('setup').onclick = setup;
 function returnToShowdown() {
   session?.stop();
   music.update(false);
-  window.parent.postMessage({type: 'ps-controller-close', nonce: config.launcherNonce}, globalThis.origin);
+  auth.dispose?.();
+  if (window.parent === window) { location.href = 'https://play.pokemonshowdown.com/'; return; }
+  window.parent.postMessage({type: 'ps-controller-close', nonce: config.launcherNonce}, config.parentOrigin || SHOWDOWN_ORIGIN);
 }
 
 function diagnostics() {
@@ -99,7 +104,7 @@ function diagnostics() {
   $('input-log').textContent = diagnosticLines.join('\n') || 'Tap the page, then press a controller button.';
   $('save-ignored').onclick = () => {
     ignoreButtons = new Set($('ignored-buttons').value.split(',').filter(x => x.trim()).map(Number).filter(x => Number.isInteger(x) && x >= 0 && x < 64));
-    localStorage.setItem('ps-mve-ignored', JSON.stringify([...ignoreButtons])); closeModal();
+    storage.setItem('ps-mve-ignored', JSON.stringify([...ignoreButtons])); closeModal();
   };
 }
 $('diagnostics').onclick = diagnostics;
@@ -288,16 +293,16 @@ document.addEventListener('pointerdown', () => music.unlock(), {passive: true});
 document.addEventListener('keydown', event => { if (!event.repeat && event.isTrusted) music.unlock(); });
 
 async function init() {
-  config = window.__SHOWDOWN_CONTROLLER_CONFIG__ || await fetch('./config.json', {cache: 'no-store'}).then(response => response.json());
-  auth = config.authMode === 'showdown-session' ? new ShowdownSessionAuth(config.username) :
-    new ShowdownAuth(localStorage.getItem('ps-mve-client-id') || config.clientId);
+  config = window.__SHOWDOWN_CONTROLLER_CONFIG__ || {...await fetch('./config.json', {cache: 'no-store'}).then(response => response.json()), ...sessionBridgeConfig()};
+  auth = config.authMode === 'showdown-session' ? new ShowdownBridgeAuth(config.username, {nonce: config.launcherNonce, parentOrigin: config.parentOrigin}) :
+    new ShowdownAuth(storage.getItem('ps-mve-client-id') || config.clientId);
   if (config.authMode === 'showdown-session') {
     const back = document.createElement('button');
     back.id = 'back-to-showdown'; back.textContent = 'Back to Showdown'; back.dataset.nav = ''; back.dataset.row = 'header';
     back.onclick = returnToShowdown;
     $('setup').after(back);
   }
-  try { ignoreButtons = new Set(JSON.parse(localStorage.getItem('ps-mve-ignored') || '[]')); } catch {}
+  try { ignoreButtons = new Set(JSON.parse(storage.getItem('ps-mve-ignored') || '[]')); } catch {}
   const {Arena} = await import('./renderer.js');
   arena = new Arena($('arena'), $('hidden-log'), () => {
     if (rosterSide === 'opponent') renderRoster();
@@ -305,7 +310,7 @@ async function init() {
   });
   arena.setFit(displayFit);
   arena.receive({room: 'battle-gen9randombattle-0', lines: demoLines, snapshot: true, request: demoRequest});
-  session = new ShowdownSession({url: config.server, username: config.username, auth, storage: localStorage,
+  session = new ShowdownSession({url: config.server, username: config.username, auth, storage,
     onState(next) { if (state.room && !next.room) lastRequest = null; state = next; music.update(!fixture && !!state.room && !state.ended && state.authenticated); render(); },
     onBattle(packet) { try {
       if (arena.room !== packet.room) { lastRequest = null; rosterSide = 'own'; if (modal.open && infoPage) closeModal(); }
@@ -338,7 +343,7 @@ async function init() {
     music.update(!fixture && !!state.room && !state.ended && state.authenticated);
   });
   if (config.authMode === 'showdown-session') {
-    window.parent.postMessage({type: 'ps-controller-ready', nonce: config.launcherNonce}, globalThis.origin);
+    window.parent.postMessage({type: 'ps-controller-ready', nonce: config.launcherNonce}, config.parentOrigin || SHOWDOWN_ORIGIN);
   }
 }
 init().catch(error => { $('connection').textContent = 'Could not start the example'; $('notice').textContent = error.message; });

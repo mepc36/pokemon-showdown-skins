@@ -8,6 +8,7 @@
     "postinstall": "node scripts/fetch-vendor.mjs",
     "build": "node scripts/source-archive.mjs && vite build",
     "build:userscript": "node scripts/build-userscript.mjs",
+    "check:userscript": "node scripts/build-userscript.mjs --check",
     "test": "node --test test/*.test.mjs"
   },
   "dependencies": {

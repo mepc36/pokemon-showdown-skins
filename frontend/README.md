@@ -8,7 +8,7 @@ The app opens in a clearly labelled offline display fixture. It shows the offici
 
 The implemented live path is connect → authorize on Showdown → confirm identity → block registered bots → search → answer battle requests → finish → replay locally or search again. The live acceptance test is **not yet verified**: it needs the app's own Showdown client ID and testing on Martin's actual iPad and SN30 Pro+.
 
-An alternative [userscript prototype](../skins/controller-client/README.md) bundles this same app into a frame on Showdown's origin and obtains fresh assertions from the existing Showdown session. That build needs no OAuth ID or backend. It starts in the offline fixture and never searches automatically. The static GitHub Pages build continues using OAuth. Live account and physical iPad/controller testing remain outstanding for both paths.
+The [small userscript backup](../skins/controller-client/README.md) opens a separately hosted frontend and bridges fresh assertions from the existing Showdown session. It is paused now that OAuth approval has arrived. The backup preview is not published; the regular GitHub Pages frontend remains the active testing path.
 
 ## Hosted testing
 
@@ -80,7 +80,7 @@ npm run dev
 
 For a standalone source ZIP, run the commands from the extracted directory and omit `cd frontend`.
 
-From a full repository checkout, `npm run build:userscript` also creates `userscript-dist/controller-client.user.js`. CI attaches that build to the PR as **controller-userscript** without publishing the PR to Pages. The launcher lives outside `frontend/`, so use the full repository for that build rather than the standalone frontend ZIP.
+From a full repository checkout, `npm run build:userscript` regenerates the small checked-in `skins/controller-client/controller-client.user.js`. CI verifies it with `npm run check:userscript`; installing the script does not require an Actions artifact. This backup remains paused; see its README before attempting to use it.
 
 For the real renderer integration checks and tablet/phone layout fixtures, open `/test/renderer.html` on the local dev server and press **Run renderer checks**. This test page is not included in the production app.
 
