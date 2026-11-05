@@ -124,5 +124,11 @@
     "url": "https://raw.githubusercontent.com/smogon/pokemon-showdown/5b01be81011ec12efa25dcfff49ea279a6029d6f/data/text/tags.ts",
     "output": "vendor/text/tags.ts",
     "sha256": "53b9c86d5350940ce12247f888a4135d8012a40d9e8b64716a793be2a634f581"
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/bw-trainer.mp3",
+    "output": "public/audio/bw-trainer.mp3",
+    "sha256": "0308dc15e1e40084bc77c90dd304cdab7d17ecd06de7753ba8b3af45116137dc",
+    "binary": true
   }
 ]
