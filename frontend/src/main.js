@@ -4,7 +4,7 @@ import {ShowdownSession} from './session.mjs';
 import {ShowdownAuth} from './auth.mjs';
 import {availableChoices} from './protocol.mjs';
 import {startController, navigate} from './controller.mjs';
-import {Music, musicActive} from './music.js';
+import {Music} from './music.js';
 import {PossibleSets, possibleSets, possibleMoves} from './possible-sets.mjs';
 import {escapeHtml, moveCards, setSection, setStatus} from './info-components.mjs';
 import {demoLines, demoRequest} from './demo.mjs';
@@ -25,7 +25,7 @@ const safe = fn => { try { fn(); } catch (error) { localNotice = error.message; 
 
 function updateMusic() {
   const button = $('music');
-  if (button) { button.textContent = music.label; button.title = music.error || 'Black / White Trainer · one looping track'; }
+  if (button) button.textContent = !music.enabled ? 'Music off' : music.unlocked ? 'Music on' : 'Tap for music';
 }
 
 function showModal(title, content) {
@@ -326,7 +326,7 @@ function render() {
     const previous = choices.moves.find(move => move.id === selectedMoveId && move.enabled) || choices.moves.find(move => move.enabled);
     if (previous) $(`move-${previous.index}`)?.focus({preventScroll: true});
   });
-  $('info').onclick = () => info(); $('skip').onclick = () => arena.skip(); $('music').onclick = () => music.retryOrToggle(); $('forfeit').onclick = forfeit;
+  $('info').onclick = () => info(); $('skip').onclick = () => arena.skip(); $('music').onclick = () => music.toggle(); $('forfeit').onclick = forfeit;
   for (const toggle of ['on', 'off']) $(`timer-${toggle}`).onclick = () => fixture ? (localNotice = `Controller check: timer ${toggle}.`, render()) : safe(() => session.roomCommand(`/timer ${toggle}`));
   if ($('replay')) $('replay').onclick = () => arena.replay();
   $('timer-status').textContent = state.timer || '';
@@ -348,8 +348,8 @@ $('primary').onclick = () => safe(() => {
   else session.search();
 });
 $('reconnect').onclick = () => { localNotice = ''; session.connect(); };
-document.addEventListener('pointerdown', event => { if (event.target.closest?.('#music')) return; music.unlock(); }, {passive: true});
-document.addEventListener('keydown', event => { if (!event.repeat && event.isTrusted && event.key !== 'm' && !(event.key === 'Enter' && event.target.id === 'music')) music.unlock(); });
+document.addEventListener('pointerdown', () => music.unlock(), {passive: true});
+document.addEventListener('keydown', event => { if (!event.repeat && event.isTrusted) music.unlock(); });
 
 async function init() {
   config = await fetch('./config.json', {cache: 'no-store'}).then(response => response.json());
@@ -363,7 +363,7 @@ async function init() {
   arena.setFit(displayFit);
   arena.receive({room: 'battle-gen9randombattle-0', lines: demoLines, snapshot: true, request: demoRequest});
   session = new ShowdownSession({url: config.server, username: config.username, auth, storage: localStorage,
-    onState(next) { if (state.room && !next.room) lastRequest = null; state = next; music.update(musicActive(state, {fixture, hidden: document.hidden, stopped: session.stopped})); render(); },
+    onState(next) { if (state.room && !next.room) lastRequest = null; state = next; music.update(!fixture && !!state.room && !state.ended && state.authenticated); render(); },
     onBattle(packet) { try {
       if (arena.room !== packet.room) { lastRequest = null; rosterSide = 'own'; if (modal.open && infoPage) closeModal(); }
       arena.receive(packet);
@@ -393,7 +393,7 @@ async function init() {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { music.update(false); return; }
     if (!fixture && !session.stopped && Date.now() - session.lastMessage > 30000) session.connect();
-    music.update(musicActive(state, {fixture, hidden: document.hidden, stopped: session.stopped}));
+    music.update(!fixture && !!state.room && !state.ended && state.authenticated);
   });
 }
 init().catch(error => { $('connection').textContent = 'Could not start the example'; $('notice').textContent = error.message; });

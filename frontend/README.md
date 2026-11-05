@@ -115,7 +115,7 @@ With the approved client ID configured:
 - Gen 9 Random Battle singles only; one room at a time. No teambuilder, chat, challenges, doubles, or battle automation.
 - `/blockbots` excludes registered ladder bots. It does not establish that every other account is a human.
 - Official renderer, move effects, backgrounds, and static sprite fallback. The full animated-sprite metadata and uncommon icon variants are not packaged yet. Trainer-name avatars work; only the fixture's two legacy numeric avatars are mapped.
-- Music uses one decoded Showdown track with Web Audio loop points. Track selection and sound effects are not included. Physical iPad autoplay and interruption behavior still require device testing.
+- Music currently uses the existing media element. Music continuity is handled in a separate PR; physical iPad autoplay and interruption behavior require device testing.
 - Move details use Gen 9 reference values; damage and battle-adjusted move properties are not computed. Speed uses the pinned Showdown calculator as described above. Opponent information reflects public events through the displayed turn, with approximate HP and unknown values left unknown; Speed estimates are separately labelled.
 - Replay plays the current battle locally. Publishing to Showdown's replay service is not included.
 - The current layout uses the supplied screenshot's large-field / move-row / team-row structure, but is not a pixel-accurate reproduction.
@@ -140,16 +140,6 @@ Each Pokémon detail panel has a separate **Possible sets** section: roles, abil
 The bundled `public/data/gen9randombattle.json` snapshot comes from [pkmn/randbats](https://github.com/pkmn/randbats), whose generator samples 100,000 teams per format. It carries a source commit, UTC source/retrieval dates and the raw source SHA-256. The UI shows the source date and link and warns that live sets may have changed. Species/form matching handles documented cosmetic and battle-only relationships; ambiguous variants stay labelled, and missing data is explicit. A failed or malformed snapshot leaves battle controls and known/revealed moves working, with a Retry action.
 
 Refresh deliberately with `npm run refresh:sets` (current upstream) or `npm run refresh:sets -- <full-upstream-commit-sha>`, review the snapshot diff, then commit it. The script retrieves metadata, statistics and license at the same immutable revision and validates before replacement. Builds do not refresh silently. Browsers fetch only the bundled same-origin JSON with credentials omitted, so set browsing needs neither external CORS nor access to the data host or OAuth credentials.
-
-## Music continuity
-
-The original 150-second MP3 was looping end-to-end. The pinned Showdown renderer instead loops **14.629–110.109 seconds**. `src/music.js` now decodes that same track once and uses a native looping Web Audio buffer source with those upstream boundaries: the intro plays once, then the musical segment repeats. One active source survives repeated turn updates and reconnect authentication changes. Toggle, battle end and backgrounding stop it and retain position; the next battle or foreground return resumes there if the audio context is running. Explicitly stopping the session also silences music.
-
-A touch or trusted keypress resumes the audio context before any asynchronous download. Loading/resume completion always checks current enabled/active state, so late promises cannot undo a mute or restart an ended battle. The button reports loading or offers a retry after failures or OS audio interruption. The official audio host does not supply the cross-origin allow-origin header required by Web Audio fetch, so postinstall downloads and checksum-verifies the 2.7 MB track into `public/audio/`; the static build serves it from the app’s own origin. The MP3 is not committed to Git, and its provenance/hash are in `vendor/manifest.json`. A full decoded track is retained in memory for the page lifetime to avoid streaming gaps. The renderer's separate audio remains muted. There is one track, no playlist. Safari may still require a fresh tap after an OS interruption; desktop automated tests do not establish seamless playback on a physical iPad.
-
-## Browser regression checks
-
-Run `npx playwright install chromium`, start `npm run dev -- --host 127.0.0.1 --port 4173`, then run `npm run test:browser`. `CHROMIUM_PATH` optionally selects a system browser; `TEST_BASE_URL` optionally selects the dev server. The PR workflow installs Chromium and runs these checks, preserving screenshots as an Actions artifact. Tests cover both 1024×650 and 390×720, information navigation/back/scroll, known vs candidate PP, unknown/fainted slots, dataset failure/retry, the existing renderer and real Cancel UI fixtures, a native OfflineAudioContext loop boundary, and fetching/decoding the real packaged MP3. All battle traffic in these checks is simulated.
 
 ## Planned visual pass (not part of this PR)
 

@@ -4,7 +4,7 @@ import {Dex} from '../vendor/pokemon-showdown/battle-dex';
 import {isBattleEvent} from './protocol.mjs';
 import {opponentSlots, pokemonSpeed} from './information.mjs';
 
-// Audio is controlled by the single looping Web Audio source in music.js.
+// Audio is controlled through one primed media element in music.js.
 BattleSound.setMute(true);
 
 export class Arena {

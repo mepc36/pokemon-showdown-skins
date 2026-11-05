@@ -8,7 +8,7 @@ This independent example is not an official Pokémon Showdown product.
 - pkmn/randbats simulation statistics: https://github.com/pkmn/randbats, MIT license in `vendor/RANDBATS-LICENSE`; exact source revision and dates in `public/data/gen9randombattle.json`.
 - jQuery 3.7.1: https://jquery.com, MIT.
 - The upstream Caja HTML/CSS sanitizers retain their upstream terms. See the upstream client repository and the original Google Caja project (Apache-2.0).
-- Sprites, trainer artwork, backgrounds and effects are requested from `play.pokemonshowdown.com` at runtime. The Black/White Trainer MP3 from that host is downloaded and checksum-verified at build setup and included in the static output/source archive to support same-origin Web Audio loading. These assets are not relicensed as original artwork. Pokémon characters and artwork remain the property of their respective rights holders. The renderer's source-code license does not cover all visual/audio assets. Effect-specific exceptions are preserved in the header of `battle-animations.ts`.
+- Sprites, trainer artwork, backgrounds, effects, and audio are requested from `play.pokemonshowdown.com` at runtime, not relicensed as original artwork. Pokémon characters and artwork remain the property of their respective rights holders. The renderer's source-code license does not cover all visual/audio assets. Effect-specific exceptions are preserved in the header of `battle-animations.ts`.
 - Google Fonts serves DM Sans and Space Grotesk under the fonts' respective open font licenses.
 
 The downloadable source archive includes the pinned vendored code used to build this app. The build-time adapters are documented in `README.md` and `vite.config.js`.
