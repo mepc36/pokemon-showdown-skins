@@ -29,7 +29,7 @@ Opponents show **Speed (estimate)** using the pinned Showdown tooltip calculator
 
 The fixture is deliberately small. It does not simulate a battle or prove live login, reconnect, iPad audio, or hardware mapping.
 
-Validation completed: 23 automated protocol/input/information tests, a production build, keyboard inspection at 1024×650 and 390×720, and 17 renderer integration checks. These cover public reveals, snapshot/room resets, both player perspectives, the Raikou Speed example, boosts/Choice Scarf/paralysis rounding, Tailwind, and replay guards. Earlier connection testing reached Showdown's anonymous login challenge. The owner has confirmed OAuth login. A complete authenticated battle and physical-controller acceptance test have not been verified.
+Validation includes 49 automated protocol/input/information tests, a production build, and the landscape browser checks described below, including 17 renderer integration assertions. These cover public reveals, snapshot/room resets, both player perspectives, the Raikou Speed example, boosts/Choice Scarf/paralysis rounding, Tailwind, and replay guards. Earlier connection testing reached Showdown's anonymous login challenge. The owner has confirmed OAuth login. A complete authenticated battle and physical-controller acceptance test have not been verified.
 
 ## Enable live login
 

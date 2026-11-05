@@ -22,15 +22,21 @@ const fit = async page => page.evaluate(() => {
   return bad;
 });
 async function pad(page, index) {
+  // Synchronize with the real controller poll. A fixed 55 ms pulse can fall
+  // entirely between WebKit frames, especially immediately after a screenshot.
+  await page.waitForFunction(() => window.testPadObserved);
   await page.evaluate(i => window.testPad.buttons[i].pressed = true, index);
-  await page.waitForTimeout(55);
+  await page.waitForFunction(i => window.testPadObserved[i], index, {polling: 10});
   await page.evaluate(i => window.testPad.buttons[i].pressed = false, index);
-  await page.waitForTimeout(55);
+  await page.waitForFunction(i => !window.testPadObserved[i], index, {polling: 10});
 }
 async function gamepad(page) {
   await page.addInitScript(() => {
     window.testPad = {id: 'Controller fixture', mapping: 'standard', axes: [0, 0], buttons: Array.from({length: 16}, () => ({pressed: false, value: 0}))};
-    navigator.getGamepads = () => [window.testPad];
+    navigator.getGamepads = () => {
+      window.testPadObserved = window.testPad.buttons.map(button => button.pressed);
+      return [window.testPad];
+    };
   });
 }
 try {
