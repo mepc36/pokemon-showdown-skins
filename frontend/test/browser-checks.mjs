@@ -1,10 +1,11 @@
 // Run against the Vite dev server. All battle traffic is simulated.
-import {chromium} from 'playwright';
+import {chromium, webkit} from 'playwright';
 import assert from 'node:assert/strict';
 import {mkdir} from 'node:fs/promises';
 const base = process.env.TEST_BASE_URL || 'http://127.0.0.1:4173';
-const browser = await chromium.launch({headless: true,
-  ...(process.env.CHROMIUM_PATH ? {executablePath: process.env.CHROMIUM_PATH} : {})});
+const engineName = process.env.TEST_BROWSER === 'webkit' ? 'webkit' : 'chromium';
+const browser = await (engineName === 'webkit' ? webkit : chromium).launch({headless: true,
+  ...(engineName === 'chromium' && process.env.CHROMIUM_PATH ? {executablePath: process.env.CHROMIUM_PATH} : {})});
 await mkdir('test-results', {recursive: true});
 let passed = 0; const failures = [];
 const check = (condition, message) => { if (condition) { console.log(`PASS: ${message}`); passed++; } else { failures.push(message); console.error(`FAIL: ${message}`); } };
@@ -49,7 +50,7 @@ try {
     }
     check(await page.locator('.compact-move').count() === 4 && await page.locator('.compact-move button').count() === 0, 'Four compact moves cannot open a nested menu');
     check(!(await fit(page)).length, `Overview fits without scrolling: ${await fit(page)}`);
-    await page.screenshot({path: `test-results/overview-${viewport.width}-${viewport.height}.png`});
+    await page.screenshot({path: `test-results/${engineName}-overview-${viewport.width}-${viewport.height}.png`});
     await pad(page, 15);
     check(await page.locator('.role-layout').count() === 1, 'D-pad right opens a sibling possible-role page');
     const roleTitle = await page.locator('[aria-selected=true]').innerText();
@@ -57,7 +58,7 @@ try {
     check(await page.locator('[aria-selected=true]').innerText() === roleTitle, 'R3 on a role move never opens another menu');
     check(await page.locator('#info-content .move-description, #info-content .move-metrics, #info-content .move-summary, #info-content .info-facts').count() === 0, 'Role move lists omit power and descriptions');
     check(!(await fit(page)).length, `Role fits without scrolling: ${await fit(page)}`);
-    await page.screenshot({path: `test-results/possible-role-${viewport.width}-${viewport.height}.png`});
+    await page.screenshot({path: `test-results/${engineName}-possible-role-${viewport.width}-${viewport.height}.png`});
     await pad(page, 13);
     check((await page.locator('#modal-title').innerText()).includes('Palossand') && await page.locator('[aria-selected=true]').innerText() === 'Overview', 'D-pad down changes Pokémon and resets to Overview');
     await pad(page, 12); await pad(page, 12);
@@ -67,7 +68,7 @@ try {
     await page.locator('#move-2').focus(); await pad(page, 11);
     check(await page.locator('#modal-title').innerText() === 'Shadow Ball' && (await page.locator('#info-content').innerText()).includes('20%'), 'R3 on a main move opens its detailed effects');
     check(!(await fit(page)).length, `Move details fit: ${await fit(page)}`);
-    await page.screenshot({path: `test-results/move-${viewport.width}-${viewport.height}.png`});
+    await page.screenshot({path: `test-results/${engineName}-move-${viewport.width}-${viewport.height}.png`});
     await pad(page, 0);
     check(await page.evaluate(() => document.activeElement.id) === 'move-2', 'Move details close directly to the battle move');
     await page.locator('#view-opponent').click(); await page.locator('#opponent-1').focus(); await pad(page, 11);
@@ -110,7 +111,7 @@ try {
     const {rolePages} = await import('/src/info-components.mjs'); const snapshot = await fetch('/data/gen9randombattle.json').then(r => r.json());
     document.querySelector('#info-content').innerHTML = rolePages({snapshot}, 'Raichu', snapshot.pokemon.Raichu.level)[0].content;
   });
-  await pools.screenshot({path: 'test-results/largest-pool.png'});
+  await pools.screenshot({path: `test-results/${engineName}-largest-pool.png`});
   await pools.keyboard.press('Escape'); await pools.locator('#move-1').focus(); await pools.keyboard.press('i');
   const longRules = await pools.evaluate(async () => {
     const {movePages} = await import('/src/info-components.mjs'); const {moveInformation} = await import('/src/information.mjs');
@@ -154,6 +155,8 @@ try {
   check((await cancel.locator('#test-commands').innerText()).includes('/undo |1'), 'Existing B / Escape still invokes Showdown undo');
   await cancel.close();
 
+  // Audio implementation is unchanged; keep its existing Chromium regression.
+  if (engineName === 'chromium') {
   const audio = await browser.newPage();
   await audio.goto(base); await audio.waitForSelector('#switch-1');
   const loop = await audio.evaluate(async () => {
@@ -188,6 +191,7 @@ try {
   });
   check(['ready', 'unrated'].includes(publicRating.status), 'Official public rating API works with browser CORS and no credentials');
   await audio.close();
+  }
   assert.equal(failures.length, 0, failures.join('\n'));
-  console.log(`All ${passed} browser checks passed.`);
+  console.log(`All ${passed} ${engineName} browser checks passed.`);
 } finally { await browser.close(); }
