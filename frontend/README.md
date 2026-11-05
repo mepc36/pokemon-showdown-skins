@@ -115,7 +115,7 @@ With the approved client ID configured:
 - Gen 9 Random Battle singles only; one room at a time. No teambuilder, chat, challenges, doubles, or battle automation.
 - `/blockbots` excludes registered ladder bots. It does not establish that every other account is a human.
 - Official renderer, move effects, backgrounds, and static sprite fallback. The full animated-sprite metadata and uncommon icon variants are not packaged yet. Trainer-name avatars work; only the fixture's two legacy numeric avatars are mapped.
-- Music uses one Showdown track in one primed media element. Full theme selection, seamless loop points, sound effects, and verified iPad autoplay behavior come later.
+- Music currently uses the existing media element. Music continuity is handled in a separate PR; physical iPad autoplay and interruption behavior require device testing.
 - Move details use Gen 9 reference values; damage and battle-adjusted move properties are not computed. Speed uses the pinned Showdown calculator as described above. Opponent information reflects public events through the displayed turn, with approximate HP and unknown values left unknown; Speed estimates are separately labelled.
 - Replay plays the current battle locally. Publishing to Showdown's replay service is not included.
 - The current layout uses the supplied screenshot's large-field / move-row / team-row structure, but is not a pixel-accurate reproduction.
@@ -130,3 +130,17 @@ With the approved client ID configured:
 Useful primary references: [wire protocol](https://github.com/smogon/pokemon-showdown/blob/master/PROTOCOL.md), [simulator protocol](https://github.com/smogon/pokemon-showdown/blob/master/sim/SIM-PROTOCOL.md), [official client](https://github.com/smogon/pokemon-showdown-client), and [login protocol](https://github.com/smogon/pokemon-showdown-loginserver/blob/master/OAUTH.md).
 
 See `THIRD_PARTY_NOTICES.md` for source and asset notices.
+
+## Possible sets and all moves
+
+**All moves** beside the team tabs opens an information browser for all six slots on either side. **Your known moves / Revealed moves** uses private team/current-request data for your team and public `moveTrack` events for opponents. **Possible moves** shows a separate union of candidate moves from the dataset. It is not a learned moveset. Unknown slots remain unknown; fainted Pokémon remain inspectable. Move cards show reference type, category, power, accuracy, PP and a short description; A / Enter or R3 / I opens full details. Browsing never submits a choice. B / Escape restores the prior card and scroll position.
+
+Each Pokémon detail panel has a separate **Possible sets** section: roles, abilities, items, Tera types and move frequencies. Role percentages are shares of simulated sets for that form; option percentages are frequencies *within the role*. Move percentages can sum above 100%. No frequencies are filtered or renormalized using public reveals, and no candidate data is written into confirmed battle state. Illusion and Transform can make the displayed species misleading.
+
+The bundled `public/data/gen9randombattle.json` snapshot comes from [pkmn/randbats](https://github.com/pkmn/randbats), whose generator samples 100,000 teams per format. It carries a source commit, UTC source/retrieval dates and the raw source SHA-256. The UI shows the source date and link and warns that live sets may have changed. Species/form matching handles documented cosmetic and battle-only relationships; ambiguous variants stay labelled, and missing data is explicit. A failed or malformed snapshot leaves battle controls and known/revealed moves working, with a Retry action.
+
+Refresh deliberately with `npm run refresh:sets` (current upstream) or `npm run refresh:sets -- <full-upstream-commit-sha>`, review the snapshot diff, then commit it. The script retrieves metadata, statistics and license at the same immutable revision and validates before replacement. Builds do not refresh silently. Browsers fetch only the bundled same-origin JSON with credentials omitted, so set browsing needs neither external CORS nor access to the data host or OAuth credentials.
+
+## Planned visual pass (not part of this PR)
+
+Make move types faster to recognize through stronger type-colored shading of move names/cards and nontextual cues such as type/category icons. Keep accessible labels and controller focus contrast. The existing action-button palette remains in place; the new information components use the current neutral styling until that separate pass.

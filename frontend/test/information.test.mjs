@@ -104,3 +104,24 @@ test('Transform uses an estimate instead of reporting the original private stat 
   assert.equal(pokemonSpeed(battle, 'own', 1).kind, 'estimate');
   assert.equal(pokemonSpeed(battle, 'own', 1).value, '193 or 236');
 });
+
+
+test('known moves are not replaced by Struggle or a restricted action request', async () => {
+  const {knownOwnMoves} = await import('../src/information.mjs');
+  const pokemon = {ident: 'p1: Raikou', active: true, moves: ['thunderbolt', 'scald', 'calmmind', 'substitute']};
+  const request = {side: {pokemon: [pokemon]}, active: [{moves: [{id: 'struggle', pp: 1}]}]};
+  assert.deepEqual(knownOwnMoves(pokemon, request).map(m => m.id), pokemon.moves);
+  assert.ok(knownOwnMoves(pokemon, request).every(m => !m.current));
+  request.active[0].moves = [{id: 'thunderbolt', pp: 0, maxpp: 24, disabled: true}];
+  assert.equal(knownOwnMoves(pokemon, request)[0].current.pp, 0);
+  assert.equal(knownOwnMoves(pokemon, request).length, 4);
+});
+
+test('known own move PP cannot come from another active Pokémon or a stale request', async () => {
+  const {knownOwnMoves} = await import('../src/information.mjs');
+  const pokemon = {ident: 'p1: Ditto', active: true, moves: ['thunderbolt', 'scald']};
+  const request = {side: {pokemon: [{ident: 'p1: Raikou', active: true}]}, active: [{moves: [{id: 'thunderbolt', pp: 9}]}]};
+  assert.deepEqual(knownOwnMoves(pokemon, request).map(m => m.id), ['thunderbolt', 'scald']);
+  assert.ok(knownOwnMoves(pokemon, request).every(m => !m.current));
+  assert.ok(knownOwnMoves(pokemon, {wait: true}).every(m => !m.current));
+});
