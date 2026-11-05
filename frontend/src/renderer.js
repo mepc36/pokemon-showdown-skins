@@ -2,7 +2,7 @@ import {Battle} from '../vendor/pokemon-showdown/battle';
 import {BattleSound} from '../vendor/pokemon-showdown/battle-sound';
 import {Dex} from '../vendor/pokemon-showdown/battle-dex';
 import {isBattleEvent} from './protocol.mjs';
-import {opponentSlots} from './information.mjs';
+import {opponentSlots, pokemonSpeed} from './information.mjs';
 
 // Audio is controlled through one primed media element in music.js.
 BattleSound.setMute(true);
@@ -67,6 +67,7 @@ export class Arena {
     queueMicrotask(() => { this.updateQueued = false; this.onUpdate(); });
   }
   opponents() { return opponentSlots(this.battle?.farSide); }
+  speed(side, index) { return pokemonSpeed(this.battle, side, index); }
   replay() { if (this.battle) { this.battle.seekTurn(0); this.battle.play(); } }
   skip() { this.battle?.seekTurn(Infinity); }
   icon(name) { return Dex.getPokemonIcon(name); }

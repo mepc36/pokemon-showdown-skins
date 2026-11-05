@@ -93,6 +93,8 @@ $('diagnostics').onclick = diagnostics;
 const currentRequest = () => fixture ? demoRequest : state.request;
 const ownTeam = () => (fixture ? demoRequest : lastRequest)?.side?.pokemon || [];
 const facts = entries => `<dl class="info-facts">${entries.map(([label, value]) => `<div><dt>${escape(label)}</dt><dd>${escape(value)}</dd></div>`).join('')}</dl>`;
+const speedFacts = speed => [[speed.kind === 'estimate' ? 'Speed (estimate)' : 'Speed (unmodified)', speed.value],
+  ...(speed.modified != null ? [['Speed (modified)', speed.modified]] : [])];
 
 function showInfo(page) {
   let title, content, moves = [];
@@ -111,22 +113,26 @@ function showInfo(page) {
     if (!page.parent) moves = currentMoves.map(m => ({id: m.id, name: moveInformation(m.id).name}));
   } else if (page.kind === 'pokemon' && page.side === 'opponent') {
     const p = arena.opponents()[page.index - 1];
+    const speed = arena.speed('opponent', page.index);
     title = p.revealed ? p.name : `Opponent · slot ${page.index}`;
     content = p.revealed ? `<p class="info-kicker">Opponent · ${p.active ? 'Active · ' : ''}Level ${escape(p.level)} · ${escape(p.types.join(' / '))}</p>${facts([
       ['Last shown HP', p.health], ['Status', p.status || 'None shown'], ['Ability', p.ability || 'Not revealed'],
       ['Item', p.item || 'Not revealed'], ['Tera type', p.teraType || 'Not revealed'],
+      ...speedFacts(speed),
       ...(p.previousItem ? [['Previous item', `${p.previousItem}${p.previousItemEffect ? ` (${p.previousItemEffect})` : ''}`]] : []),
-    ])}<h3>Revealed moves</h3>${p.moves.length ? '' : '<p>No moves revealed yet.</p>'}
+    ])}<p class="small">${escape(speed.note)}</p><h3>Revealed moves</h3>${p.moves.length ? '' : '<p>No moves revealed yet.</p>'}
     <p class="small">Public information through the displayed battle turn. Unseen moves, items and abilities stay unknown; HP is approximate.</p>` :
       '<p>This Pokémon has not been revealed. Its species, moves, ability, item and Tera type are unknown.</p>';
     moves = p.moves;
   } else if (page.kind === 'pokemon') {
     const p = ownTeam()[page.index - 1];
+    const speed = arena.speed('own', page.index);
     title = p?.details.split(',')[0] || 'Your Pokémon';
     content = p ? `<p class="info-kicker">Your team · ${escape(p.details)}</p>${facts([
       ['HP / status', p.condition], ['Ability', effectName('abilities', p.ability || p.baseAbility) || 'Unknown'],
       ['Item', effectName('items', p.item) || 'No item'], ['Tera type', p.teraType || 'Unknown'],
-    ])}<h3>Moves</h3>` : '<p>Your team will appear when a battle starts.</p>';
+      ...speedFacts(speed),
+    ])}<p class="small">${escape(speed.note)}</p><h3>Moves</h3>` : '<p>Your team will appear when a battle starts.</p>';
     moves = (p?.moves || []).map(id => ({id, name: moveInformation(id).name}));
   } else {
     title = 'Your team';
@@ -295,7 +301,7 @@ async function init() {
   const {Arena} = await import('./renderer.js');
   arena = new Arena($('arena'), $('hidden-log'), () => {
     if (rosterSide === 'opponent') renderRoster();
-    if (modal.open && infoPage?.side === 'opponent') showInfo(infoPage);
+    if (modal.open && infoPage?.kind === 'pokemon') showInfo(infoPage);
   });
   arena.setFit(displayFit);
   arena.receive({room: 'battle-gen9randombattle-0', lines: demoLines, snapshot: true, request: demoRequest});

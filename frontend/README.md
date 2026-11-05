@@ -23,9 +23,13 @@ The light controls, pink focus outline, type colors, enlarged icons, HP strips, 
 
 Highlight a move and press **R3 / I** for its type, category, base power, base accuracy, current PP, priority, target, contact and effect description. **Move info** gives touch users the same inspector and buttons to inspect each move. Pokémon detail cards also link to their moves; for opponents, only revealed moves appear. B / Escape goes back from a move to its Pokémon, then closes the inspector and restores focus. Inspecting information never submits a choice. Move reference values are labelled as baseline values, not battle-adjusted predictions; opponent moves show base PP, not an invented remaining count.
 
+Pokémon details now include **Speed**. Your unmodified stat comes from the latest private team request. For your current active Pokémon, **Speed (modified)** reuses Showdown's calculation for boosts, paralysis, items, abilities and field effects. It appears only when playback has caught up and the request and displayed active Pokémon agree. Bench, fainted and replay states do not get a misleading modified value. Missing private stats stay unknown; Transform uses Showdown's estimate instead of claiming the original stat is current.
+
+Opponents show **Speed (estimate)** using the pinned Showdown tooltip calculator: for example, level 82 Raikou displays **193 or 236**, before external modifiers. This is a species/level estimate, not a revealed stat or a prediction of turn order. Unrevealed slots stay unknown. Use **Your team / Opponent**, highlight a slot, then press **R3 / I**; **A / Enter** also opens opponent details. No extension, backend, new network dependency, or live Showdown DOM access is needed. See [the component map](docs/showdown-components.md#speed-and-possible-random-battle-sets) for the source and possible-set follow-up.
+
 The fixture is deliberately small. It does not simulate a battle or prove live login, reconnect, iPad audio, or hardware mapping.
 
-Validation completed: 19 automated protocol/input/information tests, a production build, browser checks of navigation and responsive layouts, and seven renderer integration checks for public reveals, fainting, snapshot rebuilds, player-two perspective and room resets. Earlier connection testing reached Showdown's anonymous login challenge. The owner has confirmed OAuth login. A complete authenticated battle and physical-controller acceptance test have not been verified.
+Validation completed: 23 automated protocol/input/information tests, a production build, keyboard inspection at 1024×650 and 390×720, and 17 renderer integration checks. These cover public reveals, snapshot/room resets, both player perspectives, the Raikou Speed example, boosts/Choice Scarf/paralysis rounding, Tailwind, and replay guards. Earlier connection testing reached Showdown's anonymous login challenge. The owner has confirmed OAuth login. A complete authenticated battle and physical-controller acceptance test have not been verified.
 
 ## Enable live login
 
@@ -112,7 +116,7 @@ With the approved client ID configured:
 - `/blockbots` excludes registered ladder bots. It does not establish that every other account is a human.
 - Official renderer, move effects, backgrounds, and static sprite fallback. The full animated-sprite metadata and uncommon icon variants are not packaged yet. Trainer-name avatars work; only the fixture's two legacy numeric avatars are mapped.
 - Music uses one Showdown track in one primed media element. Full theme selection, seamless loop points, sound effects, and verified iPad autoplay behavior come later.
-- Move details use Gen 9 reference values. Dynamic damage, STAB, weather/item/ability modifiers and matchup calculations are not computed. Opponent information reflects public events through the displayed turn, with approximate HP and unknown values left unknown.
+- Move details use Gen 9 reference values; damage and battle-adjusted move properties are not computed. Speed uses the pinned Showdown calculator as described above. Opponent information reflects public events through the displayed turn, with approximate HP and unknown values left unknown; Speed estimates are separately labelled.
 - Replay plays the current battle locally. Publishing to Showdown's replay service is not included.
 - The current layout uses the supplied screenshot's large-field / move-row / team-row structure, but is not a pixel-accurate reproduction.
 - Browser suspensions, networking, popup behavior, and OS-reserved buttons require actual-device testing. Automated protocol fixtures are not a substitute for completing a live human battle.
