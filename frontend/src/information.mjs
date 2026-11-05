@@ -73,6 +73,19 @@ export function pokemonSpeed(battle, side, index) {
     note: 'Showdown estimate from the displayed species and level, before boosts, status, items, abilities and field effects. This is not a revealed stat.'};
 }
 
+// Own private request values already include IVs, EVs and nature. These are
+// unmodified stats, not species base stats or a guess at an opponent's spread.
+export function ownPokemonStats(battle, index) {
+  const server = Number.isInteger(index) && index >= 1 && index <= 6 ? battle?.myPokemon?.[index - 1] : null;
+  const pokemon = battle?.mySide?.pokemon?.find(p => p.ident === server?.ident);
+  const transformed = !!pokemon?.volatiles?.transform;
+  const fields = [['Attack', 'atk'], ['Defense', 'def'], ['Sp. Atk', 'spa'], ['Sp. Def', 'spd']];
+  return {label: transformed ? 'Original stats · before Transform' : 'Your stats · before battle modifiers',
+    entries: fields.map(([name, id]) => [name, Number.isFinite(server?.stats?.[id]) && server.stats[id] > 0 ? server.stats[id] : 'Unknown']),
+    note: transformed ? 'These are the original request stats, not the copied opponent’s current stats.' :
+      'Exact values from your private team request, including IVs, EVs and nature. Boosts, items and other battle modifiers are not applied.'};
+}
+
 // The pinned renderer already tracks switches, Illusion, forms and public reveals.
 // Read its far side only; never fill gaps from species abilities or random sets.
 export function opponentSlots(side) {
