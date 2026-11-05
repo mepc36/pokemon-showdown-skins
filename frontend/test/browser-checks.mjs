@@ -126,7 +126,7 @@ try {
     const buffer = await context.decodeAudioData(await response.arrayBuffer());
     return {duration: buffer.duration, usable: buffer.duration > TRACK.loopEnd};
   });
-  check(actualAudio.usable, `Official MP3 fetches with browser CORS and decodes (${actualAudio.duration.toFixed(2)} seconds)`);
+  check(actualAudio.usable, `Packaged official MP3 fetches from the app origin and decodes (${actualAudio.duration.toFixed(2)} seconds)`);
   await audio.close();
   console.log(`All ${passed} browser checks passed.`);
 } finally { await browser.close(); }

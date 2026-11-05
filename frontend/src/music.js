@@ -1,5 +1,5 @@
 // Milliseconds in pinned Showdown battle-animations.ts, converted to seconds.
-export const TRACK = {url: 'https://play.pokemonshowdown.com/audio/bw-trainer.mp3',
+export const TRACK = {url: './audio/bw-trainer.mp3',
   loopStart: 14.629, loopEnd: 110.109, volume: 0.22};
 
 export function musicActive(state, {fixture = false, hidden = false, stopped = false} = {}) {

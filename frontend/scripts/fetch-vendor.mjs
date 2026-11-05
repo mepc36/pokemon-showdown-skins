@@ -11,7 +11,7 @@ for (const file of files) {
   try { if (hash(await readFile(output)) === file.sha256) continue; } catch {}
   const response = await fetch(file.url, {signal: AbortSignal.timeout(30000)});
   if (!response.ok) throw new Error(`Vendor download failed: ${file.output} (${response.status})`);
-  let content = await response.text();
+  let content = file.binary ? Buffer.from(await response.arrayBuffer()) : await response.text();
   if (file.absoluteAssetUrls) content = content.replaceAll('url(../', 'url(https://play.pokemonshowdown.com/');
   if (hash(content) !== file.sha256) throw new Error(`Vendor checksum mismatch: ${file.output}`);
   await mkdir(dirname(output), {recursive: true}); await writeFile(output, content);

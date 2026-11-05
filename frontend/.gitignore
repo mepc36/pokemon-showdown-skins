@@ -7,3 +7,4 @@ public/vendor/
 vendor/text/
 vendor/pokemon-showdown/battle*.ts
 test-results/
+public/audio/
