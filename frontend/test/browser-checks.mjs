@@ -6,8 +6,8 @@ const base = process.env.TEST_BASE_URL || 'http://127.0.0.1:4173';
 const browser = await chromium.launch({headless: true,
   ...(process.env.CHROMIUM_PATH ? {executablePath: process.env.CHROMIUM_PATH} : {})});
 await mkdir('test-results', {recursive: true});
-let passed = 0;
-const check = (condition, message) => { assert.ok(condition, message); console.log(`PASS: ${message}`); passed++; };
+let passed = 0; const failures = [];
+const check = (condition, message) => { if (condition) { console.log(`PASS: ${message}`); passed++; } else { failures.push(message); console.error(`FAIL: ${message}`); } };
 const fit = async page => page.evaluate(() => {
   const root = document.documentElement, modal = document.querySelector('dialog[open]');
   const targets = modal ? [modal, document.querySelector('#modal-body'), document.querySelector('#info-content')].filter(Boolean) : [root, document.querySelector('#app')];
@@ -55,7 +55,7 @@ try {
     const roleTitle = await page.locator('[aria-selected=true]').innerText();
     await page.locator('.compact-move').first().click(); await pad(page, 11);
     check(await page.locator('[aria-selected=true]').innerText() === roleTitle, 'R3 on a role move never opens another menu');
-    check(!(await page.locator('#info-content').innerText()).includes('Power'), 'Role move lists omit power and descriptions');
+    check(await page.locator('#info-content .move-description, #info-content .move-metrics, #info-content .move-summary, #info-content .info-facts').count() === 0, 'Role move lists omit power and descriptions');
     check(!(await fit(page)).length, `Role fits without scrolling: ${await fit(page)}`);
     await page.screenshot({path: `test-results/possible-role-${viewport.width}-${viewport.height}.png`});
     await pad(page, 13);
@@ -188,5 +188,6 @@ try {
   });
   check(['ready', 'unrated'].includes(publicRating.status), 'Official public rating API works with browser CORS and no credentials');
   await audio.close();
+  assert.equal(failures.length, 0, failures.join('\n'));
   console.log(`All ${passed} browser checks passed.`);
 } finally { await browser.close(); }
