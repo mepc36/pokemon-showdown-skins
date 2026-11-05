@@ -19,6 +19,9 @@ try {
     await page.locator('#switch-1').focus(); await page.keyboard.press('i');
     await page.waitForSelector('.set-role');
     check(await page.locator('#modal-title').innerText() === 'Grumpig', 'R3 / I opens Pokémon details');
+    for (const label of ['Attack', 'Defense', 'Sp. Atk', 'Sp. Def']) {
+      check(await page.locator('.info-facts > div').filter({has: page.getByText(label, {exact: true})}).locator('dd').innerText() === '150', `Exact private ${label} appears`);
+    }
     check(await page.locator('#inspect-move-1').innerText().then(t => t.includes('32 / 32')), 'Your known active moves show current PP');
     check((await page.locator('.possible-sets').innerText()).includes('Snapshot'), 'Possible sets has source and freshness');
     check((await page.locator('.set-role').first().innerText()).includes('Tera types'), 'Role cards include abilities, items and Tera types');
@@ -58,9 +61,32 @@ try {
     await page.keyboard.press('Escape');
     await page.locator('#view-opponent').click(); await page.locator('#opponent-4').click();
     check(await page.locator('.possible-sets').count() === 0, 'Unknown Pokémon exposes no possible sets');
+    await page.keyboard.press('Escape');
+    await page.route('**/users/mepc36363636.json', route => route.fulfill({json: {userid: 'mepc36363636', ratings: {gen9randombattle: {elo: 1375.16, gxe: 54.5, w: 228, l: 244}}}}));
+    await page.locator('#toggle-tools').click(); await page.locator('#rating').click();
+    await page.waitForFunction(() => document.querySelector('#modal-body').textContent.includes('1375'));
+    check(await page.locator('#modal-title').innerText() === 'Your rating', 'Public rating is reachable from More controls');
+    await page.screenshot({path: `test-results/rating-${viewport.width}.png`});
+    await page.keyboard.press('Escape');
+    check(await page.evaluate(() => document.activeElement.id) === 'rating', 'Rating closes back to its controller focus');
     check(errors.length === 0, `No runtime errors: ${errors.join(', ')}`);
     await page.close();
   }
+
+  const delayed = await browser.newPage();
+  let release;
+  const gate = new Promise(resolve => release = resolve);
+  await delayed.route('**/users/mepc36363636.json', async route => { await gate; await route.fulfill({status: 503, body: 'Unavailable'}); });
+  await delayed.goto(base); await delayed.waitForSelector('#toggle-tools');
+  await delayed.locator('#toggle-tools').click(); await delayed.locator('#rating').click();
+  await delayed.keyboard.press('Escape');
+  const delayedResponse = delayed.waitForResponse(response => response.url().includes('/users/mepc36363636.json'));
+  release(); await delayedResponse;
+  check(!await delayed.locator('#modal').isVisible(), 'A late rating response cannot reopen a closed dialog');
+  await delayed.locator('#rating').click();
+  await delayed.waitForFunction(() => document.querySelector('#modal-body').textContent.includes('Could not load'));
+  check(await delayed.locator('#refresh-rating').isEnabled(), 'Rating failure exposes a retry without breaking controls');
+  await delayed.close();
 
   // Data failures must not disable the existing information or battle controls.
   const failed = await browser.newPage();
@@ -127,6 +153,12 @@ try {
     return {duration: buffer.duration, usable: buffer.duration > TRACK.loopEnd};
   });
   check(actualAudio.usable, `Packaged official MP3 fetches from the app origin and decodes (${actualAudio.duration.toFixed(2)} seconds)`);
+  const publicRating = await audio.evaluate(async () => {
+    const {PlayerRating} = await import('/src/rating.mjs');
+    const rating = new PlayerRating('mepc36363636'); await rating.load();
+    return {status: rating.status, value: rating.value};
+  });
+  check(['ready', 'unrated'].includes(publicRating.status), 'Official public rating API works with browser CORS and no credentials');
   await audio.close();
   console.log(`All ${passed} browser checks passed.`);
 } finally { await browser.close(); }

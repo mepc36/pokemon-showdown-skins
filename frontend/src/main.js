@@ -4,6 +4,7 @@ import {ShowdownSession} from './session.mjs';
 import {ShowdownAuth} from './auth.mjs';
 import {availableChoices} from './protocol.mjs';
 import {startController, navigate} from './controller.mjs';
+import {PlayerRating} from './rating.mjs';
 import {Music, musicActive} from './music.js';
 import {PossibleSets, possibleSets, possibleMoves} from './possible-sets.mjs';
 import {escapeHtml, moveCards, setSection, setStatus} from './info-components.mjs';
@@ -16,7 +17,7 @@ const btn = (id, label, row, disabled = false, extra = '') => `<button id="${id}
 let arena, session, auth, config, state = {}, fixture = true, tera = false, lastRequest, selectedRequest, localNotice = '', ignoreButtons = new Set();
 let diagnosticLines = [];
 let modalReturnFocus = '', displayFit = 'wide';
-let rosterSide = 'own', selectedMoveId = '', infoPage = null;
+let rosterSide = 'own', selectedMoveId = '', infoPage = null, rating = null, ratingPage = false;
 try { if (localStorage.getItem('ps-mve-display-fit') === 'original') displayFit = 'original'; } catch {}
 const modal = $('modal');
 const music = new Music(() => updateMusic());
@@ -32,14 +33,14 @@ function showModal(title, content) {
   const previousScroll = modal.open ? modal.scrollTop : 0;
   const previousFocus = modal.open ? document.activeElement?.id : '';
   if (!modal.open) modalReturnFocus = document.activeElement?.id || '';
-  infoPage = null;
+  infoPage = null; ratingPage = false;
   $('modal-title').textContent = title; $('modal-body').innerHTML = content;
   if (!modal.open) modal.showModal();
   ($(previousFocus) || $('modal-close')).focus({preventScroll: true});
   modal.scrollTop = previousScroll;
 }
 function closeModal() {
-  infoPage = null;
+  infoPage = null; ratingPage = false;
   modal.close();
   $(modalReturnFocus)?.focus({preventScroll: true});
 }
@@ -122,6 +123,26 @@ function backInfo() {
   modal.scrollTop = page.returnScroll || 0;
 }
 
+function showRating(load = true, force = false) {
+  if (load) void rating.load(force).then(() => {
+    if (ratingPage && modal.open) showRating(false);
+    if ($('rating')) $('rating').textContent = rating.label;
+  });
+  const value = rating.value;
+  const details = rating.status === 'loading' ? '<p>Loading your public ladder rating…</p>' :
+    rating.status === 'error' ? '<p>Could not load your rating. Try Refresh rating.</p>' :
+    rating.status === 'unrated' ? '<p>No Gen 9 Random Battle rating was returned for this account.</p>' :
+    facts([['Elo', Math.round(value.elo)], ['GXE', value.gxe === null ? 'Unknown' : `${value.gxe}%`],
+      ['Wins', value.wins ?? 'Unknown'], ['Losses', value.losses ?? 'Unknown']]);
+  showModal('Your rating', `<p class="info-kicker">${escape(config.username)} · Gen 9 Random Battle</p>${details}
+    <p class="small">Public ladder data. Elo is rounded to whole points. GXE estimates your chance of beating an average ladder player. Other formats have separate ratings.</p>
+    ${rating.checkedAt ? `<p class="small">Last successful check: ${escape(new Date(rating.checkedAt).toLocaleString())}. Refresh after a rated battle; updates may take a moment.</p>` : ''}
+    <div class="modal-actions">${btn('refresh-rating', 'Refresh rating', 'rating-actions', rating.status === 'loading')}
+      <a id="rating-source" data-nav data-row="rating-actions" href="${escape(rating.url)}" target="_blank" rel="noopener noreferrer">Showdown public data</a></div>`);
+  ratingPage = true;
+  $('refresh-rating').onclick = () => showRating(true, true);
+}
+
 function showInfo(page) {
   const samePage = infoPage && infoPage.kind === page.kind && infoPage.side === page.side && infoPage.index === page.index && infoPage.id === page.id && infoPage.mode === page.mode;
   let title, content;
@@ -156,10 +177,12 @@ function showInfo(page) {
         <p class="small">Public information through the displayed battle turn. Unseen moves, items and abilities stay unknown; HP is approximate.</p>`;
       } else {
         const p = ownTeam()[page.index - 1];
+        const stats = arena.stats(page.index);
         content = `<p class="info-kicker">Your team · ${escape(p.details)}</p>${facts([
           ['HP / status', p.condition], ['Ability', effectName('abilities', p.ability || p.baseAbility) || 'Unknown'],
-          ['Item', effectName('items', p.item) || 'No item'], ['Tera type', p.teraType || 'Unknown'], ...speedFacts(speed),
-        ])}<p class="small">${escape(speed.note)}</p><h3>Your known moves</h3>`;
+          ['Item', effectName('items', p.item) || 'No item'], ['Tera type', p.teraType || 'Unknown'],
+        ])}<h3>${escape(stats.label)}</h3>${facts([...stats.entries, ...speedFacts(speed)])}
+        <p class="small">${escape(stats.note)}</p><p class="small">${escape(speed.note)}</p><h3>Your known moves</h3>`;
       }
       const moves = knownMoves(page.side, page.index);
       content += moves.length ? moveCards(moves, {...page, prefix: 'inspect-move'}) : '<p>No moves revealed yet.</p>';
@@ -315,7 +338,7 @@ function render() {
   renderRoster();
   const inBattle = fixture || !!state.room && !state.ended;
   $('utility').innerHTML = `
-    ${btn('info', 'Team info', 'tools', !lastRequest && !fixture)}${btn('skip', 'Skip animation', 'tools', !inBattle)}
+    ${btn('info', 'Team info', 'tools', !lastRequest && !fixture)}${btn('rating', rating?.label || 'Rating', 'tools')}${btn('skip', 'Skip animation', 'tools', !inBattle)}
     ${btn('timer-on', 'Timer on', 'tools', !inBattle || !fixture && !state.authenticated)}${btn('timer-off', 'Timer off', 'tools', !inBattle || !fixture && !state.authenticated)}
     ${btn('music', 'Tap for music', 'tools')}${btn('forfeit', 'Forfeit…', 'tools', !inBattle || !fixture && !state.authenticated)}
     ${state.ended ? btn('replay', 'Watch this battle again', 'tools') : ''}`;
@@ -326,6 +349,7 @@ function render() {
     const previous = choices.moves.find(move => move.id === selectedMoveId && move.enabled) || choices.moves.find(move => move.enabled);
     if (previous) $(`move-${previous.index}`)?.focus({preventScroll: true});
   });
+  $('rating').onclick = () => showRating();
   $('info').onclick = () => info(); $('skip').onclick = () => arena.skip(); $('music').onclick = () => music.retryOrToggle(); $('forfeit').onclick = forfeit;
   for (const toggle of ['on', 'off']) $(`timer-${toggle}`).onclick = () => fixture ? (localNotice = `Controller check: timer ${toggle}.`, render()) : safe(() => session.roomCommand(`/timer ${toggle}`));
   if ($('replay')) $('replay').onclick = () => arena.replay();
@@ -353,6 +377,7 @@ document.addEventListener('keydown', event => { if (!event.repeat && event.isTru
 
 async function init() {
   config = await fetch('./config.json', {cache: 'no-store'}).then(response => response.json());
+  rating = new PlayerRating(config.username);
   auth = new ShowdownAuth(localStorage.getItem('ps-mve-client-id') || config.clientId);
   try { ignoreButtons = new Set(JSON.parse(localStorage.getItem('ps-mve-ignored') || '[]')); } catch {}
   const {Arena} = await import('./renderer.js');

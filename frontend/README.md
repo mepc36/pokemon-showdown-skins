@@ -154,3 +154,11 @@ Run `npx playwright install chromium`, start `npm run dev -- --host 127.0.0.1 --
 ## Planned visual pass (not part of this PR)
 
 Make move types faster to recognize through stronger type-colored shading of move names/cards and nontextual cues such as type/category icons. Keep accessible labels and controller focus contrast. The existing action-button palette remains in place; the new information components use the current neutral styling until that separate pass.
+
+## Your stats and rating
+
+R3 / I on one of **your** Pokémon now shows exact Attack, Defense, Special Attack and Special Defense from the private team request, alongside the existing Speed and HP information. These values include the Pokémon’s IVs, EVs and nature; they are labelled **before battle modifiers**. Missing values stay unknown. During Transform the panel explicitly labels the original stats, rather than presenting them as the copied opponent’s stats. No opponent stat spread is inferred.
+
+**More controls → Rating** shows the account’s Gen 9 Random Battle Elo, GXE, wins and losses. This uses the documented public `https://pokemonshowdown.com/users/<userid>.json` API with credentials omitted; no OAuth token, browser extension or backend is required. Successful results are cached in memory for up to one minute and show the time checked. **Refresh rating** bypasses that cache; use it after a rated battle, allowing time for ladder updates. Missing format entries are labelled unrated, and fetch/schema failures show a retry instead of inventing 1000 Elo. Late responses never reopen a closed information dialog.
+
+The public OAuth **client ID** is checked into `public/config.json`, which the app fetches at startup; Setup may override it in `localStorage` under `ps-mve-client-id`. It is an application identifier, not a secret, and is not injected from GitHub Secrets. The authorization token is separate and sensitive: it stays in browser `localStorage` under `ps-mve-auth` and is used only by the Showdown authorization flow. It is not included in the repository, snapshot or rating request.
