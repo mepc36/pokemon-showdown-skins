@@ -144,3 +144,13 @@ test('missing stats stay unknown and Transform labels original rather than copie
   assert.match(value.label, /Original stats/); assert.match(value.note, /not the copied/);
   assert.deepEqual(value.entries.map(([, n]) => n), [150, 'Unknown', 'Unknown', 'Unknown']);
 });
+
+
+test('identity exposes species types and possible abilities without claiming a reveal', async () => {
+  const {speciesInformation} = await import('../src/information.mjs');
+  assert.deepEqual(speciesInformation('Camerupt').types, ['Fire', 'Ground']);
+  assert.ok(speciesInformation('Ursaring').abilities.includes('Guts'));
+  assert.deepEqual(speciesInformation('Not revealed').types, []);
+  const p = opponentSlots({pokemon: [{speciesForme: 'Landorus', gender: 'M', hp: 100, maxhp: 100}]})[0];
+  assert.equal(p.gender, 'M'); assert.equal(p.ability, '');
+});

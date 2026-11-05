@@ -35,7 +35,7 @@ export class Arena {
     // cover the player's Pokémon with the dock or retain a stale maximum height.
     const viewportHeight = window.visualViewport?.height || window.innerHeight;
     const safeBottom = parseFloat(getComputedStyle(document.getElementById('app')).paddingBottom) || 0;
-    const available = Math.max(160, viewportHeight - (parent.getBoundingClientRect().top + window.scrollY) - below - safeBottom);
+    const available = Math.max(0, viewportHeight - (parent.getBoundingClientRect().top + window.scrollY) - below - safeBottom);
     const scaleY = Math.min(width / 640, width >= 600 ? available / 360 : Infinity);
     const scaleX = Math.min(width / 640, scaleY * (this.fit === 'wide' ? 1.25 : 1));
     this.frame.style.transform = `scale(${scaleX}, ${scaleY})`;
