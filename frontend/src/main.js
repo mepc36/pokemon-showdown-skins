@@ -8,7 +8,7 @@ import {Music, musicActive} from './music.js';
 import {PossibleSets, possibleSets, possibleMoves} from './possible-sets.mjs';
 import {escapeHtml, moveCards, setSection, setStatus} from './info-components.mjs';
 import {demoLines, demoRequest} from './demo.mjs';
-import {moveInformation, effectName} from './information.mjs';
+import {moveInformation, effectName, knownOwnMoves} from './information.mjs';
 
 const $ = id => document.getElementById(id);
 const escape = escapeHtml;
@@ -111,11 +111,7 @@ function teamSlots(side) {
 
 function knownMoves(side, index) {
   if (side === 'opponent') return arena.opponents()[index - 1]?.moves || [];
-  const p = ownTeam()[index - 1], request = currentRequest();
-  // Active request moves can differ from the party list (e.g. Transform).
-  const current = p?.active && request?.side?.pokemon?.some(q => q.active && q.ident === p.ident) ? request.active?.[0]?.moves : null;
-  return current?.length ? current.map(m => ({id: m.id, name: m.move, current: m})) :
-    (p?.moves || []).map(id => ({id, name: moveInformation(id).name}));
+  return knownOwnMoves(ownTeam()[index - 1], currentRequest());
 }
 
 function backInfo() {

@@ -78,7 +78,9 @@ try {
   await failed.close();
 
   const renderer = await browser.newPage();
-  await renderer.goto(`${base}/test/renderer.html`); await renderer.locator('#run').click();
+  await renderer.goto(`${base}/test/renderer.html`);
+  await renderer.waitForFunction(() => typeof document.querySelector('#run').onclick === 'function');
+  await renderer.locator('#run').click();
   await renderer.waitForFunction(() => document.querySelector('#results').textContent.includes('All checks passed') || document.querySelector('#results').textContent.includes('FAIL'));
   const rendererResult = await renderer.locator('#results').innerText();
   check(!rendererResult.includes('FAIL'), rendererResult);

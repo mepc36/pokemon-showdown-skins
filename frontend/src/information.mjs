@@ -21,6 +21,19 @@ export function moveInformation(id, currentMove) {
     summary: move.shortDesc || move.desc || ''};
 }
 
+// The party list contains all current moves, including Transform copies. An
+// active action request can be reduced to a locked move or Struggle, so use it
+// only to attach matching PP/disabled information, never to erase known moves.
+export function knownOwnMoves(pokemon, request) {
+  const matches = pokemon?.active && request?.side?.pokemon?.some(p => p.active && p.ident === pokemon.ident);
+  const current = matches ? request.active?.[0]?.moves || [] : [];
+  const ids = pokemon?.moves?.length ? pokemon.moves : current.map(m => m.id);
+  return ids.map(id => {
+    const move = Dex.moves.get(id);
+    return {id: move.id, name: move.name, current: current.find(m => Dex.moves.get(m.id).id === move.id)};
+  });
+}
+
 export function effectName(kind, id) { return id ? Dex[kind].get(id).name : ''; }
 
 // Reuse the pinned client's calculator, never scrape tooltip HTML or guess a set.

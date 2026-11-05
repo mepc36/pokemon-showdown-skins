@@ -13,7 +13,7 @@ export function moveCards(moves, {prefix, origin = 'known', side = 'own', index 
       data-info-move="${escape(m.id)}" data-origin="${origin}" data-side="${side}" data-index="${index}">
       <strong>${escape(move.name)}${m.copied ? ' (copied)' : ''}</strong>
       <small>${escape(move.type)} · ${escape(move.category)}${m.frequency != null ? ` · ${percent(m.frequency)}` : ''}</small>
-      <span class="move-metrics">Power ${escape(move.power)} · Accuracy ${escape(move.accuracy)} · ${escape(move.pp)}</span>
+      <span class="move-metrics">Power ${escape(move.power)} · Accuracy ${escape(move.accuracy)} · ${escape(move.pp)}${origin !== 'possible' && m.current ? ' PP' : ''}</span>
       <span class="move-summary">${escape(move.summary)}</span></button>`;
   }).join('')}</div>`;
 }
