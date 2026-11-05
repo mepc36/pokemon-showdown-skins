@@ -100,6 +100,7 @@ dialog[data-view] #modal-body:has(.inspection-footer){display:flex;flex-directio
 .overview-layout h3+.info-facts{grid-template-columns:repeat(4,minmax(0,1fr))}
 .info-facts>div{padding:8px 10px}.info-facts dt{font-size:13px}.info-facts dd{font-size:17px;line-height:1.25;margin-top:4px}
 .compact-moves{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+#modal-body .compact-move{margin:0}
 .compact-move{min-width:0;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 9px;border-radius:5px;border:1px solid var(--type-border,#c2cbd3);background:linear-gradient(100deg,#fff,var(--type-tint,#edf1f5));min-height:44px}
 .compact-move strong{font-size:16px;font-weight:600;overflow-wrap:anywhere}.compact-move .type-badge{margin:0;font-size:12px;padding:2px 5px}
 .overview-layout .compact-moves{grid-template-columns:1fr}.overview-layout .compact-move{min-height:48px}

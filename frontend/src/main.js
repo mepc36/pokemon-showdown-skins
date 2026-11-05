@@ -65,6 +65,7 @@ function showTools(open, focusId) {
   $('toggle-tools').setAttribute('aria-expanded', String(open));
   $('toggle-tools').textContent = open ? 'Fewer controls' : 'More controls';
   if (focusId) $(focusId)?.focus({preventScroll: true});
+  arena?.resize();
 }
 $('toggle-tools').onclick = () => showTools($('utility').hidden);
 
@@ -313,6 +314,7 @@ function render() {
   if ($('replay')) $('replay').onclick = () => arena.replay();
   $('timer-status').textContent = state.timer || '';
   updateMusic();
+  arena?.resize();
   if (modal.open && infoPage) showInfo(infoPage);
   if (focusId && !modal.open) { const target = $(focusId); if (target && !target.disabled) target.focus({preventScroll: true}); }
 }

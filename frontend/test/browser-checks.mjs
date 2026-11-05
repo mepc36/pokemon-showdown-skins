@@ -155,7 +155,7 @@ try {
   await cancel.close();
 
   const audio = await browser.newPage();
-  await audio.goto(base); await audio.waitForSelector('#all-moves');
+  await audio.goto(base); await audio.waitForSelector('#switch-1');
   const loop = await audio.evaluate(async () => {
     const {Music, TRACK} = await import('/src/music.js');
     const rate = 8000, offline = new OfflineAudioContext(1, rate * 2, rate);

@@ -33,7 +33,7 @@ export function rolePages(store, name, level) {
     return Array.from({length: count}, (_, i) => ({key: `${set.name}:${role.name}:${i}`, label: `${role.name}${count > 1 ? ` ${i + 1}/${count}` : ''}`,
       content: `<div class="role-heading"><strong>${escape(set.name)} · ${escape(percent(role.weight))}</strong><span>Possible role${set.levelMismatch ? ` · snapshot level ${set.level}` : ''}</span></div>
         <div class="role-layout"><dl class="role-options">${options('Abilities', abilities[i] || abilities[0])}${options('Items', items[i] || items[0])}${options('Tera types', tera[i] || tera[0], true)}</dl>
-        <section><h3>Possible moves</h3>${moveList(moves[i] || [])}</section></div>`,
+        <section aria-label="Possible moves">${moveList(moves[i] || [])}</section></div>`,
       note: `Candidates, not confirmed · snapshot ${store.snapshot.source.updatedAt.slice(0, 10)}${count > 1 ? ' · continued role' : ''}`}));
   }));
 }
