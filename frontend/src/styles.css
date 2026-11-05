@@ -60,3 +60,14 @@ button[aria-pressed=true]{background:#fbe1eb;color:#961b43;border-color:var(--ac
 .command-heading #tera[aria-pressed="true"]{color:#981145;border-color:var(--accent);background:#fff0f5;box-shadow:inset 0 0 0 1px var(--accent)}
 .command-heading #tera:disabled{opacity:1;color:var(--muted)}
 @media(pointer:coarse){.command-heading #tera,.command-heading #undo{min-height:44px}}
+/* Information browsing uses the existing palette; a separate visual pass is planned. */
+.info-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.info-tabs button[aria-pressed=true]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.move-card{text-align:left;display:flex;flex-direction:column;gap:5px;min-width:0;overflow-wrap:anywhere;padding:12px}
+.move-card small,.move-metrics,.move-summary{font-size:11px;color:var(--muted);line-height:1.45}
+.move-summary{color:#445467}.move-pool,.possible-sets{border-top:1px solid #bdc8d2;margin-top:22px;padding-top:8px}
+.move-pool>button{margin-top:10px}.set-role{border:1px solid #cbd4dc;border-radius:7px;padding:12px;margin:12px 0;background:#fff}
+.set-role h4,.set-role h5{margin:0 0 8px}.set-role h4 small{display:block;font-weight:400;color:var(--muted)}
+.set-options{margin:12px 0;font-size:12px}.set-options dt{font-weight:600}.set-options dd{margin:0 0 8px}.set-options small{color:var(--muted)}
+.set-source{overflow-wrap:anywhere}.set-form>h4{margin-bottom:4px}#modal-close{flex-shrink:0}
+@media(max-width:480px){.info-moves{grid-template-columns:1fr}.team-toolbar>span{display:none}.set-role{padding:10px}}
