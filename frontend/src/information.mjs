@@ -23,6 +23,43 @@ export function moveInformation(id, currentMove) {
 
 export function effectName(kind, id) { return id ? Dex[kind].get(id).name : ''; }
 
+// Reuse the pinned client's calculator, never scrape tooltip HTML or guess a set.
+export function pokemonSpeed(battle, side, index) {
+  const unknown = {kind: 'unknown', value: 'Unknown', note: 'Speed is not available yet.'};
+  if (!battle || !Number.isInteger(index) || index < 1 || index > 6) return unknown;
+  const server = side === 'own' ? battle.myPokemon?.[index - 1] : null;
+  const pokemon = side === 'own' ? battle.mySide.pokemon.find(p => p.ident === server?.ident) :
+    side === 'opponent' ? battle.farSide.pokemon[index - 1] : null;
+  const tooltips = battle.scene.tooltips;
+  const valid = value => Number.isFinite(value) && value > 0;
+
+  // Transform copies hidden stats: follow Showdown's tooltip and show an estimate.
+  if (server && !pokemon?.volatiles.transform) {
+    if (!valid(server.stats?.spe)) return unknown;
+    const speed = {kind: 'known', value: server.stats.spe,
+      note: 'Unmodified Speed comes from your latest team request, before boosts, status, items, abilities and field effects.'};
+    // Request data can be ahead of the animation/replay. Never mix those states,
+    // or apply the active Pokémon's boosts to a different party slot.
+    if (battle.atQueueEnd && server.active && pokemon && !pokemon.fainted &&
+        battle.mySide.active.includes(pokemon)) {
+      const modified = tooltips.calculateModifiedStats(pokemon, server).spe;
+      if (valid(modified)) {
+        speed.modified = modified;
+        speed.note += ' Modified Speed includes known battle effects. Move priority and Trick Room can change turn order.';
+      }
+    }
+    return speed;
+  }
+
+  if (!pokemon?.speciesForme || !pokemon.getSpecies().exists) return unknown;
+  const {min, ev84, max} = tooltips.getSpeedRange(pokemon);
+  const random = battle.tier.includes('Random');
+  const values = battle.gen < 3 && random ? [max] : random ? [min, ev84] : [min, max];
+  if (!values.every(valid)) return unknown;
+  return {kind: 'estimate', value: [...new Set(values)].join(random ? ' or ' : '–'),
+    note: 'Showdown estimate from the displayed species and level, before boosts, status, items, abilities and field effects. This is not a revealed stat.'};
+}
+
 // The pinned renderer already tracks switches, Illusion, forms and public reveals.
 // Read its far side only; never fill gaps from species abilities or random sets.
 export function opponentSlots(side) {
