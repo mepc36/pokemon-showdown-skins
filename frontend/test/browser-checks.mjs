@@ -26,6 +26,7 @@ try {
     const candidate = page.locator('[data-origin="possible"][data-info-move]').first();
     await candidate.focus();
     await candidate.scrollIntoViewIfNeeded();
+    await page.screenshot({path: `test-results/possible-sets-${viewport.width}.png`});
     const focusId = await candidate.getAttribute('id');
     await page.keyboard.press('i');
     check((await page.locator('#modal-body').innerText()).includes('not confirmed'), 'R3 opens candidate reference without claiming a reveal');
@@ -93,7 +94,7 @@ try {
   await cancel.locator('#move-1').click();
   check((await cancel.locator('#test-commands').innerText()).includes('/choose move 1|1'), 'Battle choices still submit immediately');
   await cancel.keyboard.press('Escape');
-  check((await cancel.locator('#test-commands').innerText()).includes('/undo|1'), 'Existing B / Escape action still invokes Showdown undo');
+  check((await cancel.locator('#test-commands').innerText()).includes('/undo |1'), 'Existing B / Escape action still invokes Showdown undo');
   await cancel.close();
 
   // Exercise native Web Audio loop scheduling, not just mocked source properties.
@@ -115,6 +116,15 @@ try {
   });
   check(Math.abs(loop.before - 0.25 * 0.22) < 1e-6 && Math.abs(loop.after - 0.5 * 0.22) < 1e-6 && loop.nonzero,
     'Native Web Audio crosses the pinned loop boundary without silence or replaying the intro');
+  const actualAudio = await audio.evaluate(async () => {
+    const {TRACK} = await import('/src/music.js');
+    const response = await fetch(TRACK.url, {mode: 'cors', credentials: 'omit', signal: AbortSignal.timeout(30000)});
+    if (!response.ok) throw new Error(`Audio HTTP ${response.status}`);
+    const context = new OfflineAudioContext(2, 1, 44100);
+    const buffer = await context.decodeAudioData(await response.arrayBuffer());
+    return {duration: buffer.duration, usable: buffer.duration > TRACK.loopEnd};
+  });
+  check(actualAudio.usable, `Official MP3 fetches with browser CORS and decodes (${actualAudio.duration.toFixed(2)} seconds)`);
   await audio.close();
   console.log(`All ${passed} browser checks passed.`);
 } finally { await browser.close(); }
