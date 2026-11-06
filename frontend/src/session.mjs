@@ -7,11 +7,25 @@ export class ShowdownSession {
     this.attempt = 0;
     this.stopped = true;
     this.state = {status: 'Offline', authenticated: false, challenge: '', room: '', request: null,
-      pending: false, recovering: false, searching: false, ended: false, notice: '', timer: ''};
+      pending: false, recovering: false, searching: false, ended: false, notice: '', timer: '',
+      timerOn: false, timerPending: false, timerSeconds: null, timerAt: 0, timerRunning: false,
+      timerWarning: '', timerWarningUntil: 0};
     const room = storage.getItem('ps-mve-room');
     if (isBattleRoom(room)) this.state.room = room;
   }
-  emit() { this.onState({...this.state}); }
+  timerRemaining(now = Date.now()) {
+    if (this.state.timerSeconds == null) return null;
+    return Math.max(0, this.state.timerSeconds - (this.state.timerRunning ? Math.floor((now - this.state.timerAt) / 1000) : 0));
+  }
+  emit() {
+    const running = this.state.timerOn && this.state.timerSeconds != null && this.state.authenticated &&
+      !this.stopped && !this.state.recovering && !this.state.pending && !this.state.request?.wait && !this.state.ended;
+    if (running !== this.state.timerRunning) {
+      this.state.timerSeconds = this.timerRemaining();
+      this.state.timerAt = Date.now(); this.state.timerRunning = running;
+    }
+    this.onState({...this.state});
+  }
   connect() {
     this.stopped = false;
     this.cancel(this.retry);
@@ -80,7 +94,8 @@ export class ShowdownSession {
     const snapshot = lines.includes('|init|battle');
     if (snapshot && isBattleRoom(room)) {
       if (this.state.room && this.state.room !== room && !this.state.ended) return;
-      Object.assign(this.state, {room, ended: false, request: null, pending: false, recovering: true, searching: false, timer: ''});
+      Object.assign(this.state, {room, ended: false, request: null, pending: false, recovering: true, searching: false, timer: '',
+        timerOn: false, timerPending: false, timerSeconds: null, timerRunning: false, timerWarning: '', timerWarningUntil: 0});
       this.storage.setItem('ps-mve-room', room);
     }
     for (const line of lines) {
@@ -124,6 +139,8 @@ export class ShowdownSession {
           this.state.pending = !!value;
         } else if (type === 'error') {
           this.state.notice = value;
+          this.cancel(this.timerReply);
+          this.state.timerPending = false;
           if (/\[(Invalid|Unavailable) choice\]/i.test(value)) this.state.pending = false;
         } else if (type === 'win' || type === 'tie') {
           this.state.ended = true; this.state.pending = false; this.state.request = null;
@@ -134,7 +151,24 @@ export class ShowdownSession {
           this.state.room = ''; this.state.request = null; this.state.recovering = false;
           this.storage.removeItem('ps-mve-room');
         } else if (type === 'inactive' || type === 'inactiveoff') {
+          this.cancel(this.timerReply);
           this.state.timer = type === 'inactiveoff' ? 'Timer off' : value;
+          this.state.timerOn = type === 'inactive'; this.state.timerPending = false;
+          if (type === 'inactiveoff') {
+            this.state.timerSeconds = null; this.state.timerWarning = ''; this.state.timerWarningUntil = 0;
+          } else {
+            const ownTime = value.match(/^(?:Time left: |You have )(\d+)/);
+            const playerTime = value.match(/^(.+?) has (\d+) seconds left(?: this turn)?\./);
+            const ownPlayer = playerTime && toID(playerTime[1]) === toID(this.expectedUser);
+            if (ownTime || ownPlayer) {
+              this.state.timerSeconds = Number(ownTime?.[1] ?? playerTime[2]); this.state.timerAt = Date.now();
+            }
+            const warningSeconds = playerTime ? Number(playerTime[2]) : /^You have /.test(value) ? Number(ownTime?.[1]) : null;
+            if (warningSeconds != null && warningSeconds <= 60) {
+              this.state.timerWarning = `${playerTime && !ownPlayer ? 'Opponent' : 'You'}: ${warningSeconds}s left`;
+              this.state.timerWarningUntil = Date.now() + 5000;
+            }
+          }
         }
         battleLines.push(line);
       }
@@ -147,10 +181,25 @@ export class ShowdownSession {
     if (!this.state.authenticated || this.state.searching || (this.state.room && !this.state.ended)) throw new Error('Finish the current battle or sign in before searching.');
     if (this.state.ended) { this.send('/leave', this.state.room); this.state.room = ''; }
     this.state.ended = false; this.state.request = null; this.state.pending = false;
+    Object.assign(this.state, {timer: '', timerOn: false, timerPending: false, timerSeconds: null, timerRunning: false, timerWarning: '', timerWarningUntil: 0});
     this.send('/noreply /blockbots'); this.send('/utm null'); this.send('/search gen9randombattle');
     this.state.searching = true; this.state.notice = ''; this.emit();
   }
   cancelSearch() { this.send('/cancelsearch'); this.state.searching = false; this.emit(); }
+  toggleTimer() {
+    if (!this.state.authenticated || !this.state.room || this.state.ended || this.state.recovering || this.state.timerPending) return;
+    this.roomCommand(`/timer ${this.state.timerOn ? 'off' : 'on'}`);
+    this.state.timerPending = true;
+    const {epoch} = this, room = this.state.room;
+    this.cancel(this.timerReply);
+    // Showdown can silently ignore off when only the opponent requested the
+    // timer. Unlock the control without claiming the server turned it off.
+    this.timerReply = this.schedule(() => {
+      if (this.epoch !== epoch || this.state.room !== room || !this.state.timerPending) return;
+      this.state.timerPending = false; this.emit();
+    }, 5000);
+    this.emit();
+  }
   choose(kind, index, tera) {
     if (!this.state.authenticated || !this.state.room || this.state.pending || this.state.recovering || this.state.ended) throw new Error('Wait for the current battle request.');
     this.send(choiceCommand(this.state.request, kind, index, tera), this.state.room);

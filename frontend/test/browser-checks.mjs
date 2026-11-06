@@ -45,7 +45,12 @@ try {
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     await page.goto(base); await page.waitForSelector('#switch-1');
     check(await page.locator('#all-moves, #info, #move-details').count() === 0, 'Duplicate menus and separate Move info button are removed');
+    check(await page.locator('#roster button').count() === 6 && await page.locator('#opponent-roster button').count() === 6, 'Both six-slot teams are always visible');
+    check(await page.locator('#view-own, #view-opponent, #skip, #music, #display, #reconnect, .controller-bar kbd').count() === 0, 'Redundant controls and hints are removed');
+    check(!await page.locator('#diagnostics').isVisible() && !await page.locator('#source').isVisible(), 'Extra controls start collapsed');
+    await page.screenshot({path: `test-results/${engineName}-battle-${viewport.width}-${viewport.height}.png`});
     await page.locator('#toggle-tools').click();
+    await page.screenshot({path: `test-results/${engineName}-tools-${viewport.width}-${viewport.height}.png`});
     check(!(await fit(page)).length, `Battle and expanded controls fit ${viewport.width}×${viewport.height}: ${await fit(page)}`);
     await page.locator('#switch-1').focus(); await pad(page, 11);
     await page.waitForFunction(() => document.querySelectorAll('[data-info-tab]').length > 1);
@@ -55,6 +60,18 @@ try {
       check(await page.locator('.info-facts > div').filter({has: page.getByText(label, {exact: true})}).locator('dd').innerText() === '150', `Exact private ${label} remains available`);
     }
     check(await page.locator('.compact-move').count() === 4 && await page.locator('.compact-move button').count() === 0, 'Four compact moves cannot open a nested menu');
+    check(await page.locator('.stats-layout .identity-speed').count() === 1 && await page.locator('.inspection-banner .identity-speed').count() === 0, 'Speed is under the stats heading on the left');
+    if (viewport.height === 540) {
+      const icons = await page.evaluate(async () => {
+        const {itemLabel} = await import('/src/info-components.mjs');
+        const sprite = new Image(); sprite.src = 'https://play.pokemonshowdown.com/sprites/itemicons-sheet.png?v1';
+        await sprite.decode();
+        const snapshot = await fetch('/data/gen9randombattle.json').then(r => r.json());
+        const items = new Set(Object.values(snapshot.pokemon).flatMap(p => Object.values(p.roles).flatMap(r => Object.keys(r.items || {}))));
+        return {loaded: sprite.naturalWidth === 384, missing: [...items].filter(name => !itemLabel(name).includes('class="item-icon"'))};
+      });
+      check(icons.loaded && !icons.missing.length, `Complete item sheet loads and covers every possible held item: ${icons.missing}`);
+    }
     check(!(await fit(page)).length, `Overview fits without scrolling: ${await fit(page)}`);
     await page.screenshot({path: `test-results/${engineName}-overview-${viewport.width}-${viewport.height}.png`});
     await pad(page, 15);
@@ -77,14 +94,14 @@ try {
     await page.screenshot({path: `test-results/${engineName}-move-${viewport.width}-${viewport.height}.png`});
     await pad(page, 0);
     check(await page.evaluate(() => document.activeElement.id) === 'move-2', 'Move details close directly to the battle move');
-    await page.locator('#view-opponent').click(); await page.locator('#opponent-1').focus(); await pad(page, 11);
+    await page.locator('#opponent-1').focus(); await pad(page, 11);
     check((await page.locator('#modal-title').innerText()).includes('Landorus ♂') && (await page.locator('.identity-ability').innerText()).includes('Sheer Force'), 'Opponent identity preserves public gender and revealed ability');
     await pad(page, 13); await pad(page, 13);
     check((await page.locator('.identity-ability').innerText()).includes('Possible abilities') && (await page.locator('.identity-speed').innerText()).includes('estimated'), 'Unrevealed ability and Speed are labelled as possibilities/estimates');
     await pad(page, 13);
     check(await page.locator('[data-info-tab]').count() === 1 && await page.locator('.type-badge, .compact-move').count() === 0, 'Unknown slots expose neither a guessed identity nor possible sets');
     await pad(page, 0);
-    for (const id of ['display', 'setup', 'diagnostics']) {
+    for (const id of ['setup', 'diagnostics']) {
       await page.locator(`#${id}`).click();
       check(!(await fit(page)).length, `${id} has no scrolling: ${await fit(page)}`);
       await page.locator('#modal-close').click();
@@ -105,7 +122,8 @@ try {
     const {rolePages} = await import('/src/info-components.mjs');
     const snapshot = await fetch('/data/gen9randombattle.json').then(r => r.json());
     const failures = []; let count = 0;
-    for (const [name, pokemon] of Object.entries(snapshot.pokemon)) for (const page of rolePages({snapshot}, name, pokemon.level)) {
+    const speedInfo = '<div class="identity-speed"><small>Speed (estimated)</small><strong>312 or 376</strong><small>before modifiers</small></div>';
+    for (const [name, pokemon] of Object.entries(snapshot.pokemon)) for (const page of rolePages({snapshot}, name, pokemon.level, speedInfo)) {
       const el = document.querySelector('#info-content'); el.innerHTML = page.content;
       if (el.scrollHeight > el.clientHeight + 2 || el.scrollWidth > el.clientWidth + 2) failures.push(`${name}/${page.label}: ${el.scrollHeight}/${el.clientHeight}`);
       count++;
@@ -115,7 +133,7 @@ try {
   check(!coverage.failures.length, `All ${coverage.count} candidate role pages fit without clipping: ${coverage.failures.slice(0, 10)}`);
   await pools.evaluate(async () => {
     const {rolePages} = await import('/src/info-components.mjs'); const snapshot = await fetch('/data/gen9randombattle.json').then(r => r.json());
-    document.querySelector('#info-content').innerHTML = rolePages({snapshot}, 'Raichu', snapshot.pokemon.Raichu.level)[0].content;
+    document.querySelector('#info-content').innerHTML = rolePages({snapshot}, 'Raichu', snapshot.pokemon.Raichu.level, document.querySelector('.identity-speed')?.outerHTML || '')[0].content;
   });
   await pools.screenshot({path: `test-results/${engineName}-largest-pool.png`});
   await pools.keyboard.press('Escape'); await pools.locator('#move-1').focus(); await pools.keyboard.press('i');
@@ -152,13 +170,23 @@ try {
   const cancel = await browser.newPage();
   await cancel.goto(`${base}/test/cancel.html`); await cancel.waitForSelector('#switch-1');
   await cancel.locator('#primary').click();
-  await cancel.waitForFunction(() => document.querySelector('#mode').title.includes('12345'));
+  await cancel.waitForFunction(() => document.querySelector('#arena-wrap').dataset.room.includes('12345'));
   await cancel.locator('#switch-2').focus(); await cancel.keyboard.press('i'); await cancel.keyboard.press('ArrowRight'); await cancel.keyboard.press('ArrowDown'); await cancel.keyboard.press('Escape');
   check(!(await cancel.locator('#test-commands').innerText()).includes('/choose'), 'Flat information navigation never sends a battle choice');
   await cancel.locator('#move-1').click();
   check((await cancel.locator('#test-commands').innerText()).includes('/choose move 1|1'), 'Battle choices still submit immediately');
   await cancel.keyboard.press('Escape');
   check((await cancel.locator('#test-commands').innerText()).includes('/undo |1'), 'Existing B / Escape still invokes Showdown undo');
+  await cancel.locator('#toggle-tools').click();
+  await cancel.locator('#timer-toggle').click();
+  await cancel.waitForFunction(() => document.querySelector('#timer-toggle').getAttribute('aria-pressed') === 'true');
+  check((await cancel.locator('#test-commands').innerText()).includes('/timer on'), 'Single timer toggle sends Showdown timer-on');
+  await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|inactive|mepc36363636 has 30 seconds left.'}));
+  check((await cancel.locator('#timer-warning').innerText()).includes('30s'), 'Server countdown warning appears in the prominent timer');
+  await cancel.screenshot({path: `test-results/${engineName}-timer-warning.png`});
+  await cancel.locator('#timer-toggle').click();
+  await cancel.waitForFunction(() => document.querySelector('#timer-toggle').getAttribute('aria-pressed') === 'false');
+  check((await cancel.locator('#test-commands').innerText()).includes('/timer off'), 'Same timer toggle sends Showdown timer-off');
   await cancel.close();
 
   // Audio implementation is unchanged; keep its existing Chromium regression.

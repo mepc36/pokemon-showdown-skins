@@ -9,13 +9,13 @@
 <body>
   <div id="app">
     <header class="app-header">
-      <div class="brand"><h1>Random Battle</h1><small>POKÉMON SHOWDOWN · CONTROLLER CLIENT</small></div>
-      <section class="session-bar" aria-label="Connection"><div class="connection-copy"><span id="connection-dot" class="dot"></span><span id="connection">Loading…</span><small id="account">mepc36363636 · Gen 9 singles</small></div><div class="actions"><button id="primary" class="primary" data-nav data-row="header" disabled>Connect to Showdown</button><button id="reconnect" data-nav data-row="header" hidden>Reconnect</button><button id="display" data-nav data-row="header">Display</button><button id="setup" data-nav data-row="header">Setup</button></div></section>
+      <button id="primary" class="primary" data-nav data-row="header" disabled>Connect to Showdown</button>
+      <div id="battle-timer" aria-label="Battle timer"><svg class="timer-icon" aria-hidden="true" width="20" height="24" viewBox="0 0 20 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2h14M3 22h14M5 2v4c0 3 5 4 5 6s-5 3-5 6v4M15 2v4c0 3-5 4-5 6s5 3 5 6v4M6 19h8M7 5h6"/></svg><span id="timer-value">Timer off</span><span id="timer-warning" role="status" aria-live="polite"></span></div>
     </header>
     <main>
-      <div class="arena-card"><div class="arena-top"><span id="mode">OFFLINE PREVIEW</span><p id="notice" role="status" aria-live="polite">Try the controls. No match is running.</p></div><div id="arena-wrap"><div id="arena" class="battle" aria-label="Battle animation"></div></div><div id="hidden-log" hidden></div></div>
-      <section class="command-panel" aria-label="Battle choices"><div class="command-heading"><h2 id="prompt">Try the controls</h2><span id="turn-label">No live match</span><button id="tera" data-nav data-row="move-info" aria-pressed="false" hidden>Tera: Unknown</button><button id="undo" data-nav data-row="move-info" hidden>Cancel</button></div><div id="choices"></div><div id="utility" hidden></div><p id="timer-status"></p></section>
-      <div class="controller-bar"><span><kbd>D-pad</kbd> Navigate</span><span><kbd>A</kbd> Choose</span><span><kbd>B</kbd> Back</span><span><kbd>R3</kbd> Info</span><span class="extra-hint"><kbd>X</kbd> Tera</span><button id="toggle-tools" data-nav data-row="footer" aria-expanded="false" aria-controls="utility">More controls</button><button id="diagnostics" data-nav data-row="footer">Controller check</button><a href="./source.zip" download>Source</a></div>
+      <div class="arena-card"><div class="arena-top" hidden><p id="notice" role="status" aria-live="polite"></p></div><div id="arena-wrap"><div id="arena" class="battle" aria-label="Battle animation"></div></div><div id="hidden-log" hidden></div></div>
+      <section class="command-panel" aria-label="Battle choices"><div class="command-heading"><h2 id="prompt">Try the controls</h2><span id="turn-label">No live match</span><button id="tera" data-nav data-row="move-info" aria-pressed="false" hidden>Tera: Unknown</button><button id="undo" data-nav data-row="move-info" hidden>Cancel</button></div><div id="choices"></div></section>
+      <div class="controller-bar"><div id="utility" hidden></div><button id="toggle-tools" data-nav data-row="tools" aria-expanded="false" aria-controls="utility">More controls</button></div>
     </main>
     <footer>Independent frontend · Official battle visuals · Chat hidden · Registered bots blocked in live searches</footer>
   </div>
