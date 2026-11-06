@@ -1,8 +1,11 @@
-import {Battle} from '../vendor/pokemon-showdown/battle';
+import {Battle, Pokemon} from '../vendor/pokemon-showdown/battle';
+import {ModifiableValue} from '../vendor/pokemon-showdown/battle-tooltips';
 import {BattleSound} from '../vendor/pokemon-showdown/battle-sound';
 import {Dex} from '../vendor/pokemon-showdown/battle-dex';
 import {isBattleEvent} from './protocol.mjs';
 import {opponentSlots, pokemonSpeed, ownPokemonStats} from './information.mjs';
+import {possibleSets} from './possible-sets.mjs';
+import {moveCue, speedCue} from './battle-hints.mjs';
 
 // Audio is controlled by the single looping Web Audio source in music.js.
 BattleSound.setMute(true);
@@ -69,6 +72,60 @@ export class Arena {
   opponents() { return opponentSlots(this.battle?.farSide); }
   speed(side, index) { return pokemonSpeed(this.battle, side, index); }
   stats(index) { return ownPokemonStats(this.battle, index); }
+  ownView(index, tera = false) {
+    const battle = this.battle, server = battle?.myPokemon?.[index - 1];
+    if (!server || !battle.atQueueEnd || server.fainted || /fnt/.test(server.condition || '')) return null;
+    const client = battle.mySide.pokemon.find(p => p.ident === server.ident);
+    if (server.active && (!client || !battle.mySide.active.includes(client))) return null;
+    if (client?.volatiles.transform) return null;
+    // A read-only view lets the official calculations inspect unrevealed bench
+    // Pokémon without constructing sprites or changing renderer battle state.
+    const view = Object.assign(Object.create(Pokemon.prototype), {
+      volatiles: {}, turnstatuses: {}, movestatuses: {}, boosts: {}, moddedType: [],
+      ...(server.active ? client : {}), ...server, side: battle.mySide,
+      ability: server.ability || client?.ability || server.baseAbility || '',
+      item: Dex.items.get(server.item).name,
+      terastallized: tera ? server.teraType : client?.terastallized || (server.terastallized ? server.teraType : ''),
+    });
+    return {view, server};
+  }
+  moveHint(index, id, tera = false) {
+    const own = this.ownView(index, tera), target = this.battle?.farSide.active[0];
+    if (!own || !target || target.fainted) return {};
+    const tooltips = this.battle.scene.tooltips, move = this.battle.dex.moves.get(id);
+    const [type, category] = tooltips.getMoveType(move, new ModifiableValue(this.battle, own.view, own.server));
+    const factor = tooltips.getMoveEffectiveness(own.view, move, type, category, target);
+    const cue = moveCue({...move, category}, factor);
+    const label = !cue ? '' : factor === 0 ? 'Immune / blocked' : category === 'Status' ? 'No known immunity' : `${factor}× effectiveness`;
+    return {cue, label, type, factor, target: target.getSpeciesForme()};
+  }
+  speedHint(index, snapshot) {
+    const own = this.ownView(index), target = this.battle?.farSide.active[0];
+    if (!own || !target || target.fainted || target.volatiles.transform || !Number.isFinite(own.server.stats?.spe)) return {};
+    const battle = this.battle, tooltips = battle.scene.tooltips;
+    const roles = possibleSets(snapshot, target.getSpeciesForme(), target.level).flatMap(set => set.roles);
+    // Hidden options widen the estimate; independent options are never treated
+    // as evidence that a particular complete set has been revealed.
+    const abilities = target.ability ? [target.ability] : [...new Set(roles.flatMap(role => Object.keys(role.abilities)))];
+    const items = target.item ? [target.item] : target.prevItem ? [''] : [...new Set(roles.flatMap(role => Object.keys(role.items || {'': 1})))];
+    if (!abilities.length || !items.length) return {};
+    const range = tooltips.getSpeedRange(target);
+    const bases = [range.min, range.ev84];
+    // The upstream calculator reads mySide for Tailwind. Give it a separate
+    // opponent-side context, without changing the real battle's viewpoint.
+    const opponentCalculator = Object.create(tooltips);
+    opponentCalculator.battle = Object.assign(Object.create(battle), {mySide: battle.farSide, farSide: battle.mySide});
+    const candidates = [];
+    for (const spe of bases) for (const ability of abilities) for (const item of items) {
+      const server = {speciesForme: target.speciesForme, ability, item, hp: target.hp, maxhp: target.maxhp,
+        stats: {atk: 1, def: 1, spa: 1, spd: 1, spe}};
+      candidates.push(opponentCalculator.calculateModifiedStats(target, server).spe);
+    }
+    const value = tooltips.calculateModifiedStats(own.view, own.server).spe;
+    const cue = speedCue(value, candidates);
+    const relation = {green: 'Faster', yellow: 'Same Speed', red: 'Slower'}[cue] || 'Speed uncertain';
+    return {cue, value, label: `${relation} vs ${target.getSpeciesForme()} (${Math.min(...candidates)}–${Math.max(...candidates)} estimated). Includes known modifiers and possible hidden items/abilities; not move priority or Trick Room.`};
+  }
   replay() { if (this.battle) { this.battle.seekTurn(0); this.battle.play(); } }
   skip() { this.battle?.seekTurn(Infinity); }
   icon(name) { return Dex.getPokemonIcon(name); }

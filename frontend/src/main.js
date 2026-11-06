@@ -10,23 +10,27 @@ import {PossibleSets, possibleSets} from './possible-sets.mjs';
 import {escapeHtml, facts, typeBadges, moveList, rolePages, movePages} from './info-components.mjs';
 import {demoLines, demoRequest} from './demo.mjs';
 import {moveInformation, effectName, knownOwnMoves, speciesInformation} from './information.mjs';
+import {statRanks} from './battle-hints.mjs';
 
 const $ = id => document.getElementById(id);
 const escape = escapeHtml;
 const btn = (id, label, row, disabled = false, extra = '') => `<button id="${id}" data-nav data-row="${row}" ${disabled ? 'disabled' : ''} ${extra}>${label}</button>`;
 let arena, session, auth, config, state = {}, fixture = true, tera = false, lastRequest, selectedRequest, localNotice = '', ignoreButtons = new Set();
 let diagnosticLines = [];
-let modalReturnFocus = '', displayFit = 'wide';
-let rosterSide = 'own', selectedMoveId = '', infoPage = null, rating = null, ratingPage = false;
-try { if (localStorage.getItem('ps-mve-display-fit') === 'original') displayFit = 'original'; } catch {}
+let modalReturnFocus = '';
+let selectedMoveId = '', infoPage = null, rating = null, ratingPage = false, fixtureTimer = false;
 const modal = $('modal');
-const music = new Music(() => updateMusic());
+// Music is always enabled, including on devices with the old saved mute setting.
+const music = new Music(undefined, {storage: null});
 const sets = new PossibleSets();
 const safe = fn => { try { fn(); } catch (error) { localNotice = error.message; render(); } };
 
-function updateMusic() {
-  const button = $('music');
-  if (button) { button.textContent = music.label; button.title = music.error || 'Black / White Trainer · one looping track'; }
+function updateTimer() {
+  const on = fixture ? fixtureTimer : state.timerOn;
+  const seconds = session?.timerRemaining();
+  $('timer-value').textContent = !on ? 'Timer off' : seconds == null ? 'Timer on' : `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  const warning = !fixture && Date.now() < state.timerWarningUntil ? state.timerWarning : '';
+  if ($('timer-warning').textContent !== warning) $('timer-warning').textContent = warning;
 }
 
 function showModal(title, content, view = '') {
@@ -46,19 +50,6 @@ function closeModal() {
 }
 $('modal-close').onclick = closeModal;
 modal.addEventListener('cancel', event => { event.preventDefault(); closeModal(); });
-
-function displaySettings() {
-  showModal('Battlefield display', `<p>Saved on this device.</p>
-    <div class="modal-actions">${btn('fit-wide', 'Wide field', 'display-options', false, `aria-pressed="${displayFit === 'wide'}"`)}${btn('fit-original', 'Original proportions', 'display-options', false, `aria-pressed="${displayFit === 'original'}"`)}</div>
-    <p class="small">Wide stretches the field slightly. Original preserves sprite proportions.</p>`);
-  for (const value of ['wide', 'original']) $(`fit-${value}`).onclick = () => {
-    displayFit = value;
-    try { localStorage.setItem('ps-mve-display-fit', value); } catch {}
-    arena.setFit(value);
-    for (const option of ['wide', 'original']) $(`fit-${option}`).setAttribute('aria-pressed', String(option === value));
-  };
-}
-$('display').onclick = displaySettings;
 
 function showTools(open, focusId) {
   $('utility').hidden = !open;
@@ -82,7 +73,6 @@ function setup() {
   };
   $('sign-out').onclick = () => { session.stop(); auth.forget(); closeModal(); localNotice = 'Saved authorization cleared from this browser.'; render(); };
 }
-$('setup').onclick = setup;
 
 function diagnostics() {
   showModal('Controller check', `<p>Press a button to check its mapping.</p>
@@ -94,7 +84,6 @@ function diagnostics() {
     localStorage.setItem('ps-mve-ignored', JSON.stringify([...ignoreButtons])); closeModal();
   };
 }
-$('diagnostics').onclick = diagnostics;
 
 const currentRequest = () => fixture ? demoRequest : state.request;
 const ownTeam = () => (fixture ? demoRequest : lastRequest)?.side?.pokemon || [];
@@ -108,7 +97,21 @@ function teamSlots(side) {
 
 function knownMoves(side, index) {
   if (side === 'opponent') return arena.opponents()[index - 1]?.moves || [];
-  return knownOwnMoves(ownTeam()[index - 1], currentRequest());
+  return knownOwnMoves(ownTeam()[index - 1], currentRequest()).map(move => ({...move, ...arena.moveHint(index, move.id, ownTeam()[index - 1]?.active && tera)}));
+}
+
+function refreshMoveHints() {
+  if (!arena) return;
+  const index = ownTeam().findIndex(p => p.active) + 1;
+  const moves = currentRequest()?.active?.[0]?.moves || [];
+  for (const [i, move] of moves.entries()) {
+    const button = $(`move-${i + 1}`);
+    if (!button) continue;
+    const hint = arena.moveHint(index, move.id, tera);
+    button.dataset.cue = hint.cue || '';
+    button.title = hint.label ? `${hint.label} vs ${hint.target}. Based on known battle information.` : '';
+    if (hint.type) { button.dataset.type = hint.type; button.querySelector('.move-type').textContent = hint.type; }
+  }
 }
 
 function showRating(load = true, force = false) {
@@ -152,22 +155,22 @@ function showInfo(page) {
       const abilities = [...new Set(candidates.flatMap(set => set.roles.flatMap(role => Object.keys(role.abilities))))];
       const ability = own ? effectName('abilities', p.ability || p.baseAbility) : p.ability;
       const abilityText = ability || (own ? 'Unknown' : (abilities.length ? abilities : species.abilities).join(' / ') || 'Unknown');
-      const speed = arena.speed(page.side, page.index);
-      const speedValue = speed.modified ?? speed.value;
-      const speedLabel = speed.kind === 'estimate' ? 'Speed · estimated' : speed.modified != null ? 'Speed · current' : 'Speed · unmodified';
-      banner = `<div class="inspection-banner"><div class="identity-types">${typeBadges(own ? species.types : p.types)}<small>${own ? 'Your team' : 'Opponent'} · ${page.index}/6</small></div>
-        <div class="identity-ability"><small>${!own && !ability ? 'Possible abilities' : 'Ability'}</small><strong>${escape(abilityText)}</strong></div>
-        <div class="identity-speed"><small>${escape(speedLabel)}</small><strong>${escape(speedValue)}</strong>${speed.kind === 'estimate' ? '<small>before modifiers</small>' : speed.modified != null && speed.modified !== speed.value ? `<small>${escape(speed.value)} unmodified</small>` : ''}</div></div>`;
-      const summary = own ? [['HP / status', p.condition], ['Item', effectName('items', p.item) || 'No item'], ['Tera', p.teraType || 'Unknown']] :
-        [['Last shown HP', p.health], ['Status', p.status || 'None shown'], ['Item', p.item || (p.previousItem ? `Lost ${p.previousItem}` : 'Not revealed')], ['Tera', p.teraType || 'Not revealed']];
       const stats = own ? arena.stats(page.index) : null;
+      const speed = arena.speed(page.side, page.index);
+      const ranks = stats && !stats.label.startsWith('Original') ? statRanks([...stats.entries, ['Speed', p.stats?.spe]]) : {};
+      const speedLabel = speed.kind === 'estimate' ? 'Speed · estimated' : 'Speed';
+      const speedInfo = `<div class="identity-speed" data-cue="${ranks.Speed || ''}"><small>${escape(speedLabel)}</small><strong>${escape(speed.value)}</strong>${speed.kind === 'estimate' ? '<small>before modifiers</small>' : speed.modified != null && speed.modified !== speed.value ? `<small>Current: ${escape(speed.modified)}</small>` : ''}</div>`;
+      banner = `<div class="inspection-banner"><div class="identity-types">${typeBadges(own ? species.types : p.types)}<small>${own ? 'Your team' : 'Opponent'} · ${page.index}/6</small></div>
+        <div class="identity-ability"><small>${!own && !ability ? 'Possible abilities' : 'Ability'}</small><strong>${escape(abilityText)}</strong></div></div>`;
+      const summary = own ? [['HP / status', p.condition], ['Item', effectName('items', p.item) || 'No item', {item: true}], ['Tera', p.teraType || 'Unknown', p.teraType]] :
+        [['Last shown HP', p.health], ['Status', p.status || 'None shown'], ['Item', p.item || (p.previousItem ? `Lost ${p.previousItem}` : 'Not revealed'), {item: !!p.item}], ['Tera', p.teraType || 'Not revealed', p.teraType]];
       const moves = knownMoves(page.side, page.index);
       const count = Math.max(1, Math.ceil(moves.length / 4));
       pages = Array.from({length: count}, (_, i) => ({key: `overview:${i}`, label: count > 1 ? `Overview ${i + 1}/${count}` : 'Overview',
-        content: `<div class="overview-layout"><section>${facts(summary)}${stats ? `<h3>${stats.label.startsWith('Original') ? 'Original stats · before Transform' : 'Stats · before battle modifiers'}</h3>${facts(stats.entries)}` : '<p class="quiet-note">Only publicly revealed battle information.</p>'}</section>
+        content: `<div class="overview-layout"><section>${facts(summary)}<h3>${stats?.label.startsWith('Original') ? 'Original stats · before Transform' : stats ? 'Stats (before battle modifiers)' : 'Speed estimate · before battle modifiers'}</h3><div class="stats-layout">${speedInfo}${stats ? facts(stats.entries.map(([name, value]) => [name, value, {cue: ranks[name]}])) : ''}</div></section>
           <section><h3>${own ? 'Your moves' : 'Revealed moves'}</h3>${moveList(moves.slice(i * 4, i * 4 + 4), 4)}</section></div>`,
         note: moves.some(m => m.copied) ? '* Copied move' : own ? 'Exact team stats include IVs, EVs and nature.' : 'Unrevealed information stays unknown.'}));
-      pages.push(...rolePages(sets, slot.name, slot.level));
+      pages.push(...rolePages(sets, slot.name, slot.level, speedInfo));
     }
   }
   const tab = Math.max(0, Math.min(page.tab || 0, pages.length - 1));
@@ -210,10 +213,11 @@ document.addEventListener('focusin', event => {
 function renderRoster() {
   if (!$('roster')) return;
   const focusId = document.activeElement?.id;
-  for (const side of ['own', 'opponent']) $(`view-${side}`).setAttribute('aria-pressed', String(rosterSide === side));
   const request = currentRequest();
   const disabled = !fixture && (!state.authenticated || state.pending || state.recovering || state.ended || !request || request.wait);
   const choices = availableChoices(request);
+  for (const rosterSide of ['own', 'opponent']) {
+  const roster = $(rosterSide === 'own' ? 'roster' : 'opponent-roster');
   const team = rosterSide === 'own' ? ownTeam().map((p, i) => {
     const health = p.condition.match(/^(\d+)\/(\d+)/), fainted = /fnt/.test(p.condition);
     return {index: i + 1, name: p.details.split(',')[0], revealed: true, fainted,
@@ -221,18 +225,19 @@ function renderRoster() {
       health: fainted ? 'Fainted' : `${p.active ? 'Active · ' : ''}${p.condition}`,
       canSwitch: !disabled && choices.switches.some(choice => choice.index === i + 1 && choice.enabled)};
   }) : arena.opponents();
-  $('roster').setAttribute('aria-label', rosterSide === 'own' ? 'Your six Pokémon' : 'Opponent’s six Pokémon');
-  $('roster').innerHTML = team.map(p => {
+  roster.innerHTML = team.map(p => {
+    const speed = rosterSide === 'own' ? arena.speedHint(p.index, sets.snapshot) : {};
     const status = rosterSide === 'opponent' ? p.revealed ? `${p.active ? 'Active · ' : ''}${p.health}` : `Slot ${p.index}` : p.health;
     const icon = p.revealed ? `<span class="picon" aria-hidden="true" style="${escape(arena.icon(p.name))}"></span>` : '<span class="unknown-pokemon" aria-hidden="true">?</span>';
-    return btn(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`, `${icon}<strong>${escape(p.name)}</strong><small>${escape(status)}</small>${p.percent != null ? `<span class="team-hp" aria-hidden="true" data-health="${p.percent <= 20 ? 'critical' : p.percent <= 50 ? 'low' : 'healthy'}"><span style="width:${p.percent}%"></span></span>` : ''}`, 'team', false,
-      `data-unavailable="${!p.canSwitch}" data-fainted="${!!p.fainted}" aria-label="${rosterSide === 'opponent' ? `Opponent slot ${p.index}, ` : ''}${escape(p.name)}, ${escape(status)}. ${p.canSwitch ? 'Switch Pokémon' : 'View details'}"`);
+    return btn(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`, `${icon}<strong>${escape(p.name)}</strong><small>${escape(status)}</small>${p.percent != null ? `<span class="team-hp" aria-hidden="true" data-health="${p.percent <= 20 ? 'critical' : p.percent <= 50 ? 'low' : 'healthy'}"><span style="width:${p.percent}%"></span></span>` : ''}`, `team-${rosterSide}`, false,
+      `data-unavailable="${!p.canSwitch}" data-fainted="${!!p.fainted}" data-cue="${speed.cue || ''}" title="${escape(speed.label || '')}" aria-label="${rosterSide === 'opponent' ? `Opponent slot ${p.index}, ` : ''}${escape(p.name)}, ${escape(status)}. ${escape(speed.label || '')} ${p.canSwitch ? 'Switch Pokémon' : 'View details'}"`);
   }).join('');
   for (const p of team) $(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`).onclick = () => {
     if (rosterSide === 'opponent') showInfo({kind: 'pokemon', side: 'opponent', index: p.index});
     else if (p.canSwitch) choose('switch', p.index);
     else info(p.index);
   };
+  }
   if (!modal.open && focusId) $(focusId)?.focus({preventScroll: true});
 }
 
@@ -264,43 +269,41 @@ function render() {
   if (request !== selectedRequest) { selectedRequest = request; tera = false; }
   const choices = availableChoices(request);
   const disabled = !fixture && (!state.authenticated || state.pending || state.recovering || state.ended || !request || request.wait);
-  $('connection').textContent = fixture ? 'Offline preview' : state.status;
-  $('connection-dot').classList.toggle('online', !!state.authenticated);
-  $('account').textContent = `${config?.username || 'mepc36363636'} · Gen 9 singles`;
   const activePokemon = request?.side?.pokemon?.find(p => p.active) || lastRequest?.side?.pokemon?.find(p => p.active);
   const teraType = request?.active?.[0]?.canTerastallize || activePokemon?.teraType || 'Unknown';
   $('tera').hidden = !activePokemon;
   $('tera').disabled = disabled || !choices.tera;
   $('tera').textContent = `Tera: ${teraType}${activePokemon?.terastallized ? ' · active' : tera ? ' · selected' : ''}`;
+  $('tera').dataset.type = teraType;
   $('tera').setAttribute('aria-pressed', String(tera));
   $('tera').title = choices.tera ? 'Toggle Terastallize for your next move (X)' : 'This Pokémon’s Tera type; Terastallize is unavailable right now.';
   const canCancel = !fixture && state.pending && request && !request.noCancel && state.authenticated && !state.recovering && !state.ended;
   $('undo').hidden = !canCancel;
   $('undo').disabled = !canCancel;
-  $('mode').textContent = fixture ? 'OFFLINE PREVIEW' : state.room ? 'GEN 9 RANDOM BATTLE' : 'LIVE CONNECTION';
-  $('mode').title = state.room || '';
+  $('arena-wrap').dataset.room = state.room || '';
   $('turn-label').textContent = activePokemon ? `HP ${activePokemon.condition}` : '';
   $('prompt').textContent = fixture ? `What will ${activePokemon.details.split(',')[0]} do?` : state.ended ? 'Battle complete' : state.recovering ? 'Restoring your battle…' : state.pending || request?.wait ? 'Waiting for the next turn' : request?.forceSwitch ? 'Choose a Pokémon' : activePokemon ? `What will ${activePokemon.details.split(',')[0]} do?` : state.searching ? 'Finding an opponent…' : 'Let’s play';
-  $('notice').textContent = localNotice || state.notice || (fixture ? 'Try the D-pad and A. No match is running.' : !auth?.clientId ? 'Open Setup to add your registered Showdown application ID.' : state.recovering ? 'Restoring your battle. No choice will be resubmitted.' : state.searching ? 'Searching with registered bots blocked.' : '');
+  const redundantNotice = state.ended && /won the battle\.$|ended in a tie\.$/.test(state.notice || '') || state.notice === 'Choice sent. Waiting for the server.';
+  $('notice').textContent = localNotice || (!redundantNotice && state.notice) || (!fixture && state.recovering ? 'Restoring your battle…' : !fixture && !state.authenticated ? state.status : '');
+  $('notice').parentElement.hidden = !$('notice').textContent;
   const primary = $('primary');
   primary.disabled = false;
   primary.textContent = fixture || session?.stopped ? 'Connect to Showdown' : !state.authenticated ? 'Sign in with Showdown' : state.searching ? 'Cancel search' : 'Find Random Battle';
   if (!fixture && !session?.stopped) primary.disabled = !state.authenticated ? !state.challenge : !!state.room && !state.ended;
-  $('reconnect').hidden = fixture || session?.stopped;
   $('choices').innerHTML = `<div class="moves" role="group" aria-label="Moves">${choices.moves.map(move => {
     const type = window.BattleMovedex[move.id]?.type || '';
-    return btn(`move-${move.index}`, `<strong>${escape(move.move)}</strong><small>${escape(type)} <span>${escape(move.pp ?? '—')} / ${escape(move.maxpp ?? '—')} PP</span></small>`, 'moves', disabled || !move.enabled, `data-type="${escape(type)}" aria-description="R3 or I for move information"`);
+    return btn(`move-${move.index}`, `<strong>${escape(move.move)}</strong><small><span class="move-type">${escape(type)}</span><span>${escape(move.pp ?? '—')} / ${escape(move.maxpp ?? '—')} PP</span></small>`, 'moves', disabled || !move.enabled, `data-type="${escape(type)}" aria-description="R3 or I for move information"`);
   }).join('')}</div>
-    <div class="team-toolbar"><div role="group" aria-label="Team to inspect">${btn('view-own', 'Your team', 'team-tabs', false, `aria-pressed="${rosterSide === 'own'}" aria-controls="roster"`)}${btn('view-opponent', 'Opponent', 'team-tabs', false, `aria-pressed="${rosterSide === 'opponent'}" aria-controls="roster"`)}</div><span>R3: details</span></div>
-    <div id="roster" class="team" role="group"></div>`;
-  for (const side of ['own', 'opponent']) $(`view-${side}`).onclick = () => { rosterSide = side; renderRoster(); };
+    <div class="team-row"><span class="team-label">You</span><div id="roster" class="team" role="group" aria-label="Your six Pokémon"></div></div>
+    <div class="team-row"><span class="team-label">Foe</span><div id="opponent-roster" class="team" role="group" aria-label="Opponent’s six Pokémon"></div></div>`;
   renderRoster();
+  refreshMoveHints();
   const inBattle = fixture || !!state.room && !state.ended;
   $('utility').innerHTML = `
-    ${btn('rating', rating?.label || 'Rating', 'tools')}${btn('skip', 'Skip animation', 'tools', !inBattle)}
-    ${btn('timer-on', 'Timer on', 'tools', !inBattle || !fixture && !state.authenticated)}${btn('timer-off', 'Timer off', 'tools', !inBattle || !fixture && !state.authenticated)}
-    ${btn('music', 'Tap for music', 'tools')}${btn('forfeit', 'Forfeit…', 'tools', !inBattle || !fixture && !state.authenticated)}
-    ${state.ended ? btn('replay', 'Watch this battle again', 'tools') : ''}`;
+    ${btn('timer-toggle', `Timer: ${(fixture ? fixtureTimer : state.timerOn) ? 'on' : 'off'}`, 'tools', !inBattle || !fixture && (!state.authenticated || state.recovering || state.timerPending), `aria-pressed="${!!(fixture ? fixtureTimer : state.timerOn)}"`)}
+    ${btn('rating', rating?.label || 'Rating', 'tools')}${btn('forfeit', 'Forfeit…', 'tools', !inBattle || !fixture && !state.authenticated)}
+    ${state.ended ? btn('replay', 'Replay', 'tools') : ''}${btn('setup', 'Setup', 'tools')}${btn('diagnostics', 'Controller check', 'tools')}
+    <a id="source" data-nav data-row="tools" href="./source.zip" download>Source</a>`;
   for (const move of choices.moves) $(`move-${move.index}`).onclick = () => choose('move', move.index);
   $('tera').onclick = () => { tera = !tera; render(); };
   $('undo').onclick = () => safe(() => {
@@ -309,18 +312,18 @@ function render() {
     if (previous) $(`move-${previous.index}`)?.focus({preventScroll: true});
   });
   $('rating').onclick = () => showRating();
-  $('skip').onclick = () => arena.skip(); $('music').onclick = () => music.retryOrToggle(); $('forfeit').onclick = forfeit;
-  for (const toggle of ['on', 'off']) $(`timer-${toggle}`).onclick = () => fixture ? (localNotice = `Controller check: timer ${toggle}.`, render()) : safe(() => session.roomCommand(`/timer ${toggle}`));
+  $('forfeit').onclick = forfeit;
+  $('setup').onclick = setup; $('diagnostics').onclick = diagnostics;
+  $('timer-toggle').onclick = () => fixture ? (fixtureTimer = !fixtureTimer, render()) : safe(() => session.toggleTimer());
   if ($('replay')) $('replay').onclick = () => arena.replay();
-  $('timer-status').textContent = state.timer || '';
-  updateMusic();
+  updateTimer();
   arena?.resize();
   if (modal.open && infoPage) showInfo(infoPage);
   if (focusId && !modal.open) { const target = $(focusId); if (target && !target.disabled) target.focus({preventScroll: true}); }
 }
 
 function startLive() {
-  fixture = false; localNotice = ''; lastRequest = null; rosterSide = 'own'; selectedMoveId = '';
+  fixture = false; localNotice = ''; lastRequest = null; selectedMoveId = '';
   arena.reset('battle-gen9randombattle-0');
   session.connect();
 }
@@ -331,9 +334,8 @@ $('primary').onclick = () => safe(() => {
   else if (state.searching) session.cancelSearch();
   else session.search();
 });
-$('reconnect').onclick = () => { localNotice = ''; session.connect(); };
-document.addEventListener('pointerdown', event => { if (event.target.closest?.('#music')) return; music.unlock(); }, {passive: true});
-document.addEventListener('keydown', event => { if (!event.repeat && event.isTrusted && event.key !== 'm' && !(event.key === 'Enter' && event.target.id === 'music')) music.unlock(); });
+document.addEventListener('pointerdown', () => music.unlock(), {passive: true});
+document.addEventListener('keydown', event => { if (!event.repeat && event.isTrusted) music.unlock(); });
 
 async function init() {
   config = await fetch('./config.json', {cache: 'no-store'}).then(response => response.json());
@@ -342,21 +344,23 @@ async function init() {
   try { ignoreButtons = new Set(JSON.parse(localStorage.getItem('ps-mve-ignored') || '[]')); } catch {}
   const {Arena} = await import('./renderer.js');
   arena = new Arena($('arena'), $('hidden-log'), () => {
-    if (rosterSide === 'opponent') renderRoster();
+    renderRoster();
+    refreshMoveHints();
     refreshInformation();
   });
-  arena.setFit(displayFit);
+  arena.setFit('wide');
   arena.receive({room: 'battle-gen9randombattle-0', lines: demoLines, snapshot: true, request: demoRequest});
   session = new ShowdownSession({url: config.server, username: config.username, auth, storage: localStorage,
     onState(next) { if (state.room && !next.room) lastRequest = null; state = next; music.update(musicActive(state, {fixture, hidden: document.hidden, stopped: session.stopped})); render(); },
     onBattle(packet) { try {
-      if (arena.room !== packet.room) { lastRequest = null; rosterSide = 'own'; if (modal.open && infoPage) closeModal(); }
+      if (arena.room !== packet.room) { lastRequest = null; if (modal.open && infoPage) closeModal(); }
       arena.receive(packet);
     } catch { localNotice = 'The battle display encountered an error. Controls still use the server request; reconnect to rebuild the display.'; } },
   });
   state = session.state;
   render();
-  void sets.load().then(refreshInformation);
+  setInterval(updateTimer, 1000);
+  void sets.load().then(() => { renderRoster(); refreshInformation(); });
   startController({ignored: () => ignoreButtons, diagnostic(line) {
     diagnosticLines = [...diagnosticLines.slice(-2), line];
     if ($('input-log')) $('input-log').textContent = diagnosticLines.join('\n');
@@ -373,7 +377,7 @@ async function init() {
       return;
     }
     if (modal.open) return;
-    ({tera: () => $('tera')?.click(), music: () => music.toggle(), timer: () => showTools(true, 'timer-on'), menu: forfeit, info})[action]?.();
+    ({tera: () => $('tera')?.click(), timer: () => showTools(true, 'timer-toggle'), menu: forfeit, info})[action]?.();
   }});
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { music.update(false); return; }
@@ -381,4 +385,4 @@ async function init() {
     music.update(musicActive(state, {fixture, hidden: document.hidden, stopped: session.stopped}));
   });
 }
-init().catch(error => { $('connection').textContent = 'Could not start the example'; $('notice').textContent = error.message; });
+init().catch(error => { $('notice').textContent = error.message; $('notice').parentElement.hidden = false; });

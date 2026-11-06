@@ -25,11 +25,11 @@ Highlight one of the four battle moves and press **R3 / I** for power, accuracy,
 
 Pokémon details now include **Speed**. Your unmodified stat comes from the latest private team request. For your current active Pokémon, **Speed (modified)** reuses Showdown's calculation for boosts, paralysis, items, abilities and field effects. It appears only when playback has caught up and the request and displayed active Pokémon agree. Bench, fainted and replay states do not get a misleading modified value. Missing private stats stay unknown; Transform uses Showdown's estimate instead of claiming the original stat is current.
 
-Opponents show **Speed (estimate)** using the pinned Showdown tooltip calculator: for example, level 82 Raikou displays **193 or 236**, before external modifiers. This is a species/level estimate, not a revealed stat or a prediction of turn order. Unrevealed slots stay unknown. Use **Your team / Opponent**, highlight a slot, then press **R3 / I**; **A / Enter** also opens opponent details. No extension, backend, new network dependency, or live Showdown DOM access is needed. See [the component map](docs/showdown-components.md#speed-and-possible-random-battle-sets) for the source and possible-set follow-up.
+Opponents show **Speed (estimate)** using the pinned Showdown tooltip calculator: for example, level 82 Raikou displays **193 or 236**, before external modifiers. This is a species/level estimate, not a revealed stat or a prediction of turn order. Unrevealed slots stay unknown. Both teams are always visible. Highlight a slot, then press **R3 / I**; **A / Enter** also opens opponent details. No extension, backend, new network dependency, or live Showdown DOM access is needed. See [the component map](docs/showdown-components.md#speed-and-possible-random-battle-sets) for the source and possible-set follow-up.
 
 The fixture is deliberately small. It does not simulate a battle or prove live login, reconnect, iPad audio, or hardware mapping.
 
-Validation includes 49 automated protocol/input/information tests, a production build, and the landscape browser checks described below, including 17 renderer integration assertions. These cover public reveals, snapshot/room resets, both player perspectives, the Raikou Speed example, boosts/Choice Scarf/paralysis rounding, Tailwind, and replay guards. Earlier connection testing reached Showdown's anonymous login challenge. The owner has confirmed OAuth login. A complete authenticated battle and physical-controller acceptance test have not been verified.
+Validation includes automated protocol/input/information tests, a production build, and the landscape browser checks described below, including renderer integration assertions. These cover public reveals, snapshot/room resets, both player perspectives, the Raikou Speed example, boosts/Choice Scarf/paralysis rounding, Tailwind, and replay guards. Earlier connection testing reached Showdown's anonymous login challenge. The owner has confirmed OAuth login. A complete authenticated battle and physical-controller acceptance test have not been verified.
 
 ## Enable live login
 
@@ -37,7 +37,7 @@ An existing Showdown player account is separate from an application's public cli
 
 1. Use the approved ID `884f404fc4be81e1d3eb`. It is configured in this branch's `public/config.json`; on the current live site, paste it into **Setup → Public application ID → Save setup**. No merge is required for that browser-local setting.
 2. Press **Connect to Showdown**, then **Sign in with Showdown**. Keep the app tab open. Sign in to `mepc36363636` on Showdown's own page and authorize **showdown_skins**.
-3. Confirm **Signed in as mepc36363636**, then use **Reconnect** before matchmaking to check that authorization is reused.
+3. Confirm **Signed in as mepc36363636**, then reload before matchmaking to check that authorization is reused.
 4. Press **Find Random Battle** only when ready to finish a real ladder match.
 
 Showdown's authorization page recognizes this ID as **showdown_skins by mepc36363636**, and its API permits the `https://mepc36.github.io` origin. This checks the registration; it does not prove an authenticated battle. The primary [OAuth documentation](https://github.com/smogon/pokemon-showdown-loginserver/blob/master/OAUTH.md) describes the callback and token flow.
@@ -54,13 +54,13 @@ This follows the actual mappings in `console-skin.user.js`, not the stale header
 | 1 | Confirm (A in the existing setup) |
 | 0 | Undo / close dialog (B) |
 | 3 | Toggle Terastallize (X) |
-| 8 | Music on / off (Select) |
+| 8 | Unbound (music is always enabled) |
 | 9 | Forfeit confirmation (Start) |
-| 10 | Reveal controls and focus Timer on (L3); A confirms, right reaches Timer off |
+| 10 | Reveal controls and focus the single Timer toggle (L3); A toggles |
 | 11 | Focused battle move or Pokémon information (R3) |
 | 5 | Unbound (R1) |
 
-Arrow keys and Enter work too. Escape cancels; X toggles the visible Tera control; M toggles music; T reveals the timer controls; I opens information. In a Pokémon panel, left/right changes pages and up/down cycles the six slots on the current team, resetting to Overview. B closes directly to the original battle-screen control. R3 does nothing inside a panel. Directional inputs repeat; confirm acts once per press. The diagnostics screen reports received keys, button edges, and stick directions. Ignoring a button only disables **this app's** reaction; it cannot suppress iPadOS-reserved actions.
+Arrow keys and Enter work too. Escape cancels; X toggles the visible Tera control; T reveals the timer toggle; I opens information. In a Pokémon panel, left/right changes pages and up/down cycles the six slots on the current team, resetting to Overview. B closes directly to the original battle-screen control. R3 does nothing inside a panel. Directional inputs repeat; confirm acts once per press. The diagnostics screen reports received keys, button edges, and stick directions. Ignoring a button only disables **this app's** reaction; it cannot suppress iPadOS-reserved actions.
 
 ## Cancel while waiting for the opponent
 
@@ -103,9 +103,9 @@ In the existing skins repository, the app lives under `frontend/`; the original 
 
 With the approved client ID configured:
 
-1. Log in as `mepc36363636`; verify the signed-in name.
+1. Log in as `mepc36363636`; verify that Find Random Battle is available.
 2. Start a Random Battle and complete it using the controller, including a normal move, switch, forced switch, and Terastallize when available.
-3. While waiting for an opponent, press **Reconnect**. Confirm the submitted choice stays pending and is not resent.
+3. While waiting for an opponent, briefly interrupt and restore the connection. Confirm the submitted choice stays pending and is not resent.
 4. Briefly disable and restore Wi-Fi; recover the same battle. Also reload the page and sign back in. Do this with the battle timer in mind.
 5. Try undo, timer on/off, forfeit confirmation, and end-of-battle replay. Confirm all controls can be reached without touch.
 6. After the initial tap, check music through a second battle. Test Safari backgrounding and both portrait and landscape.
@@ -137,7 +137,7 @@ The supported play layout is **landscape iPad**, including Safari's visible bars
 
 **R3 on a roster slot** opens Overview. **Left/right** selects sibling pages: Overview, then each possible role. **Up/down** changes Pokémon within the same team (all six slots, including fainted/unknown), wrapping and resetting to Overview. **B** closes in one press and restores the original roster focus. The page buttons also work by touch. No page opens a child menu.
 
-Name, level, gender, type badges, known/possible ability and current/unmodified/estimated Speed remain visible on every Pokémon page. Overview shows HP/status, item, Tera, exact own stats, and compact known/revealed moves. Possible abilities remain explicitly labelled until revealed; they come from the matching random-battle roles or species abilities when the snapshot is unavailable. Candidate information never becomes confirmed battle state.
+Name, level, gender, type badges and known/possible ability remain in the header. Speed sits at the left of Overview’s stats and below the possible-role options; estimates and current modifiers remain labelled. Overview shows HP/status, item, Tera, exact own stats, and compact known/revealed moves. Possible abilities remain explicitly labelled until revealed; they come from the matching random-battle roles or species abilities when the snapshot is unavailable. Candidate information never becomes confirmed battle state.
 
 Each possible role page shows abilities, items, Tera types and a compact move pool with names and colored type badges. Detailed move stats and effects are omitted. Both teams use this same structure. Roles carry their simulated-set share; individual option percentages and long methodology prose are omitted from the play UI. Expanded datasets get same-level continuation pages (at most ten moves, three abilities, six items and eight Tera types per page); extended revealed move histories also get Overview continuation pages.
 
@@ -147,9 +147,9 @@ Refresh deliberately with `npm run refresh:sets` or `npm run refresh:sets -- <fu
 
 ## Music continuity
 
-The original 150-second MP3 was looping end-to-end. The pinned Showdown renderer instead loops **14.629–110.109 seconds**. `src/music.js` now decodes that same track once and uses a native looping Web Audio buffer source with those upstream boundaries: the intro plays once, then the musical segment repeats. One active source survives repeated turn updates and reconnect authentication changes. Toggle, battle end and backgrounding stop it and retain position; the next battle or foreground return resumes there if the audio context is running. Explicitly stopping the session also silences music.
+The original 150-second MP3 was looping end-to-end. The pinned Showdown renderer instead loops **14.629–110.109 seconds**. `src/music.js` now decodes that same track once and uses a native looping Web Audio buffer source with those upstream boundaries: the intro plays once, then the musical segment repeats. One active source survives repeated turn updates and reconnect authentication changes. Battle end and backgrounding stop it and retain position; the next battle or foreground return resumes there if the audio context is running. Explicitly stopping the session also silences music.
 
-A touch or trusted keypress resumes the audio context before any asynchronous download. Loading/resume completion always checks current enabled/active state, so late promises cannot undo a mute or restart an ended battle. The button reports loading or offers a retry after failures or OS audio interruption. The official audio host does not supply the cross-origin allow-origin header required by Web Audio fetch, so postinstall downloads and checksum-verifies the 2.7 MB track into `public/audio/`; the static build serves it from the app’s own origin. The MP3 is not committed to Git, and its provenance/hash are in `vendor/manifest.json`. A full decoded track is retained in memory for the page lifetime to avoid streaming gaps. The renderer's separate audio remains muted. There is one track, no playlist. Safari may still require a fresh tap after an OS interruption; desktop automated tests do not establish seamless playback on a physical iPad.
+A touch or trusted keypress resumes the audio context before any asynchronous download. Loading/resume completion checks current activity so late promises cannot restart an ended battle. Music is always enabled in the application, including on devices with an old saved mute setting. Any touch or trusted keypress can retry startup or recover after an OS interruption; use the TV/device volume to mute. The official audio host does not supply the cross-origin allow-origin header required by Web Audio fetch, so postinstall downloads and checksum-verifies the 2.7 MB track into `public/audio/`; the static build serves it from the app’s own origin. The MP3 is not committed to Git, and its provenance/hash are in `vendor/manifest.json`. A full decoded track is retained in memory for the page lifetime to avoid streaming gaps. The renderer's separate audio remains muted. There is one track, no playlist. Safari may still require a fresh tap after an OS interruption; desktop automated tests do not establish seamless playback on a physical iPad.
 
 ## Browser regression checks
 
@@ -157,7 +157,7 @@ Run `npx playwright install chromium webkit`, start `npm run dev -- --host 127.0
 
 ## Follow-up TODOs (after the basic UI)
 
-- **Music is still reported broken on the physical iPad.** Reproduce after the reviewed music code actually reaches main; check audio startup, interruption/recovery and AirPlay. Passing scheduling tests do not close this report.
+- **Music is still reported broken on the physical iPad.** Reproduce after the reviewed music code actually reaches main; check audio startup, interruption/recovery and AirPlay. The new always-enabled UI does not establish physical-device success. Passing scheduling tests do not close this report.
 - **Hit/HP animation order:** damage currently appears to drain HP before the attacker makes contact. Trace the pinned renderer's animation queue and packet scheduling; fix sequencing so impact precedes HP drain. This UI PR does not change that sequencing.
 - Joint possible-set inference: use set combinations/generator rules before inferring a Tera type from a revealed move. Marginal frequency lists alone are insufficient.
 - Ability definitions and species base stats, using sibling information pages without increasing menu depth.
@@ -166,8 +166,30 @@ Run `npx playwright install chromium webkit`, start `npm run dev -- --host 127.0
 
 ## Your stats and rating
 
-The Overview page for one of **your** Pokémon shows exact Attack, Defense, Special Attack and Special Defense from the private team request, alongside the existing Speed and HP information. These values include the Pokémon’s IVs, EVs and nature; they are labelled **before battle modifiers**. Missing values stay unknown. During Transform the panel explicitly labels the original stats, rather than presenting them as the copied opponent’s stats. No opponent stat spread is inferred.
+The Overview page for one of **your** Pokémon shows exact Attack, Defense, Special Attack and Special Defense from the private team request, alongside Speed in the same stats section and HP above it. These values include the Pokémon’s IVs, EVs and nature; they are labelled **before battle modifiers**. Missing values stay unknown. During Transform the panel explicitly labels the original stats, rather than presenting them as the copied opponent’s stats. No opponent stat spread is inferred.
 
 **More controls → Rating** shows the account’s Gen 9 Random Battle Elo, GXE, wins and losses. This uses the documented public `https://pokemonshowdown.com/users/<userid>.json` API with credentials omitted; no OAuth token, browser extension or backend is required. Successful results are cached in memory for up to one minute and show the time checked. **Refresh rating** bypasses that cache; use it after a rated battle, allowing time for ladder updates. Missing format entries are labelled unrated, and fetch/schema failures show a retry instead of inventing 1000 Elo. Late responses never reopen a closed information dialog.
 
 The public OAuth **client ID** is checked into `public/config.json`, which the app fetches at startup; Setup may override it in `localStorage` under `ps-mve-client-id`. It is an application identifier, not a secret, and is not injected from GitHub Secrets. The authorization token is separate and sensitive: it stays in browser `localStorage` under `ps-mve-auth` and is used only by the Showdown authorization flow. It is not included in the repository, snapshot or rating request.
+
+
+## Compact battle controls and color cues
+
+The header contains the matchmaking button at left and a large black hourglass timer at right. Server time warnings (60/30/15/10/5 seconds and other short countdown reports) appear in red next to it. Only our own time updates set our countdown; opponent warnings are labelled separately. The clock pauses while a choice is pending, during recovery and after battle end. The single Timer toggle waits for the server to confirm the state.
+
+Both six-slot teams stay visible below the four compact move buttons. There are no team-toggle tabs, controller reminders, permanent account/format labels, or duplicate winner banner. Setup, Controller check, Source, Timer, Rating and Forfeit share one expandable **More controls** row; Rating is immediately before Forfeit. Replay appears there after a battle. Display, Skip animation, Reconnect and Music controls are removed. Automatic reconnect is preserved; the battlefield always uses wide display.
+
+Tera controls and inspector values use the move palette. Item icons accompany readable names in Overview and possible sets. Speed is the leftmost stat under **Stats (before battle modifiers)**; a changed current Speed appears separately. The highest of Attack/Defense/Sp. Atk/Sp. Def/Speed is green, the next distinct value yellow and the lowest red. Ties share a rank, all-equal stats are uncolored, and lowest takes precedence when only two values exist. HP is not ranked against the other stats.
+
+Own roster borders compare modified Speed with the opposing active Pokémon: green faster, yellow an established tie, red slower. Opponent estimates include the snapshot's possible hidden items/abilities and public battle modifiers. Overlapping ranges, missing data, Transform and replay stay uncolored. Bench comparisons reflect current field effects before switch-in effects; this is a Speed comparison, not a guarantee of moving first (priority and Trick Room still apply).
+
+Move borders reuse the pinned Showdown tooltip's current move-type and effectiveness calculations: green above 1×, yellow 1×, red immune/blocked. Opponent-targeted status moves are red when blocked by known information, otherwise yellow; Protect/self/field moves and resisted damage moves have no added border. They appear on the four actionable moves and on every own Pokémon's compact R3 move list. Hidden opponent information remains hidden; these are advisory matchups against the displayed opponent, not damage or success predictions. Tera selection updates variable move types without mutating battle state.
+
+### Deferred UI exploration
+
+- Explore removing the official renderer's left/right trainer-name and six-Pokémon side panels, now redundant with the permanent roster rows. **Do not change them in this batch.**
+- Keep the existing unresolved physical iPad/AirPlay music and attack-impact-before-HP-drain reports open.
+
+### Branch and merge workflow
+
+Start every feature branch from current `main` and target `main` in its PR. Do not stack feature branches. Use squash merges; refresh any other open branch from `main` after an earlier PR merges. The owner handles merges/deployment unless explicitly authorized.

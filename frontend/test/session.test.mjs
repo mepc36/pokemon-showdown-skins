@@ -34,6 +34,30 @@ function fixture(options = {}) {
 test('room routing preserves payload pipes', () => {
   assert.deepEqual(parsePacket(`>${room}\n|request|{}\n|sentchoice|move 1`), {room, lines: ['|request|{}', '|sentchoice|move 1']});
 });
+test('timer toggle follows server acknowledgement and ignores duplicate requests', () => {
+  const f = fixture(); f.authenticate(); f.battle();
+  f.session.toggleTimer(); f.session.toggleTimer();
+  assert.equal(f.socket.sent.filter(value => value.endsWith('|/timer on')).length, 1);
+  assert.equal(f.session.state.timerOn, false);
+  f.socket.receive(`>${room}\n|inactive|Time left: 150 sec this turn | 150 sec total`);
+  assert.equal(f.session.state.timerOn, true); assert.equal(f.session.state.timerPending, false);
+  assert.equal(f.session.timerRemaining(f.session.state.timerAt + 20000), 130);
+  f.session.toggleTimer(); assert.equal(f.socket.sent.at(-1), `${room}|/timer off`);
+  f.socket.receive(`>${room}\n|inactiveoff|Battle timer is OFF.`);
+  assert.equal(f.session.state.timerOn, false); assert.equal(f.session.timerRemaining(), null);
+});
+test('opponent timer warnings never replace our clock and new rooms reset it', () => {
+  const f = fixture(); f.authenticate(); f.battle();
+  f.socket.receive(`>${room}\n|inactive|Time left: 120 sec this turn | 150 sec total`);
+  f.socket.receive(`>${room}\n|inactive|Opponent has 15 seconds left.`);
+  assert.equal(f.session.state.timerSeconds, 120); assert.equal(f.session.state.timerWarning, 'Opponent: 15s left');
+  f.socket.receive(`>${room}\n|inactive|mepc36363636 has 30 seconds left.`);
+  assert.equal(f.session.state.timerSeconds, 30); assert.equal(f.session.state.timerWarning, 'You: 30s left');
+  f.session.choose('move', 1); assert.equal(f.session.state.timerRunning, false);
+  f.session.undo(); assert.equal(f.session.state.timerRunning, true);
+  f.socket.receive(`>${room}\n|win|mepc36363636`); f.session.search();
+  assert.equal(f.session.state.timerOn, false); assert.equal(f.session.state.timerWarning, '');
+});
 test('search is gated on server-confirmed identity and blocks registered bots first', async () => {
   const f = fixture(); await f.session.login();
   assert.throws(() => f.session.search());
