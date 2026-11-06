@@ -41,7 +41,7 @@ export function navigate(direction) {
   const buttons = [...scope.querySelectorAll('[data-nav]')].filter(el => !el.disabled && el.getClientRects().length);
   if (!buttons.length) return;
   const focused = buttons.includes(document.activeElement) ? document.activeElement : null;
-  if (!focused) { (buttons.find(el => el.dataset.row === 'moves') || buttons[0]).focus(); return; }
+  if (!focused) { (buttons.find(el => el.dataset.row === 'moves') || buttons[0]).focus({preventScroll: true}); return; }
   const rows = [...new Set(buttons.map(el => el.dataset.row))];
   const row = buttons.filter(el => el.dataset.row === focused.dataset.row);
   let target;
@@ -53,5 +53,4 @@ export function navigate(direction) {
     target = buttons.filter(el => el.dataset.row === nextRow).sort((a, b) => Math.abs(a.getBoundingClientRect().left + a.offsetWidth / 2 - x) - Math.abs(b.getBoundingClientRect().left + b.offsetWidth / 2 - x))[0];
   }
   target?.focus({preventScroll: true});
-  target?.scrollIntoView({block: 'nearest', inline: 'nearest'});
 }
