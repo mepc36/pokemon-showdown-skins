@@ -79,7 +79,8 @@ test('compact candidates expose names/types without details, actions or markup i
   const changed = structuredClone(snapshot);
   changed.pokemon.Raikou.roles['<img src=x onerror=alert(1)>'] = changed.pokemon.Raikou.roles['Fast Support'];
   const rendered = rolePages({snapshot: changed}, 'Raikou', 82).map(p => p.content).join('');
-  assert.doesNotMatch(rendered, /<img/);
+  assert.match(rendered, /<img class="item-icon"/);
+  assert.doesNotMatch(rendered, /<img(?! class="item-icon" alt="" width="24" height="24" src="https:\/\/play\.pokemonshowdown\.com\/sprites\/itemicons\/[a-z0-9-]+\.png">)/);
   assert.equal(percent(0), '0% observed'); assert.equal(percent(0.0001), '<0.1%');
 });
 
