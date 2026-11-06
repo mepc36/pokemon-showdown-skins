@@ -153,3 +153,4 @@ dialog[data-view] #modal-body:has(.inspection-footer){display:flex;flex-directio
 .moves button[data-cue]:not([data-cue=""]),.team button[data-cue]:not([data-cue=""]),.compact-move[data-cue]:not([data-cue=""]),.info-facts>div[data-cue]:not([data-cue=""]),.identity-speed[data-cue]:not([data-cue=""]){border-color:var(--cue-color);box-shadow:inset 0 0 0 2px var(--cue-color)}
 .item-label{display:inline-flex;align-items:center;gap:7px;min-width:0}.item-icon{display:inline-block;width:24px;height:24px;flex-shrink:0;background-image:url(https://play.pokemonshowdown.com/sprites/itemicons-sheet.png?v1);background-repeat:no-repeat;image-rendering:pixelated}
 .info-facts .item-icon{transform:scale(1.25);margin:2px 4px 2px 2px}.role-options .item-label{gap:4px}.role-options .option-chip:has(.item-icon){padding:1px 5px}
+.identity-types small[data-identified=true],.role-heading[data-identified=true]>span{color:#208044;font-weight:700}

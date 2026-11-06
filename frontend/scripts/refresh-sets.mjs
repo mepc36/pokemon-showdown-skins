@@ -19,11 +19,26 @@ const raw = await (await get(`${root}/data/stats/${SET_FORMAT}.json`)).text();
 const snapshot = {schemaVersion: 1, format: SET_FORMAT, source: {url: SET_SOURCE,
   commit: commit.sha, updatedAt: commit.commit.committer.date, retrievedAt: new Date().toISOString(),
   sha256: createHash('sha256').update(raw).digest('hex')}, pokemon: validateSetData(JSON.parse(raw))};
+const upstream = await (await get(`https://api.github.com/repos/pkmn/randbats/contents/vendor/pokemon-showdown?ref=${commit.sha}`)).json();
+if (!/^[a-f0-9]{40}$/.test(upstream.sha)) throw new Error('Invalid generator revision');
+const rules = {source: {repository: 'https://github.com/smogon/pokemon-showdown', commit: upstream.sha,
+  path: 'data/random-battles/gen9/sets.json', randbatsCommit: commit.sha, license: 'MIT'},
+  pokemon: await (await get(`https://raw.githubusercontent.com/smogon/pokemon-showdown/${upstream.sha}/data/random-battles/gen9/sets.json`)).json()};
+for (const pokemon of Object.values(rules.pokemon)) {
+  if (!Array.isArray(pokemon.sets) || !pokemon.sets.length || pokemon.sets.some(set =>
+    !set.role || ['movepool', 'abilities', 'teraTypes'].some(key => !Array.isArray(set[key]) || !set[key].length))) {
+    throw new Error('Invalid generator set definitions');
+  }
+}
 const license = await (await get(`${root}/LICENSE`)).text();
 const directory = new URL('../public/data/', import.meta.url);
 await mkdir(directory, {recursive: true});
 const target = new URL(`${SET_FORMAT}.json`, directory);
+const rulesTarget = new URL('../src/set-rules.json', import.meta.url);
+const rulesText = `{\n  "source": ${JSON.stringify(rules.source)},\n  "pokemon": {\n${Object.entries(rules.pokemon).map(([key, value]) => `    ${JSON.stringify(key)}: ${JSON.stringify(value)}`).join(',\n')}\n  }\n}\n`;
 await writeFile(new URL(`${SET_FORMAT}.json.tmp`, directory), JSON.stringify(snapshot) + '\n');
+await writeFile(new URL('../src/set-rules.json.tmp', import.meta.url), rulesText);
 await writeFile(new URL('../vendor/RANDBATS-LICENSE', import.meta.url), license);
 await rename(new URL(`${SET_FORMAT}.json.tmp`, directory), target);
+await rename(new URL('../src/set-rules.json.tmp', import.meta.url), rulesTarget);
 console.log(`Saved ${Object.keys(snapshot.pokemon).length} species from ${commit.sha} to ${fileURLToPath(target)}`);
