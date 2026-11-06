@@ -1,9 +1,70 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {PossibleSets, possibleSets, possibleMoves, validateSnapshot, percent} from '../src/possible-sets.mjs';
+import {PossibleSets, possibleSets, possibleMoves, narrowSets, validateSnapshot, percent} from '../src/possible-sets.mjs';
+import setRules from '../src/set-rules.json' with {type: 'json'};
 import {moveList, rolePages, movePages, textPages} from '../src/info-components.mjs';
 const snapshot = JSON.parse(await readFile(new URL('../public/data/gen9randombattle.json', import.meta.url)));
+
+function inferenceFixture() {
+  const data = structuredClone(snapshot);
+  const source = {randbatsCommit: data.source.commit};
+  const definitions = [
+    {role: 'Stall', movepool: ['Leech Seed', 'Sludge Bomb'], abilities: ['Overgrow'], teraTypes: ['Steel']},
+    {role: 'Slow attacker', movepool: ['Leaf Storm', 'Sludge Bomb'], abilities: ['Chlorophyll'], teraTypes: ['Grass']},
+  ];
+  data.pokemon.Venusaur.roles = Object.fromEntries(definitions.map((r, i) => [r.role, {weight: i ? .9999 : .0001,
+    moves: Object.fromEntries(r.movepool.map(m => [m, 1])), abilities: {[r.abilities[0]]: 1}, teraTypes: {[r.teraTypes[0]]: 1}, items: {Leftovers: 1}}]));
+  return {data, rules: {source, pokemon: {venusaur: {level: 84, sets: definitions}}}};
+}
+
+test('a unique revealed move identifies its set and fixed Tera without percentages', () => {
+  const {data, rules} = inferenceFixture();
+  assert.equal(narrowSets(data, 'Venusaur', 84, {}, rules).count, 2);
+  const match = narrowSets(data, 'Venusaur', 84, {moves: [{id: 'leechseed'}]}, rules);
+  assert.equal(match.identified, true); assert.equal(match.role, 'Stall'); assert.equal(match.teraType, 'Steel');
+  assert.deepEqual(match.sets[0].roles.map(role => role.name), ['Stall']);
+  assert.ok(!rolePages({snapshot: data}, 'Venusaur', 84, '', match)[0].content.includes('%'));
+});
+
+test('one role with multiple Tera options does not invent a fixed Tera', () => {
+  const {data, rules} = inferenceFixture();
+  rules.pokemon.venusaur.sets[0].teraTypes.push('Water');
+  const match = narrowSets(data, 'Venusaur', 84, {moves: [{id: 'leechseed'}]}, rules);
+  assert.equal(match.identified, true); assert.equal(match.teraType, '');
+  assert.deepEqual(Object.keys(match.sets[0].roles[0].teraTypes), ['Steel', 'Water']);
+  rules.pokemon.venusaur.sets[1].role = 'Stall';
+  const ambiguous = narrowSets(data, 'Venusaur', 84, {moves: [{id: 'sludgebomb'}]}, rules);
+  assert.equal(ambiguous.identified, false); assert.equal(ambiguous.count, 2);
+});
+
+test('only natural moves, original ability and revealed Tera constrain definitions', () => {
+  const {data, rules} = inferenceFixture();
+  assert.equal(narrowSets(data, 'Venusaur', 84, {moves: [{id: 'leechseed', copied: true}, {id: 'struggle'}], ability: 'Overgrow', item: 'Choice Specs'}, rules).count, 2);
+  assert.equal(narrowSets(data, 'Venusaur', 84, {baseAbility: 'Chlorophyll'}, rules).role, 'Slow attacker');
+  assert.equal(narrowSets(data, 'Venusaur', 84, {teraType: 'Steel'}, rules).role, 'Stall');
+  assert.equal(narrowSets(data, 'Venusaur', 84, {transformed: true, moves: [{id: 'leechseed'}]}, rules).identified, false);
+});
+
+test('incompatible reveals or stale definitions retain the full list without certainty', () => {
+  const {data, rules} = inferenceFixture();
+  const match = narrowSets(data, 'Venusaur', 84, {moves: [{id: 'leechseed'}, {id: 'leafstorm'}]}, rules);
+  assert.equal(match.status, 'unmatched'); assert.equal(match.sets[0].roles.length, 2); assert.equal(match.teraType, '');
+  assert.equal(narrowSets(data, 'Venusaur', 85, {}, rules).status, 'unavailable');
+  rules.source.randbatsCommit = 'different';
+  assert.equal(narrowSets(data, 'Venusaur', 84, {}, rules).status, 'unavailable');
+});
+
+test('generator definitions cover every species and role in the paired snapshot', () => {
+  assert.equal(setRules.source.randbatsCommit, snapshot.source.commit);
+  for (const [name, pokemon] of Object.entries(snapshot.pokemon)) {
+    const result = narrowSets(snapshot, name, pokemon.level);
+    assert.ok(result.count > 0, name);
+    for (const role of Object.keys(pokemon.roles)) {
+      assert.ok(result.sets.some(set => set.roles.some(candidate => candidate.name === role)), `${name}: missing ${role}`);
+    }
+  }
+});
 
 test('bundled snapshot validates all species and preserves role-relative frequencies', () => {
   assert.equal(validateSnapshot(snapshot), snapshot);

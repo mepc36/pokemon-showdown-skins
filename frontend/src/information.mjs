@@ -105,6 +105,7 @@ export function opponentSlots(side) {
       health: pokemon.fainted ? 'Fainted' : percent === null ? 'HP unknown' : `~${Math.round(percent)}% HP`,
       status: pokemon.status || '', types: pokemon.getTypeList?.() || Dex.species.get(pokemon.speciesForme).types,
       ability: pokemon.ability || pokemon.baseAbility || '', item: pokemon.item || '',
+      baseAbility: pokemon.baseAbility || '', transformed: !!pokemon.volatiles?.transform,
       previousItem: pokemon.prevItem || '', previousItemEffect: pokemon.prevItemEffect || '',
       teraType: pokemon.terastallized || pokemon.teraType || '',
       // moveTrack contains publicly observed moves. A '*' marks a copied move.

@@ -53,7 +53,8 @@ try {
     await page.screenshot({path: `test-results/${engineName}-tools-${viewport.width}-${viewport.height}.png`});
     check(!(await fit(page)).length, `Battle and expanded controls fit ${viewport.width}×${viewport.height}: ${await fit(page)}`);
     await page.locator('#switch-1').focus(); await pad(page, 11);
-    await page.waitForFunction(() => document.querySelectorAll('[data-info-tab]').length > 1);
+    await page.waitForSelector('#info-tab-0');
+    check(await page.locator('[data-info-tab]').count() === 1, 'Own Pokémon have only known information; possible sets are hidden');
     check((await page.locator('#modal-title').innerText()).includes('Grumpig ♀ · Lv 92'), 'R3 shows name, gender and level');
     check((await page.locator('.inspection-banner').innerText()).includes('Thick Fat') && await page.locator('.identity-types .type-badge').innerText() === 'Psychic', 'Ability and types are prominent');
     for (const label of ['Attack', 'Defense', 'Sp. Atk', 'Sp. Def']) {
@@ -75,13 +76,7 @@ try {
     check(!(await fit(page)).length, `Overview fits without scrolling: ${await fit(page)}`);
     await page.screenshot({path: `test-results/${engineName}-overview-${viewport.width}-${viewport.height}.png`});
     await pad(page, 15);
-    check(await page.locator('.role-layout').count() === 1, 'D-pad right opens a sibling possible-role page');
-    const roleTitle = await page.locator('[aria-selected=true]').innerText();
-    await page.locator('.compact-move').first().click(); await pad(page, 11);
-    check(await page.locator('[aria-selected=true]').innerText() === roleTitle, 'R3 on a role move never opens another menu');
-    check(await page.locator('#info-content .move-description, #info-content .move-metrics, #info-content .move-summary, #info-content .info-facts').count() === 0, 'Role move lists omit power and descriptions');
-    check(!(await fit(page)).length, `Role fits without scrolling: ${await fit(page)}`);
-    await page.screenshot({path: `test-results/${engineName}-possible-role-${viewport.width}-${viewport.height}.png`});
+    check(await page.locator('.role-layout').count() === 0 && await page.locator('[aria-selected=true]').innerText() === 'Overview', 'Left/right cannot reveal own possible sets');
     await pad(page, 13);
     check((await page.locator('#modal-title').innerText()).includes('Palossand') && await page.locator('[aria-selected=true]').innerText() === 'Overview', 'D-pad down changes Pokémon and resets to Overview');
     await pad(page, 12); await pad(page, 12);
@@ -96,6 +91,14 @@ try {
     check(await page.evaluate(() => document.activeElement.id) === 'move-2', 'Move details close directly to the battle move');
     await page.locator('#opponent-1').focus(); await pad(page, 11);
     check((await page.locator('#modal-title').innerText()).includes('Landorus ♂') && (await page.locator('.identity-ability').innerText()).includes('Sheer Force'), 'Opponent identity preserves public gender and revealed ability');
+    await page.waitForSelector('#info-tab-1'); await pad(page, 15);
+    check(await page.locator('.role-layout').count() === 1, 'Opponent possible-role pages remain available');
+    const roleTitle = await page.locator('[aria-selected=true]').innerText();
+    await page.locator('.compact-move').first().click(); await pad(page, 11);
+    check(await page.locator('[aria-selected=true]').innerText() === roleTitle, 'R3 on a role move never opens another menu');
+    check(await page.locator('#info-content .move-description, #info-content .move-metrics, #info-content .move-summary, #info-content .info-facts').count() === 0, 'Role move lists omit power and descriptions');
+    check(!(await fit(page)).length, `Role fits without scrolling: ${await fit(page)}`);
+    await page.screenshot({path: `test-results/${engineName}-possible-role-${viewport.width}-${viewport.height}.png`});
     await pad(page, 13); await pad(page, 13);
     check((await page.locator('.identity-ability').innerText()).includes('Possible abilities') && (await page.locator('.identity-speed').innerText()).includes('estimated'), 'Unrevealed ability and Speed are labelled as possibilities/estimates');
     await pad(page, 13);
@@ -116,14 +119,15 @@ try {
   // Render every real candidate role at the smallest supported landscape size.
   const pools = await browser.newPage({viewport: {width: 1024, height: 540}, hasTouch: true, isMobile: true});
   await pools.goto(base); await pools.waitForSelector('#switch-1');
-  await pools.locator('#switch-1').focus(); await pools.keyboard.press('i');
+  await pools.locator('#opponent-1').focus(); await pools.keyboard.press('i');
   await pools.waitForSelector('#info-tab-1'); await pools.keyboard.press('ArrowRight');
   const coverage = await pools.evaluate(async () => {
     const {rolePages} = await import('/src/info-components.mjs');
+    const {narrowSets} = await import('/src/possible-sets.mjs');
     const snapshot = await fetch('/data/gen9randombattle.json').then(r => r.json());
     const failures = []; let count = 0;
     const speedInfo = '<div class="identity-speed"><small>Speed (estimated)</small><strong>312 or 376</strong><small>before modifiers</small></div>';
-    for (const [name, pokemon] of Object.entries(snapshot.pokemon)) for (const page of rolePages({snapshot}, name, pokemon.level, speedInfo)) {
+    for (const [name, pokemon] of Object.entries(snapshot.pokemon)) for (const page of rolePages({snapshot}, name, pokemon.level, speedInfo, narrowSets(snapshot, name, pokemon.level))) {
       const el = document.querySelector('#info-content'); el.innerHTML = page.content;
       if (el.scrollHeight > el.clientHeight + 2 || el.scrollWidth > el.clientWidth + 2) failures.push(`${name}/${page.label}: ${el.scrollHeight}/${el.clientHeight}`);
       count++;
@@ -153,6 +157,8 @@ try {
   await failed.goto(base); await failed.waitForSelector('#switch-1');
   await failed.locator('#switch-1').focus(); await failed.keyboard.press('i');
   check(await failed.locator('.compact-move').count() === 4, 'Known moves survive unavailable set data');
+  check(await failed.locator('#retry-sets').count() === 0, 'Own Pokémon never show a set-data retry page');
+  await failed.keyboard.press('Escape'); await failed.locator('#opponent-1').focus(); await failed.keyboard.press('i');
   await failed.keyboard.press('ArrowRight'); await failed.waitForSelector('#retry-sets');
   await failed.unroute('**/data/gen9randombattle.json'); await failed.keyboard.press('Enter');
   await failed.waitForSelector('.role-layout');
@@ -187,6 +193,22 @@ try {
   await cancel.locator('#timer-toggle').click();
   await cancel.waitForFunction(() => document.querySelector('#timer-toggle').getAttribute('aria-pressed') === 'false');
   check((await cancel.locator('#test-commands').innerText()).includes('/timer off'), 'Same timer toggle sends Showdown timer-off');
+  await cancel.setViewportSize({width: 1024, height: 540});
+  await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|switch|p2a: Raichu|Raichu, L88, M|100/100\n|turn|17'}));
+  await cancel.waitForFunction(() => document.querySelector('#opponent-4')?.textContent.includes('Raichu'));
+  await cancel.locator('#opponent-4').focus(); await cancel.keyboard.press('i');
+  check(await cancel.locator('[data-info-tab]').count() > 2 && !(await cancel.locator('.identity-types').innerText()).includes('Role identified'), 'Ambiguous opponent keeps all matching roles');
+  await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|move|p2a: Raichu|Tera Blast|p1a: Grumpig\n|turn|18'}));
+  await cancel.waitForSelector('.identity-types small[data-identified=true]');
+  const inferredTera = cancel.locator('.info-facts > div').filter({has: cancel.getByText('Tera · inferred', {exact: true})});
+  check(await inferredTera.locator('dd').innerText() === 'Ice' && await inferredTera.getAttribute('data-cue') === 'green', 'A unique live move infers the fixed Tera and marks it green');
+  check(await cancel.locator('[data-info-tab]').count() === 2 && (await cancel.locator('.inspection-note').innerText()).includes('Tera Blast user'), 'Live inference removes incompatible sibling pages');
+  check(await cancel.locator('#opponent-4').getAttribute('data-cue') === 'green', 'Identified opponent gets a green roster border');
+  check(!(await fit(cancel)).length, `Inferred overview fits the smallest viewport: ${await fit(cancel)}`);
+  await cancel.screenshot({path: `test-results/${engineName}-inferred-set.png`});
+  await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|move|p2a: Raichu|Spore|p1a: Grumpig\n|turn|19'}));
+  await cancel.waitForFunction(() => document.querySelector('.inspection-note').textContent.includes('do not match'));
+  check(await cancel.locator('#opponent-4').getAttribute('data-cue') === '' && await cancel.getByText('Tera · inferred', {exact: true}).count() === 0, 'Contradictory reveals clear inferred certainty and restore the full list');
   await cancel.close();
 
   // Audio implementation is unchanged; keep its existing Chromium regression.

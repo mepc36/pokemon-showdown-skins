@@ -1,4 +1,5 @@
 import {Dex} from '@pkmn/dex';
+import setRules from './set-rules.json' with {type: 'json'};
 
 export const SET_FORMAT = 'gen9randombattle';
 export const SET_SOURCE = 'https://github.com/pkmn/randbats';
@@ -95,6 +96,40 @@ export function possibleMoves(sets) {
     moves.set(move.id, {id: move.id, name: move.name});
   }
   return [...moves.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// Eliminate incompatible generator definitions, never low-frequency options.
+// A role can contain several definitions, and one definition can still allow
+// several moves/Tera types. Keep those distinctions when marking an inference.
+export function narrowSets(snapshot, name, level, reveals = {}, rules = setRules) {
+  const all = possibleSets(snapshot, name, level);
+  const unchanged = status => ({sets: all, status, identified: false, teraType: '', count: null});
+  if (!all.length || reveals.transformed || rules.source.randbatsCommit !== snapshot?.source?.commit ||
+      all.some(set => set.levelMismatch || !rules.pokemon[Dex.species.get(set.name).id])) return unchanged('unavailable');
+  const moves = (reveals.moves || []).filter(move => !move.copied && id(move.id || move.name) !== 'struggle').map(move => id(move.id || move.name));
+  const ability = id(reveals.baseAbility), tera = id(reveals.teraType);
+  const matching = all.flatMap(set => rules.pokemon[Dex.species.get(set.name).id].sets.map(rule => ({set, rule})))
+    .filter(({rule}) => moves.every(move => rule.movepool.some(option => id(option) === move)) &&
+      (!ability || rule.abilities.some(option => id(option) === ability)) &&
+      (!tera || rule.teraTypes.some(option => id(option) === tera)));
+  // New live data, copied identity, or an unexpected reveal must never produce
+  // a fabricated certainty. Keep the complete list available for inspection.
+  if (!matching.length) return unchanged('unmatched');
+  const union = (variants, field) => Object.fromEntries([...new Set(variants.flatMap(v => v.rule[field]))].map(value => [value, 1]));
+  const sets = all.flatMap(set => {
+    const variants = matching.filter(candidate => candidate.set === set);
+    if (!variants.length) return [];
+    const roles = [...new Set(variants.map(v => v.rule.role))].map(name => {
+      const selected = variants.filter(v => v.rule.role === name);
+      return {...snapshot.pokemon[set.name].roles[name], name, moves: union(selected, 'movepool'),
+        abilities: union(selected, 'abilities'), teraTypes: union(selected, 'teraTypes')};
+    });
+    return [{...set, roles}];
+  });
+  const teraTypes = [...new Set(matching.flatMap(({rule}) => rule.teraTypes))];
+  return {sets, status: matching.length === 1 ? 'identified' : 'ambiguous', identified: matching.length === 1,
+    role: matching.length === 1 ? matching[0].rule.role : '', count: matching.length,
+    teraType: !tera && teraTypes.length === 1 ? teraTypes[0] : ''};
 }
 
 export const percent = weight => weight === 0 ? '0% observed' : weight < 0.001 ? '<0.1%' :

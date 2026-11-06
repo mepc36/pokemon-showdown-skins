@@ -6,7 +6,7 @@ import {availableChoices} from './protocol.mjs';
 import {startController, navigate} from './controller.mjs';
 import {PlayerRating} from './rating.mjs';
 import {Music, musicActive} from './music.js';
-import {PossibleSets, possibleSets} from './possible-sets.mjs';
+import {PossibleSets, possibleSets, narrowSets} from './possible-sets.mjs';
 import {escapeHtml, facts, typeBadges, moveList, rolePages, movePages} from './info-components.mjs';
 import {demoLines, demoRequest} from './demo.mjs';
 import {moveInformation, effectName, knownOwnMoves, speciesInformation} from './information.mjs';
@@ -151,7 +151,8 @@ function showInfo(page) {
     } else {
       const own = page.side === 'own', p = own ? ownTeam()[page.index - 1] : slot;
       const species = speciesInformation(slot.name);
-      const candidates = possibleSets(sets.snapshot, slot.name, slot.level);
+      const inference = own ? null : narrowSets(sets.snapshot, slot.name, slot.level, slot);
+      const candidates = inference?.sets || possibleSets(sets.snapshot, slot.name, slot.level);
       const abilities = [...new Set(candidates.flatMap(set => set.roles.flatMap(role => Object.keys(role.abilities))))];
       const ability = own ? effectName('abilities', p.ability || p.baseAbility) : p.ability;
       const abilityText = ability || (own ? 'Unknown' : (abilities.length ? abilities : species.abilities).join(' / ') || 'Unknown');
@@ -160,17 +161,18 @@ function showInfo(page) {
       const ranks = stats && !stats.label.startsWith('Original') ? statRanks([...stats.entries, ['Speed', p.stats?.spe]]) : {};
       const speedLabel = speed.kind === 'estimate' ? 'Speed · estimated' : 'Speed';
       const speedInfo = `<div class="identity-speed" data-cue="${ranks.Speed || ''}"><small>${escape(speedLabel)}</small><strong>${escape(speed.value)}</strong>${speed.kind === 'estimate' ? '<small>before modifiers</small>' : speed.modified != null && speed.modified !== speed.value ? `<small>Current: ${escape(speed.modified)}</small>` : ''}</div>`;
-      banner = `<div class="inspection-banner"><div class="identity-types">${typeBadges(own ? species.types : p.types)}<small>${own ? 'Your team' : 'Opponent'} · ${page.index}/6</small></div>
+      banner = `<div class="inspection-banner"><div class="identity-types">${typeBadges(own ? species.types : p.types)}<small data-identified="${!!inference?.identified}">${own ? 'Your team' : 'Opponent'} · ${page.index}/6${inference?.identified ? ' · Role identified' : ''}</small></div>
         <div class="identity-ability"><small>${!own && !ability ? 'Possible abilities' : 'Ability'}</small><strong>${escape(abilityText)}</strong></div></div>`;
       const summary = own ? [['HP / status', p.condition], ['Item', effectName('items', p.item) || 'No item', {item: true}], ['Tera', p.teraType || 'Unknown', p.teraType]] :
-        [['Last shown HP', p.health], ['Status', p.status || 'None shown'], ['Item', p.item || (p.previousItem ? `Lost ${p.previousItem}` : 'Not revealed'), {item: !!p.item}], ['Tera', p.teraType || 'Not revealed', p.teraType]];
+        [['Last shown HP', p.health], ['Status', p.status || 'None shown'], ['Item', p.item || (p.previousItem ? `Lost ${p.previousItem}` : 'Not revealed'), {item: !!p.item}],
+          inference?.teraType ? ['Tera · inferred', inference.teraType, {type: inference.teraType, cue: 'green', hint: 'All remaining set definitions have this Tera type'}] : ['Tera', p.teraType || 'Not revealed', p.teraType]];
       const moves = knownMoves(page.side, page.index);
       const count = Math.max(1, Math.ceil(moves.length / 4));
       pages = Array.from({length: count}, (_, i) => ({key: `overview:${i}`, label: count > 1 ? `Overview ${i + 1}/${count}` : 'Overview',
         content: `<div class="overview-layout"><section>${facts(summary)}<h3>${stats?.label.startsWith('Original') ? 'Original stats · before Transform' : stats ? 'Stats (before battle modifiers)' : 'Speed estimate · before battle modifiers'}</h3><div class="stats-layout">${speedInfo}${stats ? facts(stats.entries.map(([name, value]) => [name, value, {cue: ranks[name]}])) : ''}</div></section>
           <section><h3>${own ? 'Your moves' : 'Revealed moves'}</h3>${moveList(moves.slice(i * 4, i * 4 + 4), 4)}</section></div>`,
-        note: moves.some(m => m.copied) ? '* Copied move' : own ? 'Exact team stats include IVs, EVs and nature.' : 'Unrevealed information stays unknown.'}));
-      pages.push(...rolePages(sets, slot.name, slot.level, speedInfo));
+        note: moves.some(m => m.copied) ? '* Copied move' : own ? 'Exact team stats include IVs, EVs and nature.' : inference?.identified ? `Role inferred: ${inference.role}. Unrevealed moves/items remain candidates.` : inference?.status === 'unmatched' ? 'Reveals do not match this snapshot; showing all candidates.' : 'Unrevealed information stays unknown.'}));
+      if (!own) pages.push(...rolePages(sets, slot.name, slot.level, speedInfo, inference));
     }
   }
   const tab = Math.max(0, Math.min(page.tab || 0, pages.length - 1));
@@ -226,7 +228,8 @@ function renderRoster() {
         canSwitch: !disabled && choices.switches.some(choice => choice.index === i + 1 && choice.enabled)};
     }) : arena.opponents();
     roster.innerHTML = team.map(p => {
-      const speed = rosterSide === 'own' ? arena.speedHint(p.index, sets.snapshot) : {};
+      const inference = rosterSide === 'opponent' && p.revealed ? narrowSets(sets.snapshot, p.name, p.level, p) : null;
+      const speed = rosterSide === 'own' ? arena.speedHint(p.index, sets.snapshot) : inference?.identified ? {cue: 'green', label: `Role inferred: ${inference.role}${inference.teraType ? `; Tera inferred: ${inference.teraType}` : ''}. Open details.`} : {};
       const status = rosterSide === 'opponent' ? p.revealed ? `${p.active ? 'Active · ' : ''}${p.health}` : `Slot ${p.index}` : p.health;
       const icon = p.revealed ? `<span class="picon" aria-hidden="true" style="${escape(arena.icon(p.name))}"></span>` : '<span class="unknown-pokemon" aria-hidden="true">?</span>';
       return btn(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`, `${icon}<strong>${escape(p.name)}</strong><small>${escape(status)}</small>${p.percent != null ? `<span class="team-hp" aria-hidden="true" data-health="${p.percent <= 20 ? 'critical' : p.percent <= 50 ? 'low' : 'healthy'}"><span style="width:${p.percent}%"></span></span>` : ''}`, `team-${rosterSide}`, false,
