@@ -34,6 +34,11 @@ export function knownOwnMoves(pokemon, request) {
   });
 }
 
+export function speciesInformation(name) {
+  const species = Dex.species.get(name);
+  return {types: species.exists ? species.types : [], abilities: species.exists ? [...new Set(Object.values(species.abilities))] : [], gender: species.gender || ''};
+}
+
 export function effectName(kind, id) { return id ? Dex[kind].get(id).name : ''; }
 
 // Reuse the pinned client's calculator, never scrape tooltip HTML or guess a set.
@@ -95,7 +100,7 @@ export function opponentSlots(side) {
     if (!base.revealed) return {...base, name: 'Not revealed', moves: []};
     const percent = pokemon.fainted ? 0 : Number.isFinite(pokemon.hp) && pokemon.maxhp > 0 ?
       Math.max(0, Math.min(100, pokemon.hp / pokemon.maxhp * 100)) : null;
-    return {...base, name: pokemon.getSpeciesForme?.() || pokemon.speciesForme, level: pokemon.level,
+    return {...base, name: pokemon.getSpeciesForme?.() || pokemon.speciesForme, level: pokemon.level, gender: pokemon.gender || '',
       active: !!side.active?.includes(pokemon), fainted: !!pokemon.fainted, percent,
       health: pokemon.fainted ? 'Fainted' : percent === null ? 'HP unknown' : `~${Math.round(percent)}% HP`,
       status: pokemon.status || '', types: pokemon.getTypeList?.() || Dex.species.get(pokemon.speciesForme).types,

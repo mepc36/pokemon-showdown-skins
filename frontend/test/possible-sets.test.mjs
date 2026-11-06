@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {PossibleSets, possibleSets, possibleMoves, validateSnapshot, percent} from '../src/possible-sets.mjs';
-import {moveCards, setSection} from '../src/info-components.mjs';
+import {moveList, rolePages, movePages, textPages} from '../src/info-components.mjs';
 const snapshot = JSON.parse(await readFile(new URL('../public/data/gen9randombattle.json', import.meta.url)));
 
 test('bundled snapshot validates all species and preserves role-relative frequencies', () => {
@@ -72,16 +72,34 @@ test('concurrent data loads share one request', async () => {
   assert.equal(calls, 1);
 });
 
-test('candidate components cannot inherit current PP or inject data markup', () => {
-  const html = moveCards([{id: 'thunderbolt', current: {pp: 2, maxpp: 24}}], {prefix: 'possible', origin: 'possible'});
-  assert.match(html, /15 base PP/);
-  assert.doesNotMatch(html, /2 \/ 24|choose|onclick/);
+test('compact candidates expose names/types without details, actions or markup injection', () => {
+  const html = moveList([{id: 'thunderbolt', current: {pp: 2, maxpp: 24}}]);
+  assert.match(html, /Thunderbolt/); assert.match(html, /Electric/);
+  assert.doesNotMatch(html, /base PP|2 \/ 24|Power|Accuracy|button|data-nav|data-info-move/);
   const changed = structuredClone(snapshot);
   changed.pokemon.Raikou.roles['<img src=x onerror=alert(1)>'] = changed.pokemon.Raikou.roles['Fast Support'];
-  const rendered = setSection({snapshot: changed}, 'Raikou', 82, {side: 'opponent', index: 1});
+  const rendered = rolePages({snapshot: changed}, 'Raikou', 82).map(p => p.content).join('');
   assert.doesNotMatch(rendered, /<img/);
-  assert.match(rendered, /&lt;img/);
-  assert.match(rendered, /not adjusted by revealed information/);
-  assert.equal(percent(0), '0% observed');
-  assert.equal(percent(0.0001), '<0.1%');
+  assert.equal(percent(0), '0% observed'); assert.equal(percent(0.0001), '<0.1%');
+});
+
+test('every sampled role retains all candidates in bounded sibling pages', () => {
+  for (const [name, pokemon] of Object.entries(snapshot.pokemon)) {
+    const pages = rolePages({snapshot}, name, pokemon.level);
+    assert.ok(pages.length);
+    for (const page of pages) assert.ok((page.content.match(/data-move=/g) || []).length <= 10);
+    for (const move of possibleMoves(possibleSets(snapshot, name, pokemon.level))) {
+      assert.ok(pages.some(p => p.content.includes(`data-move="${move.id}"`)), `${name}: missing ${move.name}`);
+    }
+  }
+});
+
+test('long move rules paginate without losing text or opening a child menu', () => {
+  const description = 'This is an unusually long description of a move and its effects. '.repeat(40).trim();
+  const pages = textPages(description);
+  assert.equal(pages.join(' '), description);
+  assert.ok(pages.every(p => p.length <= 420));
+  const cards = movePages({description, power: 80, accuracy: '100%', pp: '10 base PP', priority: '0', contact: 'No', target: 'User'});
+  assert.equal(cards.length, pages.length);
+  assert.ok(cards.every(p => !p.content.includes('<button')));
 });
