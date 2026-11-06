@@ -41,7 +41,7 @@ async function gamepad(page) {
 }
 try {
   for (const viewport of [{width: 1024, height: 650}, {width: 1180, height: 700}, {width: 1024, height: 540}]) {
-    const page = await browser.newPage({viewport}); await gamepad(page);
+    const page = await browser.newPage({viewport, hasTouch: true, isMobile: true}); await gamepad(page);
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     await page.goto(base); await page.waitForSelector('#switch-1');
     check(await page.locator('#all-moves, #info, #move-details').count() === 0, 'Duplicate menus and separate Move info button are removed');
@@ -97,7 +97,7 @@ try {
   }
 
   // Render every real candidate role at the smallest supported landscape size.
-  const pools = await browser.newPage({viewport: {width: 1024, height: 540}});
+  const pools = await browser.newPage({viewport: {width: 1024, height: 540}, hasTouch: true, isMobile: true});
   await pools.goto(base); await pools.waitForSelector('#switch-1');
   await pools.locator('#switch-1').focus(); await pools.keyboard.press('i');
   await pools.waitForSelector('#info-tab-1'); await pools.keyboard.press('ArrowRight');
