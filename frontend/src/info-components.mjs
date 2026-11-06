@@ -1,14 +1,17 @@
 import {moveInformation} from './information.mjs';
 import {possibleSets, percent} from './possible-sets.mjs';
 import {Dex} from '@pkmn/dex';
+import uiData from './showdown-ui-data.json' with {type: 'json'};
 
 export const escapeHtml = text => String(text ?? '').replace(/[&<>"']/g,
   char => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[char]));
 const escape = escapeHtml;
 export function itemLabel(name) {
   const item = Dex.items.get(name);
-  const slug = item.name.toLowerCase().replace(/['’]/g, '').replace(/[^a-z0-9]+/g, '-');
-  const icon = item.exists ? `<img class="item-icon" alt="" width="24" height="24" src="https://play.pokemonshowdown.com/sprites/itemicons/${escape(slug)}.png">` : '';
+  // Sprite indices extracted from data/items.ts at our pinned Showdown server
+  // revision 5b01be81011ec12efa25dcfff49ea279a6029d6f (MIT; vendor/SERVER-LICENSE).
+  const num = uiData.itemIcons[item.id];
+  const icon = item.exists && Number.isInteger(num) ? `<span class="item-icon" aria-hidden="true" style="background-position:-${num % 16 * 24}px -${Math.floor(num / 16) * 24}px"></span>` : '';
   return `<span class="item-label">${icon}<span>${escape(name)}</span></span>`;
 }
 export const facts = entries => `<dl class="info-facts">${entries.map(([label, value, meta = {}]) => {
@@ -39,7 +42,7 @@ export function rolePages(store, name, level, speedInfo = '') {
   const options = (label, values, typed = false) => `<div><dt>${label}</dt><dd>${values.length ? (typed ? typeBadges(values) : values.map(name => `<span class="option-chip">${label === 'Items' ? itemLabel(name) : escape(name)}</span>`).join('')) : '—'}</dd></div>`;
   return sets.flatMap(set => set.roles.flatMap(role => {
     const moves = chunks(Object.keys(role.moves).map(name => ({id: moveInformation(name).id})), 10);
-    const abilities = chunks(Object.keys(role.abilities), 3), items = chunks(Object.keys(role.items || {'No item': 1}), 6), tera = chunks(Object.keys(role.teraTypes), 8);
+    const abilities = chunks(Object.keys(role.abilities), 3), items = chunks(Object.keys(role.items || {'No item': 1}), 3), tera = chunks(Object.keys(role.teraTypes), 4);
     const count = Math.max(moves.length, abilities.length, items.length, tera.length);
     return Array.from({length: count}, (_, i) => ({key: `${set.name}:${role.name}:${i}`, label: `${role.name}${count > 1 ? ` ${i + 1}/${count}` : ''}`,
       content: `<div class="role-heading"><strong>${escape(set.name)} · ${escape(percent(role.weight))}</strong><span>Possible role${set.levelMismatch ? ` · snapshot level ${set.level}` : ''}</span></div>

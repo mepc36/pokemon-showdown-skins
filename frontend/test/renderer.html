@@ -78,8 +78,12 @@ document.querySelector('#run').onclick = async () => {
     check(arena.speedHint(1).cue === 'green', 'Speed borders include our Tailwind');
     arena.receive({room, lines: [...demoLines, '|-sidestart|p2: Offline preview|move: Tailwind', '|turn|17'], snapshot: true, request: demoRequest});
     check(arena.speedHint(1).cue === 'red' && arena.speedHint(1).label.includes('316–396'), 'Opponent Tailwind uses the opponent side, not ours');
-    arena.receive({room, lines: [...demoLines, '|switch|p2a: Corviknight|Corviknight, L80, M|100/100', '|turn|17'], snapshot: true, request: demoRequest});
+    arena.receive({room, lines: [...demoLines, '|switch|p2a: Skarmory|Skarmory, L80, M|100/100', '|turn|17'], snapshot: true, request: demoRequest});
     check(arena.moveHint(1, 'toxic').cue === 'red', 'Toxic is red against a Steel opponent');
+    arena.receive({room, lines: [...demoLines, '|switch|p2a: Amoonguss|Amoonguss, L80, M|100/100', '|turn|17'], snapshot: true, request: demoRequest});
+    check(arena.moveHint(1, 'spore').cue === 'red', 'Powder immunity is preserved for Grass targets');
+    arena.receive({room, lines: raikouLines, snapshot: true, request: demoRequest});
+    check(arena.moveHint(1, 'glare').cue === 'red', 'Status-only paralysis immunity is preserved for Electric targets');
     arena.receive({room, lines: [...demoLines, '|switch|p2a: Rotom|Rotom-Wash, L80|100/100', '|-ability|p2a: Rotom|Levitate', '|turn|17'], snapshot: true, request: demoRequest});
     check(arena.moveHint(2, 'earthquake').cue === 'red', 'Revealed Levitate is respected for benched move inspection');
     arena.battle.seekTurn(0);

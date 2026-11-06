@@ -112,7 +112,7 @@ dialog[data-view] #modal-body:has(.inspection-footer){display:flex;flex-directio
 .role-layout{grid-template-columns:minmax(0,.85fr) minmax(0,1.5fr);gap:20px}
 .role-options{margin:0;display:flex;flex-direction:column;gap:12px}.role-options dt{font-weight:600;font-size:14px;margin-bottom:4px}.role-options dd{margin:0;display:flex;flex-wrap:wrap;gap:5px;font-size:15px}
 .option-chip{padding:3px 7px;border-radius:4px;background:#e7ecf1;line-height:1.25}.role-options .type-badge{margin:0}
-.role-details .identity-speed{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:12px;padding:6px 8px}.role-details .identity-speed>strong{margin:0}
+.role-details .identity-speed{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-top:8px;padding:6px 8px}.role-details .identity-speed>strong{margin:0;font-size:16px}.role-details .identity-speed small{font-size:12px}
 #modal-body .inspection-note{font-size:13px;color:#576879;margin:0;min-height:18px}
 .inspection-footer{display:flex;justify-content:space-between;align-items:center;gap:16px;border-top:1px solid #c9d1da;padding-top:7px;font-size:14px;flex-shrink:0}
 .inspection-paging{display:flex;align-items:center;gap:10px}.inspection-paging button{min-width:44px;min-height:40px;padding:3px 10px;font-size:20px}
@@ -149,5 +149,5 @@ dialog[data-view] #modal-body:has(.inspection-footer){display:flex;flex-directio
 [data-type=Stellar]{--type-tint:#e5def4;--type-border:#a59cc4}
 [data-cue=green]{--cue-color:#208044}[data-cue=yellow]{--cue-color:#c99813}[data-cue=red]{--cue-color:#c63038}
 .moves button[data-cue]:not([data-cue=""]),.team button[data-cue]:not([data-cue=""]),.compact-move[data-cue]:not([data-cue=""]),.info-facts>div[data-cue]:not([data-cue=""]),.identity-speed[data-cue]:not([data-cue=""]){border-color:var(--cue-color);box-shadow:inset 0 0 0 2px var(--cue-color)}
-.item-label{display:inline-flex;align-items:center;gap:7px;min-width:0}.item-icon{display:inline-block;width:24px;height:24px;flex-shrink:0;object-fit:contain;image-rendering:pixelated}
+.item-label{display:inline-flex;align-items:center;gap:7px;min-width:0}.item-icon{display:inline-block;width:24px;height:24px;flex-shrink:0;background-image:url(https://play.pokemonshowdown.com/sprites/itemicons-sheet.png?v1);background-repeat:no-repeat;image-rendering:pixelated}
 .info-facts .item-icon{transform:scale(1.25);margin:2px 4px 2px 2px}.role-options .item-label{gap:4px}.role-options .option-chip:has(.item-icon){padding:1px 5px}

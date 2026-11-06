@@ -355,7 +355,7 @@ async function init() {
     onBattle(packet) { try {
       if (arena.room !== packet.room) { lastRequest = null; if (modal.open && infoPage) closeModal(); }
       arena.receive(packet);
-    } catch { localNotice = 'The battle display encountered an error. Controls still use the server request; reconnect to rebuild the display.'; } },
+    } catch { localNotice = 'The battle display encountered an error. Controls still use the server request; reload to rebuild the display.'; } },
   });
   state = session.state;
   render();

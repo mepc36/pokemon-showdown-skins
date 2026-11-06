@@ -6,6 +6,13 @@ import {isBattleEvent} from './protocol.mjs';
 import {opponentSlots, pokemonSpeed, ownPokemonStats} from './information.mjs';
 import {possibleSets} from './possible-sets.mjs';
 import {moveCue, speedCue} from './battle-hints.mjs';
+import uiData from './showdown-ui-data.json';
+
+// @pkmn/dex omits non-damage type immunities. Supply the pinned upstream
+// fields so Showdown's own tooltip calculation handles Toxic, powders, etc.
+for (const [type, immunities] of Object.entries(uiData.typeImmunities)) {
+  Object.assign(Dex.types.get(type).damageTaken, immunities);
+}
 
 // Audio is controlled by the single looping Web Audio source in music.js.
 BattleSound.setMute(true);

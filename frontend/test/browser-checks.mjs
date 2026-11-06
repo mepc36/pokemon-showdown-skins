@@ -60,6 +60,18 @@ try {
       check(await page.locator('.info-facts > div').filter({has: page.getByText(label, {exact: true})}).locator('dd').innerText() === '150', `Exact private ${label} remains available`);
     }
     check(await page.locator('.compact-move').count() === 4 && await page.locator('.compact-move button').count() === 0, 'Four compact moves cannot open a nested menu');
+    check(await page.locator('.stats-layout .identity-speed').count() === 1 && await page.locator('.inspection-banner .identity-speed').count() === 0, 'Speed is under the stats heading on the left');
+    if (viewport.height === 540) {
+      const icons = await page.evaluate(async () => {
+        const {itemLabel} = await import('/src/info-components.mjs');
+        const sprite = new Image(); sprite.src = 'https://play.pokemonshowdown.com/sprites/itemicons-sheet.png?v1';
+        await sprite.decode();
+        const snapshot = await fetch('/data/gen9randombattle.json').then(r => r.json());
+        const items = new Set(Object.values(snapshot.pokemon).flatMap(p => Object.values(p.roles).flatMap(r => Object.keys(r.items || {}))));
+        return {loaded: sprite.naturalWidth === 384, missing: [...items].filter(name => !itemLabel(name).includes('class="item-icon"'))};
+      });
+      check(icons.loaded && !icons.missing.length, `Complete item sheet loads and covers every possible held item: ${icons.missing}`);
+    }
     check(!(await fit(page)).length, `Overview fits without scrolling: ${await fit(page)}`);
     await page.screenshot({path: `test-results/${engineName}-overview-${viewport.width}-${viewport.height}.png`});
     await pad(page, 15);
@@ -110,7 +122,7 @@ try {
     const {rolePages} = await import('/src/info-components.mjs');
     const snapshot = await fetch('/data/gen9randombattle.json').then(r => r.json());
     const failures = []; let count = 0;
-    const speedInfo = document.querySelector('.identity-speed').outerHTML;
+    const speedInfo = '<div class="identity-speed"><small>Speed (estimated)</small><strong>312 or 376</strong><small>before modifiers</small></div>';
     for (const [name, pokemon] of Object.entries(snapshot.pokemon)) for (const page of rolePages({snapshot}, name, pokemon.level, speedInfo)) {
       const el = document.querySelector('#info-content'); el.innerHTML = page.content;
       if (el.scrollHeight > el.clientHeight + 2 || el.scrollWidth > el.clientWidth + 2) failures.push(`${name}/${page.label}: ${el.scrollHeight}/${el.clientHeight}`);
