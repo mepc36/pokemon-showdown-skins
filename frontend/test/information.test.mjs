@@ -125,3 +125,32 @@ test('known own move PP cannot come from another active Pokémon or a stale requ
   assert.ok(knownOwnMoves(pokemon, request).every(m => !m.current));
   assert.ok(knownOwnMoves(pokemon, {wait: true}).every(m => !m.current));
 });
+
+test('own Attack, Defense, Sp. Atk and Sp. Def use exact private stats for every slot', async () => {
+  const {ownPokemonStats} = await import('../src/information.mjs');
+  const stats = {atk: 143, def: 205, spa: 311, spd: 178, spe: 250};
+  const battle = {myPokemon: [{ident: 'p1: first', stats}, {ident: 'p1: bench', stats: {...stats, atk: 222}}],
+    mySide: {pokemon: [{ident: 'p1: bench', volatiles: {}}, {ident: 'p1: first', volatiles: {}}]}};
+  assert.deepEqual(ownPokemonStats(battle, 1).entries, [['Attack', 143], ['Defense', 205], ['Sp. Atk', 311], ['Sp. Def', 178]]);
+  assert.equal(ownPokemonStats(battle, 2).entries[0][1], 222);
+  assert.ok(ownPokemonStats(battle, 7).entries.every(([, value]) => value === 'Unknown'));
+});
+
+test('missing stats stay unknown and Transform labels original rather than copied stats', async () => {
+  const {ownPokemonStats} = await import('../src/information.mjs');
+  const battle = {myPokemon: [{ident: 'p1: Ditto', stats: {atk: 150, def: NaN, spa: 0}}],
+    mySide: {pokemon: [{ident: 'p1: Ditto', volatiles: {transform: ['transform']}}]}};
+  const value = ownPokemonStats(battle, 1);
+  assert.match(value.label, /Original stats/); assert.match(value.note, /not the copied/);
+  assert.deepEqual(value.entries.map(([, n]) => n), [150, 'Unknown', 'Unknown', 'Unknown']);
+});
+
+
+test('identity exposes species types and possible abilities without claiming a reveal', async () => {
+  const {speciesInformation} = await import('../src/information.mjs');
+  assert.deepEqual(speciesInformation('Camerupt').types, ['Fire', 'Ground']);
+  assert.ok(speciesInformation('Ursaring').abilities.includes('Guts'));
+  assert.deepEqual(speciesInformation('Not revealed').types, []);
+  const p = opponentSlots({pokemon: [{speciesForme: 'Landorus', gender: 'M', hp: 100, maxhp: 100}]})[0];
+  assert.equal(p.gender, 'M'); assert.equal(p.ability, '');
+});

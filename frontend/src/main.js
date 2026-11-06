@@ -4,11 +4,12 @@ import {ShowdownSession} from './session.mjs';
 import {ShowdownAuth} from './auth.mjs';
 import {availableChoices} from './protocol.mjs';
 import {startController, navigate} from './controller.mjs';
+import {PlayerRating} from './rating.mjs';
 import {Music, musicActive} from './music.js';
-import {PossibleSets, possibleSets, possibleMoves} from './possible-sets.mjs';
-import {escapeHtml, moveCards, setSection, setStatus} from './info-components.mjs';
+import {PossibleSets, possibleSets} from './possible-sets.mjs';
+import {escapeHtml, facts, typeBadges, moveList, rolePages, movePages} from './info-components.mjs';
 import {demoLines, demoRequest} from './demo.mjs';
-import {moveInformation, effectName, knownOwnMoves} from './information.mjs';
+import {moveInformation, effectName, knownOwnMoves, speciesInformation} from './information.mjs';
 
 const $ = id => document.getElementById(id);
 const escape = escapeHtml;
@@ -16,7 +17,7 @@ const btn = (id, label, row, disabled = false, extra = '') => `<button id="${id}
 let arena, session, auth, config, state = {}, fixture = true, tera = false, lastRequest, selectedRequest, localNotice = '', ignoreButtons = new Set();
 let diagnosticLines = [];
 let modalReturnFocus = '', displayFit = 'wide';
-let rosterSide = 'own', selectedMoveId = '', infoPage = null;
+let rosterSide = 'own', selectedMoveId = '', infoPage = null, rating = null, ratingPage = false;
 try { if (localStorage.getItem('ps-mve-display-fit') === 'original') displayFit = 'original'; } catch {}
 const modal = $('modal');
 const music = new Music(() => updateMusic());
@@ -28,28 +29,28 @@ function updateMusic() {
   if (button) { button.textContent = music.label; button.title = music.error || 'Black / White Trainer · one looping track'; }
 }
 
-function showModal(title, content) {
-  const previousScroll = modal.open ? modal.scrollTop : 0;
+function showModal(title, content, view = '') {
   const previousFocus = modal.open ? document.activeElement?.id : '';
   if (!modal.open) modalReturnFocus = document.activeElement?.id || '';
-  infoPage = null;
+  infoPage = null; ratingPage = false; modal.dataset.view = view;
   $('modal-title').textContent = title; $('modal-body').innerHTML = content;
   if (!modal.open) modal.showModal();
   ($(previousFocus) || $('modal-close')).focus({preventScroll: true});
-  modal.scrollTop = previousScroll;
+  modal.scrollTop = 0;
 }
 function closeModal() {
-  infoPage = null;
+  infoPage = null; ratingPage = false;
   modal.close();
-  $(modalReturnFocus)?.focus({preventScroll: true});
+  const target = $(modalReturnFocus);
+  (target && !target.disabled ? target : document.querySelector('#choices button:not(:disabled)'))?.focus({preventScroll: true});
 }
 $('modal-close').onclick = closeModal;
 modal.addEventListener('cancel', event => { event.preventDefault(); closeModal(); });
 
 function displaySettings() {
-  showModal('Battlefield display', `<p>Choose how the battlefield fits above the controls. This preference is saved on this device.</p>
+  showModal('Battlefield display', `<p>Saved on this device.</p>
     <div class="modal-actions">${btn('fit-wide', 'Wide field', 'display-options', false, `aria-pressed="${displayFit === 'wide'}"`)}${btn('fit-original', 'Original proportions', 'display-options', false, `aria-pressed="${displayFit === 'original'}"`)}</div>
-    <p class="small">Wide field allows up to 25% horizontal stretching, like your console skin. Original proportions keeps the sprites at their native shape. Both keep the controls below the battlefield.</p>`);
+    <p class="small">Wide stretches the field slightly. Original preserves sprite proportions.</p>`);
   for (const value of ['wide', 'original']) $(`fit-${value}`).onclick = () => {
     displayFit = value;
     try { localStorage.setItem('ps-mve-display-fit', value); } catch {}
@@ -64,12 +65,12 @@ function showTools(open, focusId) {
   $('toggle-tools').setAttribute('aria-expanded', String(open));
   $('toggle-tools').textContent = open ? 'Fewer controls' : 'More controls';
   if (focusId) $(focusId)?.focus({preventScroll: true});
+  arena?.resize();
 }
 $('toggle-tools').onclick = () => showTools($('utility').hidden);
 
 function setup() {
-  showModal('Connect your account', `<p>This example uses Showdown’s own sign-in page. Your password stays on Showdown.</p>
-    <ol><li>Choose the public hosting address.</li><li><a href="https://forms.gle/VAoSjqHn4zwem7tp9" target="_blank" rel="noopener noreferrer">Register a Showdown application</a> for that origin.</li><li>Paste the public client ID below, then connect and sign in.</li></ol>
+  showModal('Connect your account', `<p>Sign in through Showdown. Your password stays there.</p>
     <p class="setup-origin">This origin: <code>${escape(location.origin)}</code></p>
     <label for="client-id">Public application ID</label><input id="client-id" type="text" autocomplete="off" value="${escape(auth.clientId)}" placeholder="Assigned by Pokémon Showdown">
     <p class="small">Expected account: <strong>${escape(config.username)}</strong>. Authorization is saved in this browser. No password is stored.</p>
@@ -84,9 +85,9 @@ function setup() {
 $('setup').onclick = setup;
 
 function diagnostics() {
-  showModal('Controller check', `<p>Press each button once. The log shows what this browser receives. Mapping follows your userscript; SN30 connection modes can change button numbers.</p>
+  showModal('Controller check', `<p>Press a button to check its mapping.</p>
     <pre id="input-log"></pre><label for="ignored-buttons">Ignore button numbers (comma separated)</label><input id="ignored-buttons" type="text" inputmode="numeric" value="${[...ignoreButtons].join(', ')}" placeholder="For example: 4, 5, 6, 7">
-    <p class="small">Ignored buttons have no action in this app. iPadOS shortcuts may still run; a website cannot cancel system-reserved controls.</p>${btn('save-ignored', 'Save ignored buttons', 'modal-actions')}`);
+    <p class="small">Ignored buttons do nothing here. iPadOS shortcuts may still run.</p>${btn('save-ignored', 'Save ignored buttons', 'modal-actions')}`);
   $('input-log').textContent = diagnosticLines.join('\n') || 'Tap the page, then press a controller button.';
   $('save-ignored').onclick = () => {
     ignoreButtons = new Set($('ignored-buttons').value.split(',').filter(x => x.trim()).map(Number).filter(x => Number.isInteger(x) && x >= 0 && x < 64));
@@ -97,15 +98,11 @@ $('diagnostics').onclick = diagnostics;
 
 const currentRequest = () => fixture ? demoRequest : state.request;
 const ownTeam = () => (fixture ? demoRequest : lastRequest)?.side?.pokemon || [];
-const facts = entries => `<dl class="info-facts">${entries.map(([label, value]) => `<div><dt>${escape(label)}</dt><dd>${escape(value)}</dd></div>`).join('')}</dl>`;
-const speedFacts = speed => [[speed.kind === 'estimate' ? 'Speed (estimate)' : 'Speed (unmodified)', speed.value],
-  ...(speed.modified != null ? [['Speed (modified)', speed.modified]] : [])];
-
 function teamSlots(side) {
   return side === 'opponent' ? arena.opponents() : Array.from({length: 6}, (_, i) => {
     const p = ownTeam()[i];
     return {index: i + 1, revealed: !!p, name: p?.details.split(',')[0] || 'Not available',
-      level: Number(p?.details.match(/, L(\d+)/)?.[1] || 100)};
+      level: Number(p?.details.match(/, L(\d+)/)?.[1] || 100), gender: p?.details.match(/, ([MF])(?:,|$)/)?.[1] || ''};
   });
 }
 
@@ -114,93 +111,85 @@ function knownMoves(side, index) {
   return knownOwnMoves(ownTeam()[index - 1], currentRequest());
 }
 
-function backInfo() {
-  const page = infoPage;
-  if (!page?.parent) { closeModal(); return; }
-  showInfo(page.parent);
-  $(page.returnFocus)?.focus({preventScroll: true});
-  modal.scrollTop = page.returnScroll || 0;
+function showRating(load = true, force = false) {
+  if (load) void rating.load(force).then(() => {
+    if (ratingPage && modal.open) showRating(false);
+    if ($('rating')) $('rating').textContent = rating.label;
+  });
+  const value = rating.value;
+  const details = rating.status === 'loading' ? '<p>Loading your public ladder rating…</p>' :
+    rating.status === 'error' ? '<p>Could not load your rating. Try Refresh rating.</p>' :
+    rating.status === 'unrated' ? '<p>No Gen 9 Random Battle rating was returned for this account.</p>' :
+    facts([['Elo', Math.round(value.elo)], ['GXE', value.gxe === null ? 'Unknown' : `${value.gxe}%`],
+      ['Wins', value.wins ?? 'Unknown'], ['Losses', value.losses ?? 'Unknown']]);
+  showModal('Your rating', `<p class="info-kicker">${escape(config.username)} · Gen 9 Random Battle</p>${details}
+    <p class="small">GXE: estimated win chance against an average ladder player.</p>
+    ${rating.checkedAt ? `<p class="small">Last successful check: ${escape(new Date(rating.checkedAt).toLocaleString())}. Refresh after a rated battle.</p>` : ''}
+    <div class="modal-actions">${btn('refresh-rating', 'Refresh rating', 'rating-actions', rating.status === 'loading')}
+      <a id="rating-source" data-nav data-row="rating-actions" href="${escape(rating.url)}" target="_blank" rel="noopener noreferrer">Showdown public data</a></div>`);
+  ratingPage = true;
+  $('refresh-rating').onclick = () => showRating(true, true);
 }
 
 function showInfo(page) {
-  const samePage = infoPage && infoPage.kind === page.kind && infoPage.side === page.side && infoPage.index === page.index && infoPage.id === page.id && infoPage.mode === page.mode;
-  let title, content;
+  let title, banner = '', pages;
   if (page.kind === 'move') {
-    const current = page.origin === 'possible' || page.side === 'opponent' ? null : page.index ?
-      knownMoves(page.side, page.index).find(m => m.id === page.id)?.current :
-      currentRequest()?.active?.[0]?.moves?.find(m => m.id === page.id);
+    const current = currentRequest()?.active?.[0]?.moves?.find(m => m.id === page.id);
     const move = moveInformation(page.id, current);
     title = move.name;
-    content = `${page.origin === 'possible' ? '<p class="info-warning">Possible move · not confirmed on this Pokémon.</p>' : ''}
-    <p class="info-kicker" data-type="${escape(move.type)}">${escape(move.type)} · ${escape(move.category)}</p>${facts([
-      ['Base power', move.power], ['Base accuracy', move.accuracy], ['PP', move.pp],
-      ['Priority', move.priority], ['Target', move.target], ['Contact', move.contact],
-    ])}<p class="move-description">${escape(move.description)}</p>
-    ${move.disabled ? '<p class="info-warning">This move is currently unavailable.</p>' : ''}
-    <p class="small">Gen 9 reference values. Power, type, accuracy and damage can change with battle conditions. PP is current only when supplied by your active request.</p>`;
-    if (!page.parent) content += moveCards((currentRequest()?.active?.[0]?.moves || []).map(m => ({id: m.id, current: m})), {prefix: 'inspect-move'});
-  } else if (page.kind === 'pokemon') {
-    const slot = teamSlots(page.side)[page.index - 1];
-    const speed = arena.speed(page.side, page.index);
-    title = slot.revealed ? slot.name : `${page.side === 'opponent' ? 'Opponent' : 'Your team'} · slot ${page.index}`;
-    if (!slot.revealed) {
-      content = '<p>This Pokémon has not been revealed. Its species, moves, ability, item and Tera type are unknown.</p>';
-    } else {
-      if (page.side === 'opponent') {
-        const p = slot;
-        content = `<p class="info-kicker">Opponent · ${p.active ? 'Active · ' : ''}Level ${escape(p.level)} · ${escape(p.types.join(' / '))}</p>${facts([
-          ['Last shown HP', p.health], ['Status', p.status || 'None shown'], ['Ability', p.ability || 'Not revealed'],
-          ['Item', p.item || 'Not revealed'], ['Tera type', p.teraType || 'Not revealed'], ...speedFacts(speed),
-          ...(p.previousItem ? [['Previous item', `${p.previousItem}${p.previousItemEffect ? ` (${p.previousItemEffect})` : ''}`]] : []),
-        ])}<p class="small">${escape(speed.note)}</p><h3>Revealed moves</h3>
-        <p class="small">Public information through the displayed battle turn. Unseen moves, items and abilities stay unknown; HP is approximate.</p>`;
-      } else {
-        const p = ownTeam()[page.index - 1];
-        content = `<p class="info-kicker">Your team · ${escape(p.details)}</p>${facts([
-          ['HP / status', p.condition], ['Ability', effectName('abilities', p.ability || p.baseAbility) || 'Unknown'],
-          ['Item', effectName('items', p.item) || 'No item'], ['Tera type', p.teraType || 'Unknown'], ...speedFacts(speed),
-        ])}<p class="small">${escape(speed.note)}</p><h3>Your known moves</h3>`;
-      }
-      const moves = knownMoves(page.side, page.index);
-      content += moves.length ? moveCards(moves, {...page, prefix: 'inspect-move'}) : '<p>No moves revealed yet.</p>';
-      content += setSection(sets, slot.name, slot.level, {side: page.side, index: page.index});
-    }
-  } else if (page.kind === 'moves') {
-    title = 'All moves';
-    const possible = page.mode === 'possible';
-    content = `<div class="info-tabs" role="group" aria-label="Team to inspect">${['own', 'opponent'].map(side => btn(`moves-${side}`, side === 'own' ? 'Your team' : 'Opponent', 'moves-side', false, `aria-pressed="${page.side === side}"`)).join('')}</div>
-      <div class="info-tabs" role="group" aria-label="Move information source">${btn('moves-known', page.side === 'own' ? 'Your known moves' : 'Revealed moves', 'moves-source', false, `aria-pressed="${!possible}"`)}${btn('moves-possible', 'Possible moves', 'moves-source', false, `aria-pressed="${possible}"`)}</div>
-      <p class="small">${possible ? 'Candidate move pools from the listed roles, not actual learned movesets. No filtering by revealed information. Illusion or Transform may make the displayed species misleading.' : 'Browse move information without choosing a battle action. Opponent moves appear only after public reveals.'}</p>${possible ? setStatus(sets) : ''}`;
-    content += teamSlots(page.side).map(slot => {
-      const moves = !slot.revealed ? [] : possible ? possibleMoves(possibleSets(sets.snapshot, slot.name, slot.level)) : knownMoves(page.side, slot.index);
-      return `<section class="move-pool"><h3>Slot ${slot.index} · ${escape(slot.name)}</h3>${moves.length ? moveCards(moves, {prefix: `pool-${slot.index}`, origin: possible ? 'possible' : 'known', side: page.side, index: slot.index}) :
-        `<p class="small">${!slot.revealed ? 'Not revealed.' : possible ? (sets.snapshot ? 'No matching candidate moves.' : 'Possible moves unavailable until set data loads.') : 'No moves revealed yet.'}</p>`}
-        ${slot.revealed ? btn(`pool-info-${slot.index}`, 'Pokémon details & possible sets', `pool-info-${slot.index}`) : ''}</section>`;
-    }).join('');
+    banner = `<div class="inspection-banner move-banner">${typeBadges([move.type])}<strong>${escape(move.category)}</strong></div>`;
+    pages = movePages(move);
   } else {
-    title = 'Your team';
-    content = `<div class="team-info">${ownTeam().map((p, i) => btn(`inspect-own-${i + 1}`, `${escape(p.details.split(',')[0])}<small>${escape(p.condition)}</small>`, `inspect-team-${Math.floor(i / 2)}`)).join('')}</div>`;
+    const slot = teamSlots(page.side)[page.index - 1];
+    title = slot.revealed ? `${slot.name} ${slot.gender === 'M' ? '♂' : slot.gender === 'F' ? '♀' : '⚲'} · Lv ${slot.level}` : `Unknown Pokémon · slot ${page.index}`;
+    if (!slot.revealed) {
+      banner = `<div class="inspection-banner"><strong>${page.side === 'own' ? 'Your team' : 'Opponent'} · ${page.index}/6</strong></div>`;
+      pages = [{key: 'overview', label: 'Overview', content: '<p class="empty-info">This Pokémon has not been revealed.</p>', note: 'Species, abilities, Speed and moves are unknown.'}];
+    } else {
+      const own = page.side === 'own', p = own ? ownTeam()[page.index - 1] : slot;
+      const species = speciesInformation(slot.name);
+      const candidates = possibleSets(sets.snapshot, slot.name, slot.level);
+      const abilities = [...new Set(candidates.flatMap(set => set.roles.flatMap(role => Object.keys(role.abilities))))];
+      const ability = own ? effectName('abilities', p.ability || p.baseAbility) : p.ability;
+      const abilityText = ability || (own ? 'Unknown' : (abilities.length ? abilities : species.abilities).join(' / ') || 'Unknown');
+      const speed = arena.speed(page.side, page.index);
+      const speedValue = speed.modified ?? speed.value;
+      const speedLabel = speed.kind === 'estimate' ? 'Speed · estimated' : speed.modified != null ? 'Speed · current' : 'Speed · unmodified';
+      banner = `<div class="inspection-banner"><div class="identity-types">${typeBadges(own ? species.types : p.types)}<small>${own ? 'Your team' : 'Opponent'} · ${page.index}/6</small></div>
+        <div class="identity-ability"><small>${!own && !ability ? 'Possible abilities' : 'Ability'}</small><strong>${escape(abilityText)}</strong></div>
+        <div class="identity-speed"><small>${escape(speedLabel)}</small><strong>${escape(speedValue)}</strong>${speed.kind === 'estimate' ? '<small>before modifiers</small>' : speed.modified != null && speed.modified !== speed.value ? `<small>${escape(speed.value)} unmodified</small>` : ''}</div></div>`;
+      const summary = own ? [['HP / status', p.condition], ['Item', effectName('items', p.item) || 'No item'], ['Tera', p.teraType || 'Unknown']] :
+        [['Last shown HP', p.health], ['Status', p.status || 'None shown'], ['Item', p.item || (p.previousItem ? `Lost ${p.previousItem}` : 'Not revealed')], ['Tera', p.teraType || 'Not revealed']];
+      const stats = own ? arena.stats(page.index) : null;
+      const moves = knownMoves(page.side, page.index);
+      const count = Math.max(1, Math.ceil(moves.length / 4));
+      pages = Array.from({length: count}, (_, i) => ({key: `overview:${i}`, label: count > 1 ? `Overview ${i + 1}/${count}` : 'Overview',
+        content: `<div class="overview-layout"><section>${facts(summary)}${stats ? `<h3>${stats.label.startsWith('Original') ? 'Original stats · before Transform' : 'Stats · before battle modifiers'}</h3>${facts(stats.entries)}` : '<p class="quiet-note">Only publicly revealed battle information.</p>'}</section>
+          <section><h3>${own ? 'Your moves' : 'Revealed moves'}</h3>${moveList(moves.slice(i * 4, i * 4 + 4), 4)}</section></div>`,
+        note: moves.some(m => m.copied) ? '* Copied move' : own ? 'Exact team stats include IVs, EVs and nature.' : 'Unrevealed information stays unknown.'}));
+      pages.push(...rolePages(sets, slot.name, slot.level));
+    }
   }
-  if (page.parent) content += `<div class="modal-actions">${btn('info-back', page.parent.kind === 'pokemon' ? 'Back to Pokémon' : page.parent.kind === 'moves' ? 'Back to all moves' : 'Back to team', 'info-back')}</div>`;
-  showModal(title, content);
-  infoPage = page;
-  if (!samePage) modal.scrollTop = 0;
-  const visit = next => showInfo({...next, parent: page, returnFocus: document.activeElement?.id, returnScroll: modal.scrollTop});
-  for (const button of modal.querySelectorAll('[data-info-move]')) button.onclick = () => {
-    const {infoMove: id, origin, side, index} = button.dataset;
-    if (page.kind === 'move' && !page.parent) showInfo({kind: 'move', id});
-    else visit({kind: 'move', id, origin, side, index: Number(index)});
-  };
-  if ($('info-back')) $('info-back').onclick = backInfo;
-  if ($('retry-sets')) $('retry-sets').onclick = () => { const loading = sets.load(); showInfo(page); void loading.then(refreshInformation); };
-  if (page.kind === 'team') ownTeam().forEach((p, i) => $(`inspect-own-${i + 1}`).onclick = () => visit({kind: 'pokemon', side: 'own', index: i + 1}));
-  if (page.kind === 'moves') {
-    for (const side of ['own', 'opponent']) $(`moves-${side}`).onclick = () => showInfo({...page, side});
-    for (const mode of ['known', 'possible']) $(`moves-${mode}`).onclick = () => showInfo({...page, mode});
-    for (const slot of teamSlots(page.side)) if ($(`pool-info-${slot.index}`)) $(`pool-info-${slot.index}`).onclick = () => visit({kind: 'pokemon', side: page.side, index: slot.index});
+  const tab = Math.max(0, Math.min(page.tab || 0, pages.length - 1));
+  const current = pages[tab];
+  const tabs = `<div class="inspection-tabs" role="tablist" aria-label="Information pages">${pages.map((p, i) => `<button id="info-tab-${i}" role="tab" aria-selected="${i === tab}" aria-controls="info-content" data-info-tab="${i}">${escape(p.label)}</button>`).join('')}</div>`;
+  const nav = `<div class="inspection-footer"><div class="inspection-paging"><button id="prev-info-page" aria-label="Previous page" ${pages.length < 2 ? 'disabled' : ''}>←</button><span>Page ${tab + 1} / ${pages.length}</span><button id="next-info-page" aria-label="Next page" ${pages.length < 2 ? 'disabled' : ''}>→</button></div>
+    ${page.kind === 'pokemon' ? '<div class="inspection-paging"><button id="prev-info-mon" aria-label="Previous Pokémon">↑</button><span>Pokémon</span><button id="next-info-mon" aria-label="Next Pokémon">↓</button></div>' : ''}<span><kbd>B</kbd> Close</span></div>`;
+  showModal(title, `${banner}${tabs}<div id="info-content" role="tabpanel" aria-labelledby="info-tab-${tab}">${current.content}</div><p class="inspection-note">${escape(current.note)}</p>${nav}`, page.kind);
+  infoPage = {...page, tab, total: pages.length};
+  for (const button of modal.querySelectorAll('[data-info-tab]')) button.onclick = () => showInfo({...infoPage, tab: Number(button.dataset.infoTab)});
+  $('prev-info-page').onclick = () => navigateInfo('left'); $('next-info-page').onclick = () => navigateInfo('right');
+  if ($('prev-info-mon')) { $('prev-info-mon').onclick = () => navigateInfo('up'); $('next-info-mon').onclick = () => navigateInfo('down'); }
+  if ($('retry-sets')) {
+    $('retry-sets').onclick = () => { const loading = sets.load(); showInfo(infoPage); void loading.then(refreshInformation); };
+    $('retry-sets').focus({preventScroll: true});
   }
 }
 
+function navigateInfo(direction) {
+  if (direction === 'left' || direction === 'right') showInfo({...infoPage, tab: (infoPage.tab + (direction === 'left' ? -1 : 1) + infoPage.total) % infoPage.total});
+  else if (infoPage.kind === 'pokemon') showInfo({...infoPage, index: (infoPage.index - 1 + (direction === 'up' ? -1 : 1) + 6) % 6 + 1, tab: 0});
+}
 function refreshInformation() { if (modal.open && infoPage) showInfo(infoPage); }
 
 function info(index) {
@@ -210,14 +199,8 @@ function info(index) {
   if (slot) { showInfo({kind: 'pokemon', side: slot[1] === 'switch' ? 'own' : 'opponent', index: Number(slot[2])}); return; }
   const moveIndex = Number(focusedId.match(/^move-(\d+)$/)?.[1]);
   const move = currentRequest()?.active?.[0]?.moves?.[moveIndex - 1];
-  if (move) { showInfo({kind: 'move', id: move.id}); return; }
-  showInfo({kind: 'team'});
-}
-$('move-details').onclick = () => {
-  const moves = currentRequest()?.active?.[0]?.moves || [];
-  const move = moves.find(m => m.id === selectedMoveId) || moves[0];
   if (move) showInfo({kind: 'move', id: move.id});
-};
+}
 document.addEventListener('focusin', event => {
   const index = Number(event.target.id?.match(/^move-(\d+)$/)?.[1]);
   const move = currentRequest()?.active?.[0]?.moves?.[index - 1];
@@ -294,7 +277,8 @@ function render() {
   const canCancel = !fixture && state.pending && request && !request.noCancel && state.authenticated && !state.recovering && !state.ended;
   $('undo').hidden = !canCancel;
   $('undo').disabled = !canCancel;
-  $('mode').textContent = fixture ? 'OFFLINE PREVIEW' : state.room || 'LIVE CONNECTION';
+  $('mode').textContent = fixture ? 'OFFLINE PREVIEW' : state.room ? 'GEN 9 RANDOM BATTLE' : 'LIVE CONNECTION';
+  $('mode').title = state.room || '';
   $('turn-label').textContent = activePokemon ? `HP ${activePokemon.condition}` : '';
   $('prompt').textContent = fixture ? `What will ${activePokemon.details.split(',')[0]} do?` : state.ended ? 'Battle complete' : state.recovering ? 'Restoring your battle…' : state.pending || request?.wait ? 'Waiting for the next turn' : request?.forceSwitch ? 'Choose a Pokémon' : activePokemon ? `What will ${activePokemon.details.split(',')[0]} do?` : state.searching ? 'Finding an opponent…' : 'Let’s play';
   $('notice').textContent = localNotice || state.notice || (fixture ? 'Try the D-pad and A. No match is running.' : !auth?.clientId ? 'Open Setup to add your registered Showdown application ID.' : state.recovering ? 'Restoring your battle. No choice will be resubmitted.' : state.searching ? 'Searching with registered bots blocked.' : '');
@@ -303,19 +287,17 @@ function render() {
   primary.textContent = fixture || session?.stopped ? 'Connect to Showdown' : !state.authenticated ? 'Sign in with Showdown' : state.searching ? 'Cancel search' : 'Find Random Battle';
   if (!fixture && !session?.stopped) primary.disabled = !state.authenticated ? !state.challenge : !!state.room && !state.ended;
   $('reconnect').hidden = fixture || session?.stopped;
-  $('move-details').disabled = !request?.active?.[0]?.moves?.length;
   $('choices').innerHTML = `<div class="moves" role="group" aria-label="Moves">${choices.moves.map(move => {
     const type = window.BattleMovedex[move.id]?.type || '';
     return btn(`move-${move.index}`, `<strong>${escape(move.move)}</strong><small>${escape(type)} <span>${escape(move.pp ?? '—')} / ${escape(move.maxpp ?? '—')} PP</span></small>`, 'moves', disabled || !move.enabled, `data-type="${escape(type)}" aria-description="R3 or I for move information"`);
   }).join('')}</div>
-    <div class="team-toolbar"><div role="group" aria-label="Team to inspect">${btn('view-own', 'Your team', 'team-tabs', false, `aria-pressed="${rosterSide === 'own'}" aria-controls="roster"`)}${btn('view-opponent', 'Opponent', 'team-tabs', false, `aria-pressed="${rosterSide === 'opponent'}" aria-controls="roster"`)}</div>${btn('all-moves', 'All moves', 'team-tabs')}<span>R3: details</span></div>
+    <div class="team-toolbar"><div role="group" aria-label="Team to inspect">${btn('view-own', 'Your team', 'team-tabs', false, `aria-pressed="${rosterSide === 'own'}" aria-controls="roster"`)}${btn('view-opponent', 'Opponent', 'team-tabs', false, `aria-pressed="${rosterSide === 'opponent'}" aria-controls="roster"`)}</div><span>R3: details</span></div>
     <div id="roster" class="team" role="group"></div>`;
   for (const side of ['own', 'opponent']) $(`view-${side}`).onclick = () => { rosterSide = side; renderRoster(); };
-  $('all-moves').onclick = () => showInfo({kind: 'moves', side: rosterSide, mode: 'known'});
   renderRoster();
   const inBattle = fixture || !!state.room && !state.ended;
   $('utility').innerHTML = `
-    ${btn('info', 'Team info', 'tools', !lastRequest && !fixture)}${btn('skip', 'Skip animation', 'tools', !inBattle)}
+    ${btn('rating', rating?.label || 'Rating', 'tools')}${btn('skip', 'Skip animation', 'tools', !inBattle)}
     ${btn('timer-on', 'Timer on', 'tools', !inBattle || !fixture && !state.authenticated)}${btn('timer-off', 'Timer off', 'tools', !inBattle || !fixture && !state.authenticated)}
     ${btn('music', 'Tap for music', 'tools')}${btn('forfeit', 'Forfeit…', 'tools', !inBattle || !fixture && !state.authenticated)}
     ${state.ended ? btn('replay', 'Watch this battle again', 'tools') : ''}`;
@@ -326,11 +308,13 @@ function render() {
     const previous = choices.moves.find(move => move.id === selectedMoveId && move.enabled) || choices.moves.find(move => move.enabled);
     if (previous) $(`move-${previous.index}`)?.focus({preventScroll: true});
   });
-  $('info').onclick = () => info(); $('skip').onclick = () => arena.skip(); $('music').onclick = () => music.retryOrToggle(); $('forfeit').onclick = forfeit;
+  $('rating').onclick = () => showRating();
+  $('skip').onclick = () => arena.skip(); $('music').onclick = () => music.retryOrToggle(); $('forfeit').onclick = forfeit;
   for (const toggle of ['on', 'off']) $(`timer-${toggle}`).onclick = () => fixture ? (localNotice = `Controller check: timer ${toggle}.`, render()) : safe(() => session.roomCommand(`/timer ${toggle}`));
   if ($('replay')) $('replay').onclick = () => arena.replay();
   $('timer-status').textContent = state.timer || '';
   updateMusic();
+  arena?.resize();
   if (modal.open && infoPage) showInfo(infoPage);
   if (focusId && !modal.open) { const target = $(focusId); if (target && !target.disabled) target.focus({preventScroll: true}); }
 }
@@ -353,6 +337,7 @@ document.addEventListener('keydown', event => { if (!event.repeat && event.isTru
 
 async function init() {
   config = await fetch('./config.json', {cache: 'no-store'}).then(response => response.json());
+  rating = new PlayerRating(config.username);
   auth = new ShowdownAuth(localStorage.getItem('ps-mve-client-id') || config.clientId);
   try { ignoreButtons = new Set(JSON.parse(localStorage.getItem('ps-mve-ignored') || '[]')); } catch {}
   const {Arena} = await import('./renderer.js');
@@ -373,21 +358,21 @@ async function init() {
   render();
   void sets.load().then(refreshInformation);
   startController({ignored: () => ignoreButtons, diagnostic(line) {
-    diagnosticLines = [...diagnosticLines.slice(-13), line];
+    diagnosticLines = [...diagnosticLines.slice(-2), line];
     if ($('input-log')) $('input-log').textContent = diagnosticLines.join('\n');
   }, action(action) {
-    if (['up', 'down', 'left', 'right'].includes(action)) { navigate(action); return; }
+    if (['up', 'down', 'left', 'right'].includes(action)) { if (modal.open && infoPage) navigateInfo(action); else navigate(action); return; }
     if (action === 'cancel') {
-      if (modal.open) backInfo();
+      if (modal.open) closeModal();
       else $('undo')?.click();
       return;
     }
     if (action === 'confirm') {
-      if (document.activeElement?.matches('[data-nav]')) document.activeElement.click();
+      if (document.activeElement?.matches('[data-nav], [data-info-tab], .inspection-footer button')) document.activeElement.click();
       else navigate('right');
       return;
     }
-    if (modal.open) { if (action === 'info') document.activeElement?.closest('[data-info-move]')?.click(); return; }
+    if (modal.open) return;
     ({tera: () => $('tera')?.click(), music: () => music.toggle(), timer: () => showTools(true, 'timer-on'), menu: forfeit, info})[action]?.();
   }});
   document.addEventListener('visibilitychange', () => {

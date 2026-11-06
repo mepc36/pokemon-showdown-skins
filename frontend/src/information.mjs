@@ -34,6 +34,11 @@ export function knownOwnMoves(pokemon, request) {
   });
 }
 
+export function speciesInformation(name) {
+  const species = Dex.species.get(name);
+  return {types: species.exists ? species.types : [], abilities: species.exists ? [...new Set(Object.values(species.abilities))] : [], gender: species.gender || ''};
+}
+
 export function effectName(kind, id) { return id ? Dex[kind].get(id).name : ''; }
 
 // Reuse the pinned client's calculator, never scrape tooltip HTML or guess a set.
@@ -73,6 +78,19 @@ export function pokemonSpeed(battle, side, index) {
     note: 'Showdown estimate from the displayed species and level, before boosts, status, items, abilities and field effects. This is not a revealed stat.'};
 }
 
+// Own private request values already include IVs, EVs and nature. These are
+// unmodified stats, not species base stats or a guess at an opponent's spread.
+export function ownPokemonStats(battle, index) {
+  const server = Number.isInteger(index) && index >= 1 && index <= 6 ? battle?.myPokemon?.[index - 1] : null;
+  const pokemon = battle?.mySide?.pokemon?.find(p => p.ident === server?.ident);
+  const transformed = !!pokemon?.volatiles?.transform;
+  const fields = [['Attack', 'atk'], ['Defense', 'def'], ['Sp. Atk', 'spa'], ['Sp. Def', 'spd']];
+  return {label: transformed ? 'Original stats · before Transform' : 'Your stats · before battle modifiers',
+    entries: fields.map(([name, id]) => [name, Number.isFinite(server?.stats?.[id]) && server.stats[id] > 0 ? server.stats[id] : 'Unknown']),
+    note: transformed ? 'These are the original request stats, not the copied opponent’s current stats.' :
+      'Exact values from your private team request, including IVs, EVs and nature. Boosts, items and other battle modifiers are not applied.'};
+}
+
 // The pinned renderer already tracks switches, Illusion, forms and public reveals.
 // Read its far side only; never fill gaps from species abilities or random sets.
 export function opponentSlots(side) {
@@ -82,7 +100,7 @@ export function opponentSlots(side) {
     if (!base.revealed) return {...base, name: 'Not revealed', moves: []};
     const percent = pokemon.fainted ? 0 : Number.isFinite(pokemon.hp) && pokemon.maxhp > 0 ?
       Math.max(0, Math.min(100, pokemon.hp / pokemon.maxhp * 100)) : null;
-    return {...base, name: pokemon.getSpeciesForme?.() || pokemon.speciesForme, level: pokemon.level,
+    return {...base, name: pokemon.getSpeciesForme?.() || pokemon.speciesForme, level: pokemon.level, gender: pokemon.gender || '',
       active: !!side.active?.includes(pokemon), fainted: !!pokemon.fainted, percent,
       health: pokemon.fainted ? 'Fainted' : percent === null ? 'HP unknown' : `~${Math.round(percent)}% HP`,
       status: pokemon.status || '', types: pokemon.getTypeList?.() || Dex.species.get(pokemon.speciesForme).types,
