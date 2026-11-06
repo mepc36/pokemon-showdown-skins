@@ -162,7 +162,9 @@ Run `npx playwright install chromium webkit`, start `npm run dev -- --host 127.0
 1. **Music on physical iPad/AirPlay:** reproduce startup, interruption/recovery and looping on current main. Always-enabled music and passing automated tests do not close the reported device issue.
 2. **Hit/HP animation order:** trace the pinned renderer's animation queue and packet scheduling so attack impact precedes HP drain. This remains an explicit priority; set inference does not change sequencing.
 
-**Tabled:** species base stats, ability descriptions, and exploring removal of the renderer's trainer side panels. Base stats and ability descriptions already exist in the bundled `@pkmn/dex` data; if resumed, use sibling R3 pages with no nesting/scrolling. General extra visual indicators and CI optimization were assistant suggestions, not accepted work, and are removed from the backlog. Keep `controller-frontend.yml` unchanged: PRs run tests/build/browser checks; main additionally deploys the checked build to GitHub Pages.
+**Tabled:** species base stats, ability descriptions, and exploring removal of the renderer's trainer side panels. Base stats and ability descriptions already exist in the bundled `@pkmn/dex` data; if resumed, use sibling R3 pages with no nesting/scrolling. General extra visual indicators and skipping redundant CI runs were assistant suggestions and are removed from the backlog.
+
+`controller-frontend.yml` runs unit tests, the production build, Chromium/WebKit browser checks and screenshot uploads for PRs. Main runs the same checks and then deploys the checked build to GitHub Pages. The build job uses the official Playwright image with browsers and Linux dependencies already installed, avoiding the per-run `apt`/browser installation bottleneck. Keep its image version aligned with Playwright in `package-lock.json`; Node 22 and Python 3.12 are configured explicitly. A 15-minute job limit prevents indefinite setup/test hangs. No checks are skipped.
 
 ## Your stats and rating
 
