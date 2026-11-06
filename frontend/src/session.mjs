@@ -139,6 +139,7 @@ export class ShowdownSession {
           this.state.pending = !!value;
         } else if (type === 'error') {
           this.state.notice = value;
+          this.cancel(this.timerReply);
           this.state.timerPending = false;
           if (/\[(Invalid|Unavailable) choice\]/i.test(value)) this.state.pending = false;
         } else if (type === 'win' || type === 'tie') {
@@ -150,6 +151,7 @@ export class ShowdownSession {
           this.state.room = ''; this.state.request = null; this.state.recovering = false;
           this.storage.removeItem('ps-mve-room');
         } else if (type === 'inactive' || type === 'inactiveoff') {
+          this.cancel(this.timerReply);
           this.state.timer = type === 'inactiveoff' ? 'Timer off' : value;
           this.state.timerOn = type === 'inactive'; this.state.timerPending = false;
           if (type === 'inactiveoff') {
@@ -187,7 +189,16 @@ export class ShowdownSession {
   toggleTimer() {
     if (!this.state.authenticated || !this.state.room || this.state.ended || this.state.recovering || this.state.timerPending) return;
     this.roomCommand(`/timer ${this.state.timerOn ? 'off' : 'on'}`);
-    this.state.timerPending = true; this.emit();
+    this.state.timerPending = true;
+    const {epoch} = this, room = this.state.room;
+    this.cancel(this.timerReply);
+    // Showdown can silently ignore off when only the opponent requested the
+    // timer. Unlock the control without claiming the server turned it off.
+    this.timerReply = this.schedule(() => {
+      if (this.epoch !== epoch || this.state.room !== room || !this.state.timerPending) return;
+      this.state.timerPending = false; this.emit();
+    }, 5000);
+    this.emit();
   }
   choose(kind, index, tera) {
     if (!this.state.authenticated || !this.state.room || this.state.pending || this.state.recovering || this.state.ended) throw new Error('Wait for the current battle request.');

@@ -124,6 +124,8 @@ dialog[data-view] #modal-body:has(.inspection-footer){display:flex;flex-directio
   dialog{padding:12px 16px}.modal-header{min-height:36px}.modal-header h2{font-size:21px}#modal-close{min-height:38px;height:38px}
   dialog[data-view] #modal-body:has(.inspection-footer){gap:6px}.inspection-banner{min-height:54px;padding:5px 10px}.inspection-banner strong{font-size:16px}.identity-speed{padding:6px 8px}
   .inspection-tabs button{min-height:34px;padding:5px}.role-heading{margin-bottom:6px}.role-options{gap:8px}
+  .role-options dt{font-size:13px;line-height:1.2;margin-bottom:2px}.role-options .type-badge{font-size:12px;padding:2px 6px}
+  .role-details .identity-speed{margin-top:6px}
   .compact-move{min-height:40px;padding:4px 7px}.compact-move strong{font-size:15px}.compact-move .type-badge{font-size:11px}
   .overview-layout .compact-move{min-height:44px}.info-facts>div{padding:6px 8px}.info-facts dd{font-size:16px}
   #modal-body h3{font-size:15px;margin-bottom:6px}.inspection-footer{padding-top:5px}.inspection-paging button{min-height:36px}

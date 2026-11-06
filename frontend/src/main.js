@@ -217,26 +217,26 @@ function renderRoster() {
   const disabled = !fixture && (!state.authenticated || state.pending || state.recovering || state.ended || !request || request.wait);
   const choices = availableChoices(request);
   for (const rosterSide of ['own', 'opponent']) {
-  const roster = $(rosterSide === 'own' ? 'roster' : 'opponent-roster');
-  const team = rosterSide === 'own' ? ownTeam().map((p, i) => {
-    const health = p.condition.match(/^(\d+)\/(\d+)/), fainted = /fnt/.test(p.condition);
-    return {index: i + 1, name: p.details.split(',')[0], revealed: true, fainted,
-      percent: fainted ? 0 : health ? Math.max(0, Math.min(100, Number(health[1]) / Number(health[2]) * 100)) : 100,
-      health: fainted ? 'Fainted' : `${p.active ? 'Active · ' : ''}${p.condition}`,
-      canSwitch: !disabled && choices.switches.some(choice => choice.index === i + 1 && choice.enabled)};
-  }) : arena.opponents();
-  roster.innerHTML = team.map(p => {
-    const speed = rosterSide === 'own' ? arena.speedHint(p.index, sets.snapshot) : {};
-    const status = rosterSide === 'opponent' ? p.revealed ? `${p.active ? 'Active · ' : ''}${p.health}` : `Slot ${p.index}` : p.health;
-    const icon = p.revealed ? `<span class="picon" aria-hidden="true" style="${escape(arena.icon(p.name))}"></span>` : '<span class="unknown-pokemon" aria-hidden="true">?</span>';
-    return btn(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`, `${icon}<strong>${escape(p.name)}</strong><small>${escape(status)}</small>${p.percent != null ? `<span class="team-hp" aria-hidden="true" data-health="${p.percent <= 20 ? 'critical' : p.percent <= 50 ? 'low' : 'healthy'}"><span style="width:${p.percent}%"></span></span>` : ''}`, `team-${rosterSide}`, false,
-      `data-unavailable="${!p.canSwitch}" data-fainted="${!!p.fainted}" data-cue="${speed.cue || ''}" title="${escape(speed.label || '')}" aria-label="${rosterSide === 'opponent' ? `Opponent slot ${p.index}, ` : ''}${escape(p.name)}, ${escape(status)}. ${escape(speed.label || '')} ${p.canSwitch ? 'Switch Pokémon' : 'View details'}"`);
-  }).join('');
-  for (const p of team) $(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`).onclick = () => {
-    if (rosterSide === 'opponent') showInfo({kind: 'pokemon', side: 'opponent', index: p.index});
-    else if (p.canSwitch) choose('switch', p.index);
-    else info(p.index);
-  };
+    const roster = $(rosterSide === 'own' ? 'roster' : 'opponent-roster');
+    const team = rosterSide === 'own' ? ownTeam().map((p, i) => {
+      const health = p.condition.match(/^(\d+)\/(\d+)/), fainted = /fnt/.test(p.condition);
+      return {index: i + 1, name: p.details.split(',')[0], revealed: true, fainted,
+        percent: fainted ? 0 : health ? Math.max(0, Math.min(100, Number(health[1]) / Number(health[2]) * 100)) : 100,
+        health: fainted ? 'Fainted' : `${p.active ? 'Active · ' : ''}${p.condition}`,
+        canSwitch: !disabled && choices.switches.some(choice => choice.index === i + 1 && choice.enabled)};
+    }) : arena.opponents();
+    roster.innerHTML = team.map(p => {
+      const speed = rosterSide === 'own' ? arena.speedHint(p.index, sets.snapshot) : {};
+      const status = rosterSide === 'opponent' ? p.revealed ? `${p.active ? 'Active · ' : ''}${p.health}` : `Slot ${p.index}` : p.health;
+      const icon = p.revealed ? `<span class="picon" aria-hidden="true" style="${escape(arena.icon(p.name))}"></span>` : '<span class="unknown-pokemon" aria-hidden="true">?</span>';
+      return btn(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`, `${icon}<strong>${escape(p.name)}</strong><small>${escape(status)}</small>${p.percent != null ? `<span class="team-hp" aria-hidden="true" data-health="${p.percent <= 20 ? 'critical' : p.percent <= 50 ? 'low' : 'healthy'}"><span style="width:${p.percent}%"></span></span>` : ''}`, `team-${rosterSide}`, false,
+        `data-unavailable="${!p.canSwitch}" data-fainted="${!!p.fainted}" data-cue="${speed.cue || ''}" title="${escape(speed.label || '')}" aria-label="${rosterSide === 'opponent' ? `Opponent slot ${p.index}, ` : ''}${escape(p.name)}, ${escape(status)}. ${escape(speed.label || '')} ${p.canSwitch ? 'Switch Pokémon' : 'View details'}"`);
+    }).join('');
+    for (const p of team) $(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`).onclick = () => {
+      if (rosterSide === 'opponent') showInfo({kind: 'pokemon', side: 'opponent', index: p.index});
+      else if (p.canSwitch) choose('switch', p.index);
+      else info(p.index);
+    };
   }
   if (!modal.open && focusId) $(focusId)?.focus({preventScroll: true});
 }

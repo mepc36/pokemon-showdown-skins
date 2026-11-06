@@ -58,6 +58,16 @@ test('opponent timer warnings never replace our clock and new rooms reset it', (
   f.socket.receive(`>${room}\n|win|mepc36363636`); f.session.search();
   assert.equal(f.session.state.timerOn, false); assert.equal(f.session.state.timerWarning, '');
 });
+test('a silently ignored timer-off request remains on and allows retry', () => {
+  const f = fixture(); f.authenticate(); f.battle();
+  f.socket.receive(`>${room}\n|inactive|Battle timer is ON (requested by Opponent).`);
+  f.session.toggleTimer();
+  assert.equal(f.session.state.timerPending, true);
+  [...f.timers.values()].at(-1)();
+  assert.equal(f.session.state.timerPending, false); assert.equal(f.session.state.timerOn, true);
+  f.session.toggleTimer();
+  assert.equal(f.socket.sent.filter(value => value.endsWith('|/timer off')).length, 2);
+});
 test('search is gated on server-confirmed identity and blocks registered bots first', async () => {
   const f = fixture(); await f.session.login();
   assert.throws(() => f.session.search());
