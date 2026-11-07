@@ -231,3 +231,17 @@ dialog[data-view] #modal-body:has(.inspection-footer){display:flex;flex-directio
 .move-preview[data-cue]:not([data-cue=""]){border-style:solid;border-color:var(--cue-color);box-shadow:inset 0 0 0 2px var(--cue-color)}
 .move-preview.unknown-move{justify-content:center;color:#687481}
 @media(max-height:620px){.matchup{padding:5px 6px;gap:4px}.stat-box{padding:3px 5px}.matchup-kicker{display:none}}
+
+/* Stable battlefield: the move row keeps its height when there are no moves, and the side panels never hide. */
+.moves{min-height:44px}
+/* Held item sprite in the roster button's corner. */
+.team button .roster-item{position:absolute;top:2px;right:2px;transform:scale(.8);transform-origin:top right;pointer-events:none}
+/* Panel column headers: ⚔️ over the attacker, 🛡️ over the defender. No words. */
+.matchup-cols{display:grid;grid-template-columns:1fr 1fr;gap:4px;text-align:center;font-size:clamp(14px,1.4vw,18px);line-height:1.2}
+/* No cue borders anywhere until the effectiveness design is rethought; data-cue attributes stay for later. */
+.moves button[data-cue]:not([data-cue=""]),.move-preview[data-cue]:not([data-cue=""]),.compact-move[data-cue]:not([data-cue=""]),.info-facts>div[data-cue]:not([data-cue=""]),.identity-speed[data-cue]:not([data-cue=""]){border-color:var(--type-border,#b7b3a7);box-shadow:none;background:linear-gradient(#fff,var(--type-tint,#e2e1dc))}
+.team button[data-cue]:not([data-cue=""]){border:1px solid var(--line);background:#fff;box-shadow:none}
+.team button[data-cue]:not([data-cue=""])[data-active=true]{background:linear-gradient(#fff,#d7e4f1)}
+.move-preview[data-cue]:not([data-cue=""]){border-style:dashed}
+.speed-badge,.speed-badge[data-first=true],.speed-badge[data-first=false]{border:1px solid #c4cdd5;background:#fff}
+#matchup-own .stat-pair>.stat-box:first-child,#matchup-foe .stat-pair>.stat-box:last-child{border-color:#c4cdd5;background:#fff}

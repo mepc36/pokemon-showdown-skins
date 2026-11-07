@@ -6,13 +6,15 @@ import uiData from './showdown-ui-data.json' with {type: 'json'};
 export const escapeHtml = text => String(text ?? '').replace(/[&<>"']/g,
   char => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[char]));
 const escape = escapeHtml;
-export function itemLabel(name) {
+export function itemIcon(name, className = 'item-icon') {
   const item = Dex.items.get(name);
   // Sprite indices extracted from data/items.ts at our pinned Showdown server
   // revision 5b01be81011ec12efa25dcfff49ea279a6029d6f (MIT; vendor/SERVER-LICENSE).
   const num = uiData.itemIcons[item.id];
-  const icon = item.exists && Number.isInteger(num) ? `<span class="item-icon" aria-hidden="true" style="background-position:-${num % 16 * 24}px -${Math.floor(num / 16) * 24}px"></span>` : '';
-  return `<span class="item-label">${icon}<span>${escape(name)}</span></span>`;
+  return item.exists && Number.isInteger(num) ? `<span class="${className}" aria-hidden="true" title="${escape(item.name)}" style="background-position:-${num % 16 * 24}px -${Math.floor(num / 16) * 24}px"></span>` : '';
+}
+export function itemLabel(name) {
+  return `<span class="item-label">${itemIcon(name)}<span>${escape(name)}</span></span>`;
 }
 export const facts = entries => `<dl class="info-facts">${entries.map(([label, value, meta = {}]) => {
   if (typeof meta === 'string') meta = {type: meta};

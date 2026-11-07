@@ -7,7 +7,7 @@ import {startController, navigate} from './controller.mjs';
 import {PlayerRating} from './rating.mjs';
 import {Music, musicActive} from './music.js';
 import {PossibleSets, possibleSets, narrowSets} from './possible-sets.mjs';
-import {escapeHtml, facts, typeBadges, moveList, rolePages, movePages} from './info-components.mjs';
+import {escapeHtml, facts, typeBadges, moveList, rolePages, movePages, itemIcon} from './info-components.mjs';
 import {demoLines, demoRequest} from './demo.mjs';
 import {moveInformation, effectName, knownOwnMoves, speciesInformation, stableOwnOrder} from './information.mjs';
 
@@ -277,7 +277,8 @@ function renderMovePreview() {
   }).join(''));
 }
 // Side panels: left is the shown own Pokémon attacking their active one, right is
-// their active one attacking it. Numbers are paired so the eye compares them directly.
+// their active one attacking it. ⚔️ marks the attacking column, 🛡️ the defending one.
+// The panels stay in place even with no opponent on the field, so the battlefield never resizes.
 function renderMatchup() {
   const left = $('matchup-own'), right = $('matchup-foe');
   if (!left || !right || !arena) return;
@@ -285,19 +286,21 @@ function renderMatchup() {
   const index = previewIndex || team.findIndex(p => p.active) + 1;
   const pokemon = team[index - 1];
   const data = pokemon ? arena.matchup(pokemon.serverIndex, sets.snapshot) : null;
-  if (!data) { left.hidden = right.hidden = true; return; }
-  left.hidden = right.hidden = false;
-  const box = (label, value, estimate = false) => `<div class="stat-box"><small>${escape(label)}</small><strong>${estimate ? '~' : ''}${escape(value)}</strong></div>`;
-  const badge = side => data.first === 'foe' && side === 'own' || data.first === 'own' && side === 'foe' ? '<div class="speed-badge" data-first="false"><span aria-hidden="true">🐢</span>2</div>' : '<div class="speed-badge" data-first="true"><span aria-hidden="true">🐇</span>1</div>';
-  const name = pokemon.details.split(',')[0];
-  left.innerHTML = `<h4>${escape(name)}</h4><p class="matchup-kicker">attacking</p>
-    <div class="stat-pair">${box('Atk', data.own.atk)}${box('Def', data.foe.def, true)}</div>
-    <div class="stat-pair">${box('SpA', data.own.spa)}${box('SpD', data.foe.spd, true)}</div>
-    <div class="stat-pair">${box('Spe', data.own.spe)}${badge('own')}</div>`;
-  right.innerHTML = `<h4>${escape(data.foeName)}</h4><p class="matchup-kicker">attacking</p>
-    <div class="stat-pair">${box('Atk', data.foe.atk, true)}${box('Def', data.own.def)}</div>
-    <div class="stat-pair">${box('SpA', data.foe.spa, true)}${box('SpD', data.own.spd)}</div>
-    <div class="stat-pair">${box('Spe', data.foe.spe, true)}${badge('foe')}</div>`;
+  const own = data?.own || arena.ownStats?.(pokemon?.serverIndex) || {};
+  const foe = data?.foe || {};
+  const box = (label, value, estimate = false) => `<div class="stat-box"><small>${escape(label)}</small><strong>${value == null ? '—' : `${estimate ? '~' : ''}${escape(value)}`}</strong></div>`;
+  const badge = side => !data || data.first === 'tie' ? '<div class="speed-badge" data-first="true"><span aria-hidden="true">🐇</span>1</div>'
+    : (data.first === 'own') === (side === 'own') ? '<div class="speed-badge" data-first="true"><span aria-hidden="true">🐇</span>1</div>' : '<div class="speed-badge" data-first="false"><span aria-hidden="true">🐢</span>2</div>';
+  const cols = (first, second) => `<div class="matchup-cols" aria-hidden="true"><span>${first}</span><span>${second}</span></div>`;
+  const name = pokemon ? pokemon.details.split(',')[0] : '—';
+  left.innerHTML = `<h4>${escape(name)}</h4>${cols('⚔️', '🛡️')}
+    <div class="stat-pair">${box('Atk', own.atk)}${box('Def', foe.def, true)}</div>
+    <div class="stat-pair">${box('SpA', own.spa)}${box('SpD', foe.spd, true)}</div>
+    <div class="stat-pair">${box('Spe', own.spe)}${data ? badge('own') : box('Spe', null)}</div>`;
+  right.innerHTML = `<h4>${escape(data?.foeName || '—')}</h4>${cols('🛡️', '⚔️')}
+    <div class="stat-pair">${box('Atk', foe.atk, true)}${box('Def', own.def)}</div>
+    <div class="stat-pair">${box('SpA', foe.spa, true)}${box('SpD', own.spd)}</div>
+    <div class="stat-pair">${box('Spe', foe.spe, true)}${data ? badge('foe') : box('Spe', null)}</div>`;
 }
 
 function renderRoster() {
@@ -310,7 +313,7 @@ function renderRoster() {
     const roster = $(rosterSide === 'own' ? 'roster' : 'opponent-roster');
     const team = rosterSide === 'own' ? ownTeam().map((p, i) => {
       const shown = arena.ownHealth(p);
-      return {index: i + 1, serverIndex: p.serverIndex, name: p.details.split(',')[0], revealed: true, fainted: shown.fainted, active: p.active,
+      return {index: i + 1, serverIndex: p.serverIndex, name: p.details.split(',')[0], revealed: true, fainted: shown.fainted, active: p.active, item: p.item || '',
         percent: shown.percent, health: shown.fainted ? 'Fainted' : shown.condition, status: shown.condition.match(/ (\w{3})$/)?.[1] || '',
         canSwitch: !disabled && choices.switches.some(choice => choice.index === p.serverIndex && choice.enabled)};
     }) : arena.opponents();
@@ -323,7 +326,9 @@ function renderRoster() {
       const status = p.revealed && !p.fainted ? (p.status || '').toUpperCase() : '';
       const spoken = !p.revealed ? `Slot ${p.index}` : p.fainted ? 'Fainted' : `${p.active ? 'Active, ' : ''}${p.health}`;
       const icon = p.revealed ? `<span class="picon" aria-hidden="true" style="${escape(arena.icon(p.name))}"></span>` : '<span class="unknown-pokemon" aria-hidden="true">?</span>';
-      return btn(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`, `${icon}<strong><span class="mon-name">${p.revealed ? escape(p.name) : 'Unknown'}</span>${status ? `<small class="status-tag">${escape(status)}</small>` : ''}</strong>${p.percent != null ? `<span class="team-hp" aria-hidden="true" data-health="${p.percent <= 20 ? 'critical' : p.percent <= 50 ? 'low' : 'healthy'}"><span style="width:${p.percent}%"></span></span>` : ''}`, `team-${rosterSide}`, false,
+      // The held item, when known, sits in the button's top-right corner as a sprite.
+      const held = p.revealed && !p.fainted && p.item ? itemIcon(p.item, 'item-icon roster-item') : '';
+      return btn(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`, `${icon}${held}<strong><span class="mon-name">${p.revealed ? escape(p.name) : 'Unknown'}</span>${status ? `<small class="status-tag">${escape(status)}</small>` : ''}</strong>${p.percent != null ? `<span class="team-hp" aria-hidden="true" data-health="${p.percent <= 20 ? 'critical' : p.percent <= 50 ? 'low' : 'healthy'}"><span style="width:${p.percent}%"></span></span>` : ''}`, `team-${rosterSide}`, false,
         `data-unavailable="${!p.canSwitch}" data-fainted="${!!p.fainted}" data-active="${!!p.active}" data-cue="${speed.cue || ''}" title="${escape(speed.label || '')}" aria-label="${rosterSide === 'opponent' ? `Opponent slot ${p.index}, ` : ''}${escape(p.name)}, ${escape(spoken)}. ${escape(speed.label || '')} ${p.canSwitch ? 'Switch Pokémon' : 'View details'}"`);
     }).join('');
     for (const p of team) $(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`).onclick = () => {

@@ -162,6 +162,8 @@ export class Arena {
     return {own: {...server.stats, spe: ownSpeed}, foe, foeName: target.getSpeciesForme(),
       first: ownSpeed > foeSpeed ? 'own' : ownSpeed < foeSpeed ? 'foe' : 'tie'};
   }
+  // Exact own stats for the side panel when no opponent is on the field.
+  ownStats(index) { const server = this.battle?.myPokemon?.[index - 1]; return server?.stats ? {...server.stats} : null; }
   replay() { if (this.battle) { this.battle.seekTurn(0); this.battle.play(); this.followAnimations(); } }
   skip() { this.battle?.seekTurn(Infinity); }
   icon(name) { return Dex.getPokemonIcon(name); }
