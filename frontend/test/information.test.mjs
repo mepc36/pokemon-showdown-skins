@@ -154,3 +154,35 @@ test('identity exposes species types and possible abilities without claiming a r
   const p = opponentSlots({pokemon: [{speciesForme: 'Landorus', gender: 'M', hp: 100, maxhp: 100}]})[0];
   assert.equal(p.gender, 'M'); assert.equal(p.ability, '');
 });
+
+test('own roster order keeps the lead first and maps each slot to its current request index', async () => {
+  const {stableOwnOrder} = await import('../src/information.mjs');
+  const lead = {ident: 'p1: Grumpig', active: true}, bench = {ident: 'p1: Palossand'}, third = {ident: 'p1: Excadrill'};
+  const first = stableOwnOrder([lead, bench, third]);
+  assert.deepEqual(first.order, ['p1: Grumpig', 'p1: Palossand', 'p1: Excadrill']);
+  assert.deepEqual(first.team.map(p => p.serverIndex), [1, 2, 3]);
+  // After switching, the server lists the new active Pokémon first.
+  const after = stableOwnOrder([{...third, active: true}, bench, {...lead, active: false}], first.order);
+  assert.deepEqual(after.team.map(p => p.ident), ['p1: Grumpig', 'p1: Palossand', 'p1: Excadrill']);
+  assert.deepEqual(after.team.map(p => p.serverIndex), [3, 2, 1]);
+  assert.equal(after.team[2].active, true);
+  // A missing ident is not shown, but the remembered order survives until it returns.
+  const partial = stableOwnOrder([bench, third], after.order);
+  assert.deepEqual(partial.team.map(p => p.ident), ['p1: Palossand', 'p1: Excadrill']);
+  assert.deepEqual(stableOwnOrder([], partial.order).order, after.order);
+  assert.deepEqual(stableOwnOrder([third, lead, bench], partial.order).team.map(p => p.ident), ['p1: Grumpig', 'p1: Palossand', 'p1: Excadrill']);
+});
+
+test('own roster HP follows the renderer copy and falls back to the request when it has none', async () => {
+  const {ownDisplayedHealth} = await import('../src/information.mjs');
+  const request = {ident: 'p1: Grumpig', condition: '100/297'};
+  // The request already knows this turn’s result; the renderer has not animated it yet.
+  const battle = {mySide: {pokemon: [{ident: 'p1: Grumpig', hp: 297, maxhp: 297, status: 'par'}]}};
+  assert.deepEqual(ownDisplayedHealth(battle, request), {percent: 100, fainted: false, condition: '297/297 par'});
+  battle.mySide.pokemon[0].hp = 0; battle.mySide.pokemon[0].fainted = true;
+  assert.deepEqual(ownDisplayedHealth(battle, request), {percent: 0, fainted: true, condition: '0 fnt'});
+  // Bench Pokémon the renderer has never seen use the request.
+  assert.deepEqual(ownDisplayedHealth(battle, {ident: 'p1: Breloom', condition: '118/324'}).percent, Math.max(0, 118 / 324 * 100));
+  assert.equal(ownDisplayedHealth(null, {ident: 'p1: Breloom', condition: '0 fnt'}).fainted, true);
+  assert.equal(ownDisplayedHealth(null, {ident: 'p1: Breloom', condition: '0 fnt'}).percent, 0);
+});

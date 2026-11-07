@@ -3,7 +3,7 @@ import {ModifiableValue} from '../vendor/pokemon-showdown/battle-tooltips';
 import {BattleSound} from '../vendor/pokemon-showdown/battle-sound';
 import {Dex} from '../vendor/pokemon-showdown/battle-dex';
 import {isBattleEvent} from './protocol.mjs';
-import {opponentSlots, pokemonSpeed, ownPokemonStats} from './information.mjs';
+import {opponentSlots, pokemonSpeed, ownPokemonStats, ownDisplayedHealth} from './information.mjs';
 import {possibleSets} from './possible-sets.mjs';
 import {moveCue, speedCue} from './battle-hints.mjs';
 import uiData from './showdown-ui-data.json';
@@ -70,13 +70,25 @@ export class Arena {
     }
     this.battle.play();
     this.scheduleUpdate();
+    this.followAnimations();
   }
   scheduleUpdate() {
     if (this.updateQueued) return;
     this.updateQueued = true;
     queueMicrotask(() => { this.updateQueued = false; this.onUpdate(); });
   }
+  // The renderer only notifies on turn boundaries. While it is still animating
+  // a chunk, refresh the custom rosters a few times a second so their HP bars
+  // follow each damage line as it plays, after the move animation.
+  followAnimations() {
+    if (this.following) return;
+    this.following = setInterval(() => {
+      this.onUpdate();
+      if (!this.battle || this.battle.atQueueEnd) { clearInterval(this.following); this.following = 0; }
+    }, 250);
+  }
   opponents() { return opponentSlots(this.battle?.farSide); }
+  ownHealth(pokemon) { return ownDisplayedHealth(this.battle, pokemon); }
   speed(side, index) { return pokemonSpeed(this.battle, side, index); }
   stats(index) { return ownPokemonStats(this.battle, index); }
   ownView(index, tera = false) {
@@ -133,7 +145,7 @@ export class Arena {
     const relation = {green: 'Faster', yellow: 'Same Speed', red: 'Slower'}[cue] || 'Speed uncertain';
     return {cue, value, label: `${relation} vs ${target.getSpeciesForme()} (${Math.min(...candidates)}–${Math.max(...candidates)} estimated). Includes known modifiers and possible hidden items/abilities; not move priority or Trick Room.`};
   }
-  replay() { if (this.battle) { this.battle.seekTurn(0); this.battle.play(); } }
+  replay() { if (this.battle) { this.battle.seekTurn(0); this.battle.play(); this.followAnimations(); } }
   skip() { this.battle?.seekTurn(Infinity); }
   icon(name) { return Dex.getPokemonIcon(name); }
 }
