@@ -212,3 +212,22 @@ dialog[data-view] #modal-body:has(.inspection-footer){display:flex;flex-directio
 
 /* The renderer's trainer/team side bars repeat the custom rosters; hide them. */
 #arena .leftbar,#arena .rightbar{display:none!important}
+
+/* Matchup side panels over the battlefield edges; stats paired for direct comparison. */
+.matchup{position:absolute;top:0;bottom:0;width:16%;min-width:120px;padding:8px 8px;display:flex;flex-direction:column;gap:6px;background:#eef2f5e6;color:#27303b;z-index:1;overflow:hidden}
+#matchup-own{left:0;border-right:1px solid #b9c2cb}#matchup-foe{right:0;border-left:1px solid #b9c2cb}
+.matchup h4{margin:0;font-size:clamp(13px,1.3vw,17px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.matchup-kicker{margin:-4px 0 2px;font-size:11px;color:var(--muted)}
+.stat-pair{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.stat-box{background:#fff;border:1px solid #c4cdd5;border-radius:6px;padding:4px 6px;min-width:0}
+.stat-box small{display:block;font-size:10px;color:var(--muted)}.stat-box strong{display:block;font-size:clamp(14px,1.5vw,20px);line-height:1.15}
+#matchup-own .stat-pair>.stat-box:first-child,#matchup-foe .stat-pair>.stat-box:last-child{border-color:#3d709a;background:linear-gradient(#fff,#e3edf7)}
+.speed-badge{display:flex;align-items:center;justify-content:center;gap:4px;border-radius:6px;font-size:clamp(16px,1.9vw,26px);font-weight:800;border:2px solid}
+.speed-badge[data-first=true]{color:#146b36;border-color:#20a050;background:#dff5e6}.speed-badge[data-first=false]{color:#9c1e26;border-color:#d04a52;background:#fbe3e4}
+/* Bench preview replaces the live move buttons until the cursor returns. */
+.moves[data-preview=true]>button[id^=move-]{display:none}
+.move-preview{min-width:0;min-height:44px;padding:4px 8px;display:flex;flex-direction:column;justify-content:space-between;gap:2px;text-align:center;border:1px dashed var(--type-border,#b7b3a7);border-radius:6px;background:linear-gradient(#fff,var(--type-tint,#e2e1dc));opacity:.75}
+.move-preview strong{font-size:15px;font-weight:500}.move-preview small{display:flex;justify-content:space-between;gap:7px;color:#555d66;font-size:10px}
+.move-preview[data-cue]:not([data-cue=""]){border-style:solid;border-color:var(--cue-color);box-shadow:inset 0 0 0 2px var(--cue-color)}
+.move-preview.unknown-move{justify-content:center;color:#687481}
+@media(max-height:620px){.matchup{padding:5px 6px;gap:4px}.stat-box{padding:3px 5px}.matchup-kicker{display:none}}

@@ -143,7 +143,24 @@ export class Arena {
     const value = tooltips.calculateModifiedStats(own.view, own.server).spe;
     const cue = speedCue(value, candidates);
     const relation = {green: 'Faster', yellow: 'Same Speed', red: 'Slower'}[cue] || 'Speed uncertain';
-    return {cue, value, label: `${relation} vs ${target.getSpeciesForme()} (${Math.min(...candidates)}–${Math.max(...candidates)} estimated). Includes known modifiers and possible hidden items/abilities; not move priority or Trick Room.`};
+    return {cue, value, fastest: Math.max(...candidates), label: `${relation} vs ${target.getSpeciesForme()} (${Math.min(...candidates)}–${Math.max(...candidates)} estimated). Includes known modifiers and possible hidden items/abilities; not move priority or Trick Room.`};
+  }
+  // Side-panel matchup: one own Pokémon (by request index) against the opposing
+  // active Pokémon. Own values are exact request stats; opposing values are the
+  // Random Battle spread (level, 31 IVs, 84 EVs, neutral nature) from species
+  // base stats, before boosts. Speed uses the fastest estimate for the opponent.
+  matchup(index, snapshot) {
+    const server = this.battle?.myPokemon?.[index - 1], target = this.battle?.farSide.active[0];
+    if (!server?.stats || !target || target.fainted) return null;
+    const species = target.getSpecies();
+    const estimate = base => Math.floor(Math.floor(2 * base + 31 + 21) * target.level / 100) + 5;
+    const foe = Object.fromEntries(['atk', 'def', 'spa', 'spd', 'spe'].map(stat => [stat, estimate(species.baseStats[stat])]));
+    const speedHint = this.speedHint(index, snapshot);
+    const ownSpeed = speedHint.value || server.stats.spe;
+    const foeSpeed = speedHint.fastest || foe.spe;
+    foe.spe = foeSpeed;
+    return {own: {...server.stats, spe: ownSpeed}, foe, foeName: target.getSpeciesForme(),
+      first: ownSpeed > foeSpeed ? 'own' : ownSpeed < foeSpeed ? 'foe' : 'tie'};
   }
   replay() { if (this.battle) { this.battle.seekTurn(0); this.battle.play(); this.followAnimations(); } }
   skip() { this.battle?.seekTurn(Infinity); }

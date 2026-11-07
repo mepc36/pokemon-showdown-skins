@@ -10,7 +10,6 @@ import {PossibleSets, possibleSets, narrowSets} from './possible-sets.mjs';
 import {escapeHtml, facts, typeBadges, moveList, rolePages, movePages} from './info-components.mjs';
 import {demoLines, demoRequest} from './demo.mjs';
 import {moveInformation, effectName, knownOwnMoves, speciesInformation, stableOwnOrder} from './information.mjs';
-import {statRanks} from './battle-hints.mjs';
 
 const $ = id => document.getElementById(id);
 const escape = escapeHtml;
@@ -19,6 +18,7 @@ let arena, session, auth, config, state = {}, fixture = true, tera = false, last
 let diagnosticLines = [];
 let ownOrder = [];
 let shownTeam = 'own';
+let previewIndex = null;
 let modalReturnFocus = '';
 let selectedMoveId = '', infoPage = null, rating = null, ratingPage = false, fixtureTimer = false;
 const modal = $('modal');
@@ -166,9 +166,8 @@ function showInfo(page) {
       const abilityText = ability || (own ? 'Unknown' : (abilities.length ? abilities : species.abilities).join(' / ') || 'Unknown');
       const stats = own ? arena.stats(p.serverIndex) : null;
       const speed = arena.speed(page.side, own ? p.serverIndex : page.index);
-      const ranks = stats && !stats.label.startsWith('Original') ? statRanks([...stats.entries, ['Speed', p.stats?.spe]]) : {};
       const speedLabel = speed.kind === 'estimate' ? 'Speed · estimated' : 'Speed';
-      const speedInfo = `<div class="identity-speed" data-cue="${ranks.Speed || ''}"><small>${escape(speedLabel)}</small><strong>${escape(speed.value)}</strong>${speed.kind === 'estimate' ? '<small>before modifiers</small>' : speed.modified != null && speed.modified !== speed.value ? `<small>Current: ${escape(speed.modified)}</small>` : ''}</div>`;
+      const speedInfo = `<div class="identity-speed"><small>${escape(speedLabel)}</small><strong>${escape(speed.value)}</strong>${speed.kind === 'estimate' ? '<small>before modifiers</small>' : speed.modified != null && speed.modified !== speed.value ? `<small>Current: ${escape(speed.modified)}</small>` : ''}</div>`;
       // Same reading order as the main screen: who it is, what it holds, how fast, what it can do.
       const hp = own ? arena.ownHealth(p).condition : `${p.health}${p.status ? ` · ${p.status.toUpperCase()}` : ''}`;
       banner = `<div class="inspection-banner"><div class="identity-types">${typeBadges(own ? species.types : p.types)}${inference?.identified ? '<small data-identified="true">Role identified</small>' : ''}</div>
@@ -177,8 +176,8 @@ function showInfo(page) {
       const summary = own ? [abilityEntry, ['Item', effectName('items', p.item) || 'No item', {item: true}], ['Tera', p.teraType || 'Unknown', p.teraType]] :
         [abilityEntry, ['Item', p.item || (p.previousItem ? `Lost ${p.previousItem}` : 'Not revealed'), {item: !!p.item}],
           inference?.teraType ? ['Tera · inferred', inference.teraType, {type: inference.teraType, cue: 'green', hint: 'All remaining set definitions have this Tera type'}] : ['Tera', p.teraType || 'Not revealed', p.teraType]];
-      const statCells = stats ? [...stats.entries.map(([name, value]) => [name, value, {cue: ranks[name]}]),
-        ['Speed', speed.kind === 'known' && speed.modified != null && speed.modified !== speed.value ? `${speed.value} → ${speed.modified}` : speed.value, {cue: ranks.Speed}]] : null;
+      const statCells = stats ? [...stats.entries.map(([name, value]) => [name, value]),
+        ['Speed', speed.kind === 'known' && speed.modified != null && speed.modified !== speed.value ? `${speed.value} → ${speed.modified}` : speed.value]] : null;
       const moves = knownMoves(page.side, page.index);
       const count = Math.max(1, Math.ceil(moves.length / 4));
       pages = Array.from({length: count}, (_, i) => ({key: `overview:${i}`, label: count > 1 ? `Overview ${i + 1}/${count}` : 'Overview',
@@ -239,10 +238,67 @@ function info(index) {
   if (move) showInfo({kind: 'move', id: move.id});
 }
 document.addEventListener('focusin', event => {
-  const index = Number(event.target.id?.match(/^move-(\d+)$/)?.[1]);
+  const id = event.target.id || '';
+  const index = Number(id.match(/^move-(\d+)$/)?.[1]);
   const move = currentRequest()?.active?.[0]?.moves?.[index - 1];
   if (move) selectedMoveId = move.id;
+  // The cursor on a bench Pokémon previews it; anywhere in the move row or header returns to the active one.
+  const own = id.match(/^switch-(\d+)$/);
+  if (own) setPreview(Number(own[1]));
+  else if (move || event.target.closest('.moves, .app-header')) setPreview(null);
 });
+
+// Preview: which own Pokémon the move row and side panels describe. null = the active one.
+function setPreview(index) {
+  const next = index && !ownTeam()[index - 1]?.active ? index : null;
+  if (next === previewIndex) return;
+  previewIndex = next;
+  renderMovePreview();
+  renderMatchup();
+}
+function endPreview(focusTarget) {
+  setPreview(null);
+  if (focusTarget === 'moves') document.querySelector('#choices .moves button:not(:disabled):not([hidden])')?.focus({preventScroll: true});
+  else { const active = ownTeam().findIndex(p => p.active) + 1; if (active) $(`switch-${active}`)?.focus({preventScroll: true}); }
+}
+// Bench preview: the focused Pokémon's four known moves, with effectiveness cues, not pressable.
+function renderMovePreview() {
+  const row = document.querySelector('#choices .moves');
+  if (!row) return;
+  for (const el of row.querySelectorAll('.move-preview')) el.remove();
+  row.dataset.preview = String(!!previewIndex);
+  if (!previewIndex) return;
+  const moves = knownMoves('own', previewIndex);
+  row.insertAdjacentHTML('afterbegin', Array.from({length: 4}, (_, i) => {
+    const move = moves[i];
+    if (!move) return '<div class="move-preview unknown-move" aria-hidden="true">—</div>';
+    const type = move.type || window.BattleMovedex[move.id]?.type || '';
+    return `<div class="move-preview" data-type="${escape(type)}" data-cue="${escape(move.cue || '')}" title="${escape(move.label || '')}" aria-hidden="true"><strong>${escape(move.name)}</strong><small><span class="move-type">${escape(type)}</span><span>${move.current ? `${escape(move.current.pp ?? '—')} / ${escape(move.current.maxpp ?? '—')} PP` : ''}</span></small></div>`;
+  }).join(''));
+}
+// Side panels: left is the shown own Pokémon attacking their active one, right is
+// their active one attacking it. Numbers are paired so the eye compares them directly.
+function renderMatchup() {
+  const left = $('matchup-own'), right = $('matchup-foe');
+  if (!left || !right || !arena) return;
+  const team = ownTeam();
+  const index = previewIndex || team.findIndex(p => p.active) + 1;
+  const pokemon = team[index - 1];
+  const data = pokemon ? arena.matchup(pokemon.serverIndex, sets.snapshot) : null;
+  if (!data) { left.hidden = right.hidden = true; return; }
+  left.hidden = right.hidden = false;
+  const box = (label, value, estimate = false) => `<div class="stat-box"><small>${escape(label)}</small><strong>${estimate ? '~' : ''}${escape(value)}</strong></div>`;
+  const badge = side => data.first === 'foe' && side === 'own' || data.first === 'own' && side === 'foe' ? '<div class="speed-badge" data-first="false"><span aria-hidden="true">🐢</span>2</div>' : '<div class="speed-badge" data-first="true"><span aria-hidden="true">🐇</span>1</div>';
+  const name = pokemon.details.split(',')[0];
+  left.innerHTML = `<h4>${escape(name)}</h4><p class="matchup-kicker">attacking</p>
+    <div class="stat-pair">${box('Atk', data.own.atk)}${box('Def', data.foe.def, true)}</div>
+    <div class="stat-pair">${box('SpA', data.own.spa)}${box('SpD', data.foe.spd, true)}</div>
+    <div class="stat-pair">${box('Spe', data.own.spe)}${badge('own')}</div>`;
+  right.innerHTML = `<h4>${escape(data.foeName)}</h4><p class="matchup-kicker">attacking</p>
+    <div class="stat-pair">${box('Atk', data.foe.atk, true)}${box('Def', data.own.def)}</div>
+    <div class="stat-pair">${box('SpA', data.foe.spa, true)}${box('SpD', data.own.spd)}</div>
+    <div class="stat-pair">${box('Spe', data.foe.spe, true)}${badge('foe')}</div>`;
+}
 
 function renderRoster() {
   if (!$('roster')) return;
@@ -260,7 +316,8 @@ function renderRoster() {
     }) : arena.opponents();
     roster.innerHTML = team.map(p => {
       const inference = rosterSide === 'opponent' && p.revealed ? narrowSets(sets.snapshot, p.name, p.level, p) : null;
-      const speed = rosterSide === 'own' ? arena.speedHint(p.serverIndex, sets.snapshot) : inference?.identified ? {cue: 'green', label: `Role inferred: ${inference.role}${inference.teraType ? `; Tera inferred: ${inference.teraType}` : ''}. Open details.`} : {};
+      // Speed and stat comparisons live in the side panels now, not on borders.
+      const speed = rosterSide === 'own' ? {} : inference?.identified ? {cue: 'green', label: `Role inferred: ${inference.role}${inference.teraType ? `; Tera inferred: ${inference.teraType}` : ''}. Open details.`} : {};
       // No HP numbers or "Active" text on the roster: the bar shows HP, the
       // status tag sits on the name line, and the active Pokémon is marked by style.
       const status = p.revealed && !p.fainted ? (p.status || '').toUpperCase() : '';
@@ -276,6 +333,7 @@ function renderRoster() {
     };
   }
   if (!modal.open && focusId) $(focusId)?.focus({preventScroll: true});
+  renderMatchup();
 }
 
 // One team row shows at a time; the right stick (or F) flips between them.
@@ -348,6 +406,7 @@ function render() {
   $('choices').querySelector('.moves').append($('tera'), $('undo'));
   renderRoster();
   refreshMoveHints();
+  renderMovePreview();
   const inBattle = fixture || !!state.room && !state.ended;
   $('utility').innerHTML = `
     ${btn('timer-toggle', `Timer: ${(fixture ? fixtureTimer : state.timerOn) ? 'on' : 'off'}`, 'header', !inBattle || !fixture && (!state.authenticated || state.recovering || state.timerPending), `aria-pressed="${!!(fixture ? fixtureTimer : state.timerOn)}"`)}
@@ -415,9 +474,15 @@ async function init() {
     diagnosticLines = [...diagnosticLines.slice(-2), line];
     if ($('input-log')) $('input-log').textContent = diagnosticLines.join('\n');
   }, action(action) {
-    if (['up', 'down', 'left', 'right'].includes(action)) { if (modal.open && infoPage) navigateInfo(action); else navigate(action); return; }
+    if (['up', 'down', 'left', 'right'].includes(action)) {
+      if (modal.open && infoPage) { navigateInfo(action); return; }
+      // Up from a previewed bench Pokémon goes back to the active Pokémon's real moves.
+      if (action === 'up' && previewIndex && /^switch-\d+$/.test(document.activeElement?.id || '')) { endPreview('moves'); return; }
+      navigate(action); return;
+    }
     if (action === 'cancel') {
       if (modal.open) closeModal();
+      else if (previewIndex) endPreview('active');
       else $('undo')?.click();
       return;
     }
