@@ -1,9 +1,10 @@
-export const BUTTONS = {0: 'cancel', 1: 'confirm', 3: 'tera', 8: 'tools', 9: 'menu', 10: 'timer', 11: 'info', 12: 'up', 13: 'down', 14: 'left', 15: 'right'};
+// L3 (10) is unmapped: the timer is a header button reached with the d-pad.
+export const BUTTONS = {0: 'cancel', 1: 'confirm', 3: 'tera', 8: 'tools', 9: 'menu', 11: 'info', 12: 'up', 13: 'down', 14: 'left', 15: 'right'};
 export const risingEdges = (current, previous) => current.flatMap((pressed, index) => pressed && !previous[index] ? [index] : []);
 
 export function startController({action, diagnostic, ignored = () => new Set()}) {
-  let previous = [], device = '', repeatAt = 0, heldDirection = '';
-  const keys = {ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Enter: 'confirm', Escape: 'cancel', x: 'tera', t: 'timer', i: 'info', h: 'tools'};
+  let previous = [], device = '', repeatAt = 0, heldDirection = '', heldFlip = '';
+  const keys = {ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Enter: 'confirm', Escape: 'cancel', x: 'tera', t: 'timer', i: 'info', h: 'tools', f: 'team'};
   document.addEventListener('keydown', event => {
     if (/INPUT|TEXTAREA|SELECT/.test(event.target.tagName)) return;
     diagnostic(`Key ${event.code} · cancelable ${event.cancelable}`);
@@ -30,6 +31,9 @@ export function startController({action, diagnostic, ignored = () => new Set()})
       heldDirection = direction; repeatAt = now + 350;
       if (direction && !current.slice(12, 16).some(Boolean)) { diagnostic(`Axis → ${direction}`); action(direction); }
     } else if (direction && now >= repeatAt) { action(direction); repeatAt = now + 150; }
+    // Right stick left/right flips the shown team row; one action per push, no repeat.
+    const flip = Math.abs(gamepad.axes[2] || 0) > .65 ? (gamepad.axes[2] > 0 ? 'right' : 'left') : '';
+    if (flip !== heldFlip) { heldFlip = flip; if (flip) { diagnostic(`Right stick → ${flip}`); action('team'); } }
     previous = current;
     requestAnimationFrame(poll);
   }
