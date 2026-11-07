@@ -9,7 +9,7 @@ import {Music, musicActive} from './music.js';
 import {PossibleSets, possibleSets, narrowSets} from './possible-sets.mjs';
 import {escapeHtml, facts, typeBadges, moveList, rolePages, movePages} from './info-components.mjs';
 import {demoLines, demoRequest} from './demo.mjs';
-import {moveInformation, effectName, knownOwnMoves, speciesInformation} from './information.mjs';
+import {moveInformation, effectName, knownOwnMoves, speciesInformation, stableOwnOrder} from './information.mjs';
 import {statRanks} from './battle-hints.mjs';
 
 const $ = id => document.getElementById(id);
@@ -17,6 +17,7 @@ const escape = escapeHtml;
 const btn = (id, label, row, disabled = false, extra = '') => `<button id="${id}" data-nav data-row="${row}" ${disabled ? 'disabled' : ''} ${extra}>${label}</button>`;
 let arena, session, auth, config, state = {}, fixture = true, tera = false, lastRequest, selectedRequest, localNotice = '', ignoreButtons = new Set();
 let diagnosticLines = [];
+let ownOrder = [];
 let modalReturnFocus = '';
 let selectedMoveId = '', infoPage = null, rating = null, ratingPage = false, fixtureTimer = false;
 const modal = $('modal');
@@ -52,6 +53,7 @@ $('modal-close').onclick = closeModal;
 modal.addEventListener('cancel', event => { event.preventDefault(); closeModal(); });
 
 function showTools(open, focusId) {
+  if (open) showControlBar(true);
   $('utility').hidden = !open;
   $('toggle-tools').setAttribute('aria-expanded', String(open));
   $('toggle-tools').textContent = open ? 'Fewer controls' : 'More controls';
@@ -59,6 +61,14 @@ function showTools(open, focusId) {
   arena?.resize();
 }
 $('toggle-tools').onclick = () => showTools($('utility').hidden);
+
+// Select hides the whole bottom button row; the battlefield takes the space.
+function showControlBar(show) {
+  const bar = document.querySelector('.controller-bar');
+  bar.hidden = !show;
+  if (!show && bar.contains(document.activeElement)) document.querySelector('#choices button:not(:disabled)')?.focus({preventScroll: true});
+  arena?.resize();
+}
 
 function setup() {
   showModal('Connect your account', `<p>Sign in through Showdown. Your password stays there.</p>
@@ -86,7 +96,14 @@ function diagnostics() {
 }
 
 const currentRequest = () => fixture ? demoRequest : state.request;
-const ownTeam = () => (fixture ? demoRequest : lastRequest)?.side?.pokemon || [];
+// Display order: the lead first, then the rest as first seen. Each entry keeps
+// serverIndex, the position in the latest request, for stats and switches.
+function ownTeam() {
+  const result = stableOwnOrder((fixture ? demoRequest : lastRequest)?.side?.pokemon || [], ownOrder);
+  ownOrder = result.order;
+  return result.team;
+}
+const serverIndex = index => ownTeam()[index - 1]?.serverIndex || index;
 function teamSlots(side) {
   return side === 'opponent' ? arena.opponents() : Array.from({length: 6}, (_, i) => {
     const p = ownTeam()[i];
@@ -97,12 +114,12 @@ function teamSlots(side) {
 
 function knownMoves(side, index) {
   if (side === 'opponent') return arena.opponents()[index - 1]?.moves || [];
-  return knownOwnMoves(ownTeam()[index - 1], currentRequest()).map(move => ({...move, ...arena.moveHint(index, move.id, ownTeam()[index - 1]?.active && tera)}));
+  return knownOwnMoves(ownTeam()[index - 1], currentRequest()).map(move => ({...move, ...arena.moveHint(serverIndex(index), move.id, ownTeam()[index - 1]?.active && tera)}));
 }
 
 function refreshMoveHints() {
   if (!arena) return;
-  const index = ownTeam().findIndex(p => p.active) + 1;
+  const index = ownTeam().find(p => p.active)?.serverIndex || 0;
   const moves = currentRequest()?.active?.[0]?.moves || [];
   for (const [i, move] of moves.entries()) {
     const button = $(`move-${i + 1}`);
@@ -156,8 +173,8 @@ function showInfo(page) {
       const abilities = [...new Set(candidates.flatMap(set => set.roles.flatMap(role => Object.keys(role.abilities))))];
       const ability = own ? effectName('abilities', p.ability || p.baseAbility) : p.ability;
       const abilityText = ability || (own ? 'Unknown' : (abilities.length ? abilities : species.abilities).join(' / ') || 'Unknown');
-      const stats = own ? arena.stats(page.index) : null;
-      const speed = arena.speed(page.side, page.index);
+      const stats = own ? arena.stats(p.serverIndex) : null;
+      const speed = arena.speed(page.side, own ? p.serverIndex : page.index);
       const ranks = stats && !stats.label.startsWith('Original') ? statRanks([...stats.entries, ['Speed', p.stats?.spe]]) : {};
       const speedLabel = speed.kind === 'estimate' ? 'Speed · estimated' : 'Speed';
       const speedInfo = `<div class="identity-speed" data-cue="${ranks.Speed || ''}"><small>${escape(speedLabel)}</small><strong>${escape(speed.value)}</strong>${speed.kind === 'estimate' ? '<small>before modifiers</small>' : speed.modified != null && speed.modified !== speed.value ? `<small>Current: ${escape(speed.modified)}</small>` : ''}</div>`;
@@ -169,7 +186,7 @@ function showInfo(page) {
       const moves = knownMoves(page.side, page.index);
       const count = Math.max(1, Math.ceil(moves.length / 4));
       pages = Array.from({length: count}, (_, i) => ({key: `overview:${i}`, label: count > 1 ? `Overview ${i + 1}/${count}` : 'Overview',
-        content: `<div class="overview-layout"><section>${facts(summary)}<h3>${stats?.label.startsWith('Original') ? 'Original stats · before Transform' : stats ? 'Stats (before battle modifiers)' : 'Speed estimate · before battle modifiers'}</h3><div class="stats-layout">${speedInfo}${stats ? facts(stats.entries.map(([name, value]) => [name, value, {cue: ranks[name]}])) : ''}</div></section>
+        content: `<div class="overview-layout"><section>${facts(summary)}<h3>${stats?.label.startsWith('Original') ? 'Original stats · before Transform' : stats ? 'Stats (before battle modifiers)' : 'Speed estimate · before battle modifiers'}</h3><div class="stats-layout">${stats ? facts(stats.entries.map(([name, value]) => [name, value, {cue: ranks[name]}])) : ''}${speedInfo}</div></section>
           <section><h3>${own ? 'Your moves' : 'Revealed moves'}</h3>${moveList(moves.slice(i * 4, i * 4 + 4), 4)}</section></div>`,
         note: moves.some(m => m.copied) ? '* Copied move' : own ? 'Exact team stats include IVs, EVs and nature.' : inference?.identified ? `Role inferred: ${inference.role}. Unrevealed moves/items remain candidates.` : inference?.status === 'unmatched' ? 'Reveals do not match this snapshot; showing all candidates.' : 'Unrevealed information stays unknown.'}));
       if (!own) pages.push(...rolePages(sets, slot.name, slot.level, speedInfo, inference));
@@ -212,8 +229,15 @@ document.addEventListener('focusin', event => {
   if (move) selectedMoveId = move.id;
 });
 
+// The heading HP follows the renderer too, so it drains with the animation.
+function refreshHpLabel() {
+  const activePokemon = ownTeam().find(p => p.active);
+  $('turn-label').textContent = activePokemon ? `HP ${arena ? arena.ownHealth(activePokemon).condition : activePokemon.condition}` : '';
+}
+
 function renderRoster() {
   if (!$('roster')) return;
+  refreshHpLabel();
   const focusId = document.activeElement?.id;
   const request = currentRequest();
   const disabled = !fixture && (!state.authenticated || state.pending || state.recovering || state.ended || !request || request.wait);
@@ -221,23 +245,24 @@ function renderRoster() {
   for (const rosterSide of ['own', 'opponent']) {
     const roster = $(rosterSide === 'own' ? 'roster' : 'opponent-roster');
     const team = rosterSide === 'own' ? ownTeam().map((p, i) => {
-      const health = p.condition.match(/^(\d+)\/(\d+)/), fainted = /fnt/.test(p.condition);
-      return {index: i + 1, name: p.details.split(',')[0], revealed: true, fainted,
-        percent: fainted ? 0 : health ? Math.max(0, Math.min(100, Number(health[1]) / Number(health[2]) * 100)) : 100,
-        health: fainted ? 'Fainted' : `${p.active ? 'Active · ' : ''}${p.condition}`,
-        canSwitch: !disabled && choices.switches.some(choice => choice.index === i + 1 && choice.enabled)};
+      const shown = arena.ownHealth(p);
+      return {index: i + 1, serverIndex: p.serverIndex, name: p.details.split(',')[0], revealed: true, fainted: shown.fainted, active: p.active,
+        percent: shown.percent, health: shown.fainted ? 'Fainted' : shown.condition, status: shown.condition.match(/ (\w{3})$/)?.[1] || '',
+        canSwitch: !disabled && choices.switches.some(choice => choice.index === p.serverIndex && choice.enabled)};
     }) : arena.opponents();
     roster.innerHTML = team.map(p => {
       const inference = rosterSide === 'opponent' && p.revealed ? narrowSets(sets.snapshot, p.name, p.level, p) : null;
-      const speed = rosterSide === 'own' ? arena.speedHint(p.index, sets.snapshot) : inference?.identified ? {cue: 'green', label: `Role inferred: ${inference.role}${inference.teraType ? `; Tera inferred: ${inference.teraType}` : ''}. Open details.`} : {};
-      const status = rosterSide === 'opponent' ? p.revealed ? `${p.active ? 'Active · ' : ''}${p.health}` : `Slot ${p.index}` : p.health;
+      const speed = rosterSide === 'own' ? arena.speedHint(p.serverIndex, sets.snapshot) : inference?.identified ? {cue: 'green', label: `Role inferred: ${inference.role}${inference.teraType ? `; Tera inferred: ${inference.teraType}` : ''}. Open details.`} : {};
+      // No HP numbers on the roster: the bar shows HP, the text shows state only.
+      const status = !p.revealed ? `Slot ${p.index}` : p.fainted ? 'Fainted' : [p.active ? 'Active' : '', (p.status || '').toUpperCase()].filter(Boolean).join(' · ');
+      const spoken = !p.revealed ? status : p.fainted ? 'Fainted' : `${p.active ? 'Active, ' : ''}${p.health}`;
       const icon = p.revealed ? `<span class="picon" aria-hidden="true" style="${escape(arena.icon(p.name))}"></span>` : '<span class="unknown-pokemon" aria-hidden="true">?</span>';
       return btn(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`, `${icon}<strong>${escape(p.name)}</strong><small>${escape(status)}</small>${p.percent != null ? `<span class="team-hp" aria-hidden="true" data-health="${p.percent <= 20 ? 'critical' : p.percent <= 50 ? 'low' : 'healthy'}"><span style="width:${p.percent}%"></span></span>` : ''}`, `team-${rosterSide}`, false,
-        `data-unavailable="${!p.canSwitch}" data-fainted="${!!p.fainted}" data-cue="${speed.cue || ''}" title="${escape(speed.label || '')}" aria-label="${rosterSide === 'opponent' ? `Opponent slot ${p.index}, ` : ''}${escape(p.name)}, ${escape(status)}. ${escape(speed.label || '')} ${p.canSwitch ? 'Switch Pokémon' : 'View details'}"`);
+        `data-unavailable="${!p.canSwitch}" data-fainted="${!!p.fainted}" data-cue="${speed.cue || ''}" title="${escape(speed.label || '')}" aria-label="${rosterSide === 'opponent' ? `Opponent slot ${p.index}, ` : ''}${escape(p.name)}, ${escape(spoken)}. ${escape(speed.label || '')} ${p.canSwitch ? 'Switch Pokémon' : 'View details'}"`);
     }).join('');
     for (const p of team) $(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`).onclick = () => {
       if (rosterSide === 'opponent') showInfo({kind: 'pokemon', side: 'opponent', index: p.index});
-      else if (p.canSwitch) choose('switch', p.index);
+      else if (p.canSwitch) choose('switch', p.serverIndex);
       else info(p.index);
     };
   }
@@ -284,7 +309,7 @@ function render() {
   $('undo').hidden = !canCancel;
   $('undo').disabled = !canCancel;
   $('arena-wrap').dataset.room = state.room || '';
-  $('turn-label').textContent = activePokemon ? `HP ${activePokemon.condition}` : '';
+  refreshHpLabel();
   $('prompt').textContent = fixture ? `What will ${activePokemon.details.split(',')[0]} do?` : state.ended ? 'Battle complete' : state.recovering ? 'Restoring your battle…' : state.pending || request?.wait ? 'Waiting for the next turn' : request?.forceSwitch ? 'Choose a Pokémon' : activePokemon ? `What will ${activePokemon.details.split(',')[0]} do?` : state.searching ? 'Finding an opponent…' : 'Let’s play';
   const redundantNotice = state.ended && /won the battle\.$|ended in a tie\.$/.test(state.notice || '') || state.notice === 'Choice sent. Waiting for the server.';
   $('notice').textContent = localNotice || (!redundantNotice && state.notice) || (!fixture && state.recovering ? 'Restoring your battle…' : !fixture && !state.authenticated ? state.status : '');
@@ -326,7 +351,7 @@ function render() {
 }
 
 function startLive() {
-  fixture = false; localNotice = ''; lastRequest = null; selectedMoveId = '';
+  fixture = false; localNotice = ''; lastRequest = null; ownOrder = []; selectedMoveId = '';
   arena.reset('battle-gen9randombattle-0');
   session.connect();
 }
@@ -354,9 +379,9 @@ async function init() {
   arena.setFit('wide');
   arena.receive({room: 'battle-gen9randombattle-0', lines: demoLines, snapshot: true, request: demoRequest});
   session = new ShowdownSession({url: config.server, username: config.username, auth, storage: localStorage,
-    onState(next) { if (state.room && !next.room) lastRequest = null; state = next; music.update(musicActive(state, {fixture, hidden: document.hidden, stopped: session.stopped})); render(); },
+    onState(next) { if (state.room && !next.room) { lastRequest = null; ownOrder = []; } state = next; music.update(musicActive(state, {fixture, hidden: document.hidden, stopped: session.stopped})); render(); },
     onBattle(packet) { try {
-      if (arena.room !== packet.room) { lastRequest = null; if (modal.open && infoPage) closeModal(); }
+      if (arena.room !== packet.room) { lastRequest = null; ownOrder = []; if (modal.open && infoPage) closeModal(); }
       arena.receive(packet);
     } catch { localNotice = 'The battle display encountered an error. Controls still use the server request; reload to rebuild the display.'; } },
   });
@@ -380,7 +405,8 @@ async function init() {
       return;
     }
     if (modal.open) return;
-    ({tera: () => $('tera')?.click(), timer: () => showTools(true, 'timer-toggle'), menu: forfeit, info})[action]?.();
+    ({tera: () => $('tera')?.click(), timer: () => showTools(true, 'timer-toggle'), menu: forfeit, info,
+      tools: () => showControlBar(document.querySelector('.controller-bar').hidden)})[action]?.();
   }});
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { music.update(false); return; }

@@ -1,9 +1,9 @@
-export const BUTTONS = {0: 'cancel', 1: 'confirm', 3: 'tera', 9: 'menu', 10: 'timer', 11: 'info', 12: 'up', 13: 'down', 14: 'left', 15: 'right'};
+export const BUTTONS = {0: 'cancel', 1: 'confirm', 3: 'tera', 8: 'tools', 9: 'menu', 10: 'timer', 11: 'info', 12: 'up', 13: 'down', 14: 'left', 15: 'right'};
 export const risingEdges = (current, previous) => current.flatMap((pressed, index) => pressed && !previous[index] ? [index] : []);
 
 export function startController({action, diagnostic, ignored = () => new Set()}) {
   let previous = [], device = '', repeatAt = 0, heldDirection = '';
-  const keys = {ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Enter: 'confirm', Escape: 'cancel', x: 'tera', t: 'timer', i: 'info'};
+  const keys = {ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Enter: 'confirm', Escape: 'cancel', x: 'tera', t: 'timer', i: 'info', h: 'tools'};
   document.addEventListener('keydown', event => {
     if (/INPUT|TEXTAREA|SELECT/.test(event.target.tagName)) return;
     diagnostic(`Key ${event.code} · cancelable ${event.cancelable}`);

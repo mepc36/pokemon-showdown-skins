@@ -41,6 +41,34 @@ export function speciesInformation(name) {
 
 export function effectName(kind, id) { return id ? Dex[kind].get(id).name : ''; }
 
+// The server request lists the active Pokémon first, so its order changes on
+// every switch. Keep the first order seen (the lead first) and remember each
+// entry's current request position, which is what /choose switch needs.
+export function stableOwnOrder(team, previousOrder = []) {
+  const idents = team.map(pokemon => pokemon.ident);
+  // Remembered idents stay in place even while a request is missing, so a
+  // reconnect or an empty request between turns never resets the order.
+  const order = [...previousOrder, ...idents.filter(ident => !previousOrder.includes(ident))];
+  return {order, team: order.filter(ident => idents.includes(ident)).map(ident => {
+    const serverIndex = idents.indexOf(ident) + 1;
+    return {...team[serverIndex - 1], serverIndex};
+  })};
+}
+
+// Renderer HP for the player's own Pokémon. The request already knows the
+// result of the turn before the hit animates, so roster bars read the
+// renderer's copy, which only changes when the damage line plays.
+export function ownDisplayedHealth(battle, pokemon) {
+  const client = battle?.mySide?.pokemon?.find(p => p.ident === pokemon?.ident);
+  if (client && Number.isFinite(client.hp) && client.maxhp > 0) {
+    return {percent: client.fainted ? 0 : Math.max(0, Math.min(100, client.hp / client.maxhp * 100)),
+      fainted: !!client.fainted, condition: client.fainted ? '0 fnt' : `${client.hp}/${client.maxhp}${client.status ? ` ${client.status}` : ''}`};
+  }
+  const health = pokemon?.condition?.match(/^(\d+)\/(\d+)/), fainted = /fnt/.test(pokemon?.condition || '');
+  return {percent: fainted ? 0 : health ? Math.max(0, Math.min(100, Number(health[1]) / Number(health[2]) * 100)) : 100,
+    fainted, condition: pokemon?.condition || ''};
+}
+
 // Reuse the pinned client's calculator, never scrape tooltip HTML or guess a set.
 export function pokemonSpeed(battle, side, index) {
   const unknown = {kind: 'unknown', value: 'Unknown', note: 'Speed is not available yet.'};

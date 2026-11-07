@@ -48,6 +48,22 @@ try {
     check(await page.locator('#roster button').count() === 6 && await page.locator('#opponent-roster button').count() === 6, 'Both six-slot teams are always visible');
     check(await page.locator('#view-own, #view-opponent, #skip, #music, #display, #reconnect, .controller-bar kbd').count() === 0, 'Redundant controls and hints are removed');
     check(!await page.locator('#diagnostics').isVisible() && !await page.locator('#source').isVisible(), 'Extra controls start collapsed');
+    const rosterText = await page.locator('#roster small, #opponent-roster small').allInnerTexts();
+    check(rosterText.length === 12 && rosterText.every(text => !/%|\d+\/\d+/.test(text)) && rosterText.some(text => text.includes('Active')), `Roster entries show state words, never HP numbers: ${rosterText.join(' | ')}`);
+    const barHeight = id => page.locator(`${id} .team-hp`).evaluate(el => el.getBoundingClientRect().height);
+    check(await barHeight('#switch-1') >= 8 && await barHeight('#opponent-1') >= 8, 'Roster HP bars are at least 8px tall');
+    check(await page.locator('#switch-4').getAttribute('data-fainted') === 'true' && (await page.locator('#switch-4 small').innerText()) === 'Fainted', 'Fainted roster state survives without numbers');
+    const arenaBefore = (await page.locator('#arena-wrap').boundingBox()).height;
+    await page.locator('#toggle-tools').focus(); await pad(page, 8);
+    check(!await page.locator('.controller-bar').isVisible() && (await page.locator('#arena-wrap').boundingBox()).height > arenaBefore + 10, 'Select hides the bottom button row and the battlefield grows into the space');
+    check(await page.evaluate(() => document.activeElement.closest('#choices') !== null), 'Hiding the focused bottom row moves focus back to the battle choices');
+    check(!(await fit(page)).length, `Hidden bottom row still fits ${viewport.width}×${viewport.height}: ${await fit(page)}`);
+    await page.screenshot({path: `test-results/${engineName}-no-bottom-row-${viewport.width}-${viewport.height}.png`});
+    await pad(page, 8);
+    check(await page.locator('.controller-bar').isVisible() && Math.abs((await page.locator('#arena-wrap').boundingBox()).height - arenaBefore) < 2, 'Select again restores the bottom row and the battlefield size');
+    await pad(page, 8); await pad(page, 10);
+    check(await page.locator('.controller-bar').isVisible() && await page.evaluate(() => document.activeElement.id) === 'timer-toggle', 'The timer shortcut reveals the hidden bottom row');
+    await page.locator('#toggle-tools').click();
     await page.screenshot({path: `test-results/${engineName}-battle-${viewport.width}-${viewport.height}.png`});
     await page.locator('#toggle-tools').click();
     await page.screenshot({path: `test-results/${engineName}-tools-${viewport.width}-${viewport.height}.png`});
@@ -61,7 +77,8 @@ try {
       check(await page.locator('.info-facts > div').filter({has: page.getByText(label, {exact: true})}).locator('dd').innerText() === '150', `Exact private ${label} remains available`);
     }
     check(await page.locator('.compact-move').count() === 4 && await page.locator('.compact-move button').count() === 0, 'Four compact moves cannot open a nested menu');
-    check(await page.locator('.stats-layout .identity-speed').count() === 1 && await page.locator('.inspection-banner .identity-speed').count() === 0, 'Speed is under the stats heading on the left');
+    check(await page.locator('.stats-layout .identity-speed').count() === 1 && await page.locator('.inspection-banner .identity-speed').count() === 0, 'Speed is under the stats heading');
+    check(JSON.stringify(await page.locator('.stats-layout dt').allInnerTexts()) === JSON.stringify(['Attack', 'Defense', 'Sp. Atk', 'Sp. Def']) && await page.locator('.stats-layout > :last-child').getAttribute('class') === 'identity-speed', 'Stats read Attack, Defense, Sp. Atk, Sp. Def, then Speed last');
     if (viewport.height === 540) {
       const icons = await page.evaluate(async () => {
         const {itemLabel} = await import('/src/info-components.mjs');
@@ -209,6 +226,42 @@ try {
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|move|p2a: Raichu|Spore|p1a: Grumpig\n|turn|19'}));
   await cancel.waitForFunction(() => document.querySelector('.inspection-note').textContent.includes('do not match'));
   check(await cancel.locator('#opponent-4').getAttribute('data-cue') === '' && await cancel.getByText('Tera · inferred', {exact: true}).count() === 0, 'Contradictory reveals clear inferred certainty and restore the full list');
+  await cancel.keyboard.press('Escape');
+
+  // The server request already knows the turn's result; the roster must wait for the hit to land.
+  const barWidth = async id => cancel.locator(`${id} .team-hp > span`).evaluate(el => parseFloat(el.style.width));
+  await cancel.evaluate(async () => {
+    const {demoRequest} = await import('/src/demo.mjs');
+    const hurt = {...demoRequest, rqid: 2, side: {...demoRequest.side, pokemon: demoRequest.side.pokemon.map(p => p.ident === 'p1: Grumpig' ? {...p, condition: '150/297'} : p)}};
+    window.testSocket.onmessage({data: `>battle-gen9randombattle-12345\n|request|${JSON.stringify(hurt)}`});
+  });
+  check(await barWidth('#switch-1') === 100 && (await cancel.locator('#turn-label').innerText()) === 'HP 297/297', 'A request that already knows the damage does not drain the roster bar early');
+  await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|move|p2a: Raichu|Thunderbolt|p1a: Grumpig\n|-damage|p1a: Grumpig|150/297\n|turn|20'}));
+  check(await barWidth('#switch-1') === 100, 'The roster bar still waits while the attack animation plays');
+  await cancel.waitForFunction(() => document.querySelector('#turn-label').textContent === 'HP 150/297', null, {timeout: 15000});
+  check(Math.abs(await barWidth('#switch-1') - 150 / 297 * 100) < 0.01, 'After the hit lands the roster bar drains to the renderer HP');
+
+  // Switching reorders the server request (active first); the roster keeps the lead first.
+  await cancel.evaluate(async () => {
+    const {demoRequest} = await import('/src/demo.mjs');
+    const team = demoRequest.side.pokemon.map(p => ({...p, active: p.ident === 'p1: Palossand'}));
+    const swapped = {...demoRequest, rqid: 3, side: {...demoRequest.side, pokemon: [team[1], team[0], ...team.slice(2)]}};
+    window.testSocket.onmessage({data: `>battle-gen9randombattle-12345\n|request|${JSON.stringify(swapped)}`});
+    window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|switch|p1a: Palossand|Palossand, L80|118/324\n|switch|p2a: Rotom|Rotom-Wash, L80|34/100 par\n|turn|21'});
+  });
+  await cancel.waitForFunction(() => document.querySelector('#turn-label').textContent === 'HP 118/324', null, {timeout: 15000});
+  check(JSON.stringify(await cancel.locator('#roster strong').allInnerTexts()) === JSON.stringify(['Grumpig', 'Palossand', 'Excadrill', 'Breloom', 'Amoonguss', 'Iron Hands']), 'Own roster keeps the lead first after a switch');
+  check((await cancel.locator('#switch-2 small').innerText()) === 'Active' && (await cancel.locator('#switch-1 small').innerText()) === '', 'The active marker follows the Pokémon, not the slot');
+  check(JSON.stringify(await cancel.locator('#opponent-roster strong').allInnerTexts()) === JSON.stringify(['Landorus', 'Corviknight', 'Rotom-Wash', 'Raichu', 'Not revealed', 'Not revealed']), 'Opponent roster stays in order of first reveal after a switch');
+  await cancel.locator('#switch-1').focus(); await cancel.keyboard.press('i');
+  check((await cancel.locator('#modal-title').innerText()).includes('Grumpig'), 'R3 on the first roster slot still opens the lead');
+  await cancel.keyboard.press('Escape');
+  await cancel.locator('#switch-1').click();
+  check((await cancel.locator('#test-commands').innerText()).includes('/choose switch 2|3'), 'Switching to the displayed lead sends its current server index');
+  await cancel.keyboard.press('Escape');
+  await cancel.keyboard.press('h');
+  check(!await cancel.locator('.controller-bar').isVisible(), 'Keyboard H hides the bottom row too');
+  await cancel.keyboard.press('h');
   await cancel.close();
 
   // Audio implementation is unchanged; keep its existing Chromium regression.
