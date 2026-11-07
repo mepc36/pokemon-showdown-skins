@@ -35,7 +35,7 @@ async function pad(page, index) {
 }
 async function gamepad(page) {
   await page.addInitScript(() => {
-    window.testPad = {id: 'Controller fixture', mapping: 'standard', axes: [0, 0], buttons: Array.from({length: 16}, () => ({pressed: false, value: 0}))};
+    window.testPad = {id: 'Controller fixture', mapping: 'standard', axes: [0, 0, 0, 0], buttons: Array.from({length: 16}, () => ({pressed: false, value: 0}))};
     navigator.getGamepads = () => {
       window.testPadObserved = window.testPad.buttons.map(button => button.pressed);
       return [window.testPad];
@@ -48,21 +48,24 @@ try {
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     await page.goto(base); await page.waitForSelector('#switch-1');
     check(await page.locator('#all-moves, #info, #move-details').count() === 0, 'Duplicate menus and separate Move info button are removed');
-    check(await page.locator('#roster button').count() === 6 && await page.locator('#opponent-roster button').count() === 6, 'Both six-slot teams are always visible');
+    check(await page.locator('#roster button').count() === 6 && await page.locator('#opponent-roster button').count() === 6 && await page.locator('#roster').isVisible() && !await page.locator('#opponent-roster').isVisible(), 'Six slots per team; your row shows first, one row at a time');
     check(await page.locator('#view-own, #view-opponent, #skip, #music, #display, #reconnect, .controller-bar kbd').count() === 0, 'Redundant controls and hints are removed');
     check(await page.locator('.app-header #utility #diagnostics').isVisible() && await page.locator('.app-header #source').isVisible() && await page.locator('#toggle-tools, .controller-bar, #turn-label').count() === 0, 'Secondary controls sit in the header, always visible, with no More controls row');
     const rosterText = await page.locator('#roster button, #opponent-roster button').allInnerTexts();
     check(rosterText.length === 12 && rosterText.every(text => !/%|\d+\/\d+|Active/.test(text)), `Roster entries show no HP numbers and no Active text: ${rosterText.join(' | ')}`);
     check(await page.locator('#switch-1[data-active=true]').count() === 1 && await page.locator('#roster [data-active=true]').count() === 1, 'The active Pokémon is marked by attribute, not text');
+    await page.locator('#switch-3').focus(); await page.evaluate(() => { window.testPad.axes[2] = 1; }); await page.waitForTimeout(120); await page.evaluate(() => { window.testPad.axes[2] = 0; }); await page.waitForTimeout(60);
+    check(await page.locator('#opponent-roster').isVisible() && !await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'opponent-3', 'Right stick flips to the opponent row and keeps the same slot focused');
     check((await page.locator('#opponent-3 strong').innerText()).replace(/\s+/g, ' ') === 'Rotom-Wash PAR', 'Status sits on the name line of the roster button');
+    await page.keyboard.press('f');
+    check(await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-3', 'F flips back to your row');
     check(await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('#switch-1 strong')).fontSize)) >= 14.5, 'Roster names are larger');
-    check(await page.locator('.team-row + .team-row').evaluate(el => parseFloat(getComputedStyle(el).borderTopWidth)) >= 2, 'A divider separates your row from the opponent row');
     check(await page.locator('#battle-timer').evaluate(el => getComputedStyle(el).color) !== 'rgb(17, 17, 17)', 'Timer is no longer black');
     check(await page.locator('.moves > #tera').count() === 1 && await page.locator('.command-heading, #prompt').count() === 0 && await page.locator('#tera').evaluate(el => el.getBoundingClientRect().right > document.querySelector('#move-4').getBoundingClientRect().right), 'Tera sits at the right end of the move row and the heading row is gone');
     const cueStyle = await page.evaluate(() => { const el = document.querySelector('#switch-1'); return ({border: parseFloat(getComputedStyle(el).borderTopWidth), image: getComputedStyle(el).backgroundImage, cue: el.dataset.cue}); });
     check(cueStyle.cue && cueStyle.border >= 3 && (cueStyle.image.match(/gradient/g) || []).length >= 2, `Speed cue uses a thick two-tone gradient border: ${JSON.stringify(cueStyle)}`);
     check(await height(page, '#switch-1') >= 60, 'Roster buttons are at least 60px tall');
-    check(await height(page, '#switch-1 .team-hp') >= 8 && await height(page, '#opponent-1 .team-hp') >= 8, 'Roster HP bars are at least 8px tall');
+    check(await height(page, '#switch-1 .team-hp') >= 8, 'Roster HP bars are at least 8px tall');
     check(await page.locator('#switch-4').getAttribute('data-fainted') === 'true' && (await page.locator('#switch-4').getAttribute('aria-label')).includes('Fainted') && await page.locator('#switch-4 .status-tag').count() === 0, 'Fainted Pokémon are styled and announced, with no tag or numbers');
     await page.screenshot({path: `test-results/${engineName}-battle-${viewport.width}-${viewport.height}.png`});
     check(!(await fit(page)).length, `Battle and header controls fit ${viewport.width}×${viewport.height}: ${await fit(page)}`);
@@ -73,7 +76,9 @@ try {
     await pad(page, 8);
     check(await page.locator('#utility').isVisible(), 'Select again restores the secondary controls');
     await pad(page, 8); await pad(page, 10);
-    check(await page.locator('#utility').isVisible() && await page.evaluate(() => document.activeElement.id) === 'timer-toggle', 'The timer shortcut reveals the hidden controls');
+    check(!await page.locator('#utility').isVisible(), 'L3 is unmapped and no longer jumps to the timer');
+    await page.keyboard.press('t');
+    check(await page.locator('#utility').isVisible() && await page.evaluate(() => document.activeElement.id) === 'timer-toggle', 'The T key still reveals the controls and focuses the timer');
     await page.locator('#switch-1').focus(); await pad(page, 11);
     await page.waitForSelector('#info-content');
     check(await page.locator('[data-info-tab], #prev-info-page, .inspection-note').count() === 0, 'Own Pokémon have one flat page: no Overview tab, no paging, no footnote');
@@ -114,7 +119,7 @@ try {
     await page.screenshot({path: `test-results/${engineName}-move-${viewport.width}-${viewport.height}.png`});
     await pad(page, 0);
     check(await page.evaluate(() => document.activeElement.id) === 'move-2', 'Move details close directly to the battle move');
-    await page.locator('#opponent-1').focus(); await pad(page, 11);
+    await page.keyboard.press('f'); await page.locator('#opponent-1').focus(); await pad(page, 11);
     check((await page.locator('#modal-title').innerText()) === 'Landorus · Lv 76' && (await page.locator('.overview-layout > .info-facts').innerText()).includes('Sheer Force') && (await page.locator('.identity-hp').innerText()).includes('31%'), 'Opponent identity shows level, revealed ability and last shown HP');
     await page.waitForSelector('#info-tab-1'); await pad(page, 13);
     check(await page.locator('.role-layout').count() === 1, 'D-pad down opens the opponent possible-role page');
@@ -128,7 +133,7 @@ try {
     check((await page.locator('.overview-layout > .info-facts').innerText()).includes('Possible abilities') && (await page.locator('.identity-speed').innerText()).includes('estimated') && await page.locator('[aria-selected=true]').innerText() === 'Overview', 'Right moves to the next opponent and resets to Overview; unrevealed ability and Speed are labelled as estimates');
     await pad(page, 15);
     check(await page.locator('[data-info-tab]').count() === 0 && await page.locator('.type-badge, .compact-move').count() === 0, 'Unknown slots expose neither a guessed identity nor possible sets');
-    await pad(page, 0);
+    await pad(page, 0); await page.keyboard.press('f');
     for (const id of ['setup', 'diagnostics']) {
       await page.locator(`#${id}`).click();
       check(!(await fit(page)).length, `${id} has no scrolling: ${await fit(page)}`);
@@ -144,7 +149,7 @@ try {
   // Render every real candidate role at the smallest supported landscape size.
   const pools = await browser.newPage({viewport: {width: 1024, height: 540}, hasTouch: true, isMobile: true});
   await pools.goto(base); await pools.waitForSelector('#switch-1');
-  await pools.locator('#opponent-1').focus(); await pools.keyboard.press('i');
+  await pools.keyboard.press('f'); await pools.locator('#opponent-1').focus(); await pools.keyboard.press('i');
   await pools.waitForSelector('#info-tab-1'); await pools.keyboard.press('ArrowDown');
   const coverage = await pools.evaluate(async () => {
     const {rolePages} = await import('/src/info-components.mjs');
@@ -183,7 +188,7 @@ try {
   await failed.locator('#switch-1').focus(); await failed.keyboard.press('i');
   check(await failed.locator('.compact-move').count() === 4, 'Known moves survive unavailable set data');
   check(await failed.locator('#retry-sets').count() === 0, 'Own Pokémon never show a set-data retry page');
-  await failed.keyboard.press('Escape'); await failed.locator('#opponent-1').focus(); await failed.keyboard.press('i');
+  await failed.keyboard.press('Escape'); await failed.keyboard.press('f'); await failed.locator('#opponent-1').focus(); await failed.keyboard.press('i');
   await failed.keyboard.press('ArrowDown'); await failed.waitForSelector('#retry-sets');
   await failed.unroute('**/data/gen9randombattle.json'); await failed.keyboard.press('Enter');
   await failed.waitForSelector('.role-layout');
@@ -220,7 +225,7 @@ try {
   await cancel.setViewportSize({width: 1024, height: 540});
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|switch|p2a: Raichu|Raichu, L88, M|100/100\n|turn|17'}));
   await cancel.waitForFunction(() => document.querySelector('#opponent-4')?.textContent.includes('Raichu'));
-  await cancel.locator('#opponent-4').focus(); await cancel.keyboard.press('i');
+  await cancel.keyboard.press('f'); await cancel.locator('#opponent-4').focus(); await cancel.keyboard.press('i');
   check(await cancel.locator('[data-info-tab]').count() > 2 && !(await cancel.locator('.identity-types').innerText()).includes('Role identified'), 'Ambiguous opponent keeps all matching roles');
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|move|p2a: Raichu|Tera Blast|p1a: Grumpig\n|turn|18'}));
   await cancel.waitForSelector('.identity-types small[data-identified=true]');
@@ -233,7 +238,7 @@ try {
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|move|p2a: Raichu|Spore|p1a: Grumpig\n|turn|19'}));
   await cancel.waitForFunction(() => document.querySelector('.inspection-note').textContent.includes('do not match'));
   check(await cancel.locator('#opponent-4').getAttribute('data-cue') === '' && await cancel.getByText('Tera · inferred', {exact: true}).count() === 0, 'Contradictory reveals clear inferred certainty and restore the full list');
-  await cancel.keyboard.press('Escape');
+  await cancel.keyboard.press('Escape'); await cancel.keyboard.press('f');
 
   // The server request already knows the turn's result; the roster must wait for the hit to land.
   const barWidth = async id => cancel.locator(`${id} .team-hp > span`).evaluate(el => parseFloat(el.style.width));

@@ -18,6 +18,7 @@ const btn = (id, label, row, disabled = false, extra = '') => `<button id="${id}
 let arena, session, auth, config, state = {}, fixture = true, tera = false, lastRequest, selectedRequest, localNotice = '', ignoreButtons = new Set();
 let diagnosticLines = [];
 let ownOrder = [];
+let shownTeam = 'own';
 let modalReturnFocus = '';
 let selectedMoveId = '', infoPage = null, rating = null, ratingPage = false, fixtureTimer = false;
 const modal = $('modal');
@@ -267,6 +268,16 @@ function renderRoster() {
   if (!modal.open && focusId) $(focusId)?.focus({preventScroll: true});
 }
 
+// One team row shows at a time; the right stick (or F) flips between them.
+// Focus carries over to the same slot so the cursor does not vanish.
+function showTeam(side = shownTeam === 'own' ? 'opponent' : 'own') {
+  shownTeam = side;
+  const focused = document.activeElement?.id.match(/^(switch|opponent)-(\d+)$/);
+  for (const row of document.querySelectorAll('.team-row')) row.hidden = row.dataset.side !== side;
+  if (focused) $(`${side === 'own' ? 'switch' : 'opponent'}-${focused[2]}`)?.focus({preventScroll: true});
+  arena?.resize();
+}
+
 function forfeit() {
   if (fixture) { localNotice = 'Start opens a forfeit confirmation during a live battle.'; render(); return; }
   if (!state.room || state.ended) return;
@@ -321,8 +332,8 @@ function render() {
     const type = window.BattleMovedex[move.id]?.type || '';
     return btn(`move-${move.index}`, `<strong>${escape(move.move)}</strong><small><span class="move-type">${escape(type)}</span><span>${escape(move.pp ?? '—')} / ${escape(move.maxpp ?? '—')} PP</span></small>`, 'moves', disabled || !move.enabled, `data-type="${escape(type)}" aria-description="R3 or I for move information"`);
   }).join('')}</div>
-    <div class="team-row"><span class="team-label">You</span><div id="roster" class="team" role="group" aria-label="Your six Pokémon"></div></div>
-    <div class="team-row"><span class="team-label">Foe</span><div id="opponent-roster" class="team" role="group" aria-label="Opponent’s six Pokémon"></div></div>`;
+    <div class="team-row" data-side="own" ${shownTeam === 'own' ? '' : 'hidden'}><span class="team-label">You</span><div id="roster" class="team" role="group" aria-label="Your six Pokémon"></div></div>
+    <div class="team-row" data-side="opponent" ${shownTeam === 'opponent' ? '' : 'hidden'}><span class="team-label">Foe</span><div id="opponent-roster" class="team" role="group" aria-label="Opponent’s six Pokémon"></div></div>`;
   // Tera and Cancel keep their nodes and handlers; they sit at the end of the move row.
   $('choices').querySelector('.moves').append($('tera'), $('undo'));
   renderRoster();
@@ -406,7 +417,7 @@ async function init() {
       return;
     }
     if (modal.open) return;
-    ({tera: () => $('tera')?.click(), timer: () => showTools(true, 'timer-toggle'), menu: forfeit, info,
+    ({tera: () => $('tera')?.click(), timer: () => showTools(true, 'timer-toggle'), menu: forfeit, info, team: () => showTeam(),
       tools: () => showTools($('utility').hidden)})[action]?.();
   }});
   document.addEventListener('visibilitychange', () => {
