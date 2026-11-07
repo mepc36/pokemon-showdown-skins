@@ -21,6 +21,9 @@ const fit = async page => page.evaluate(() => {
   }
   return bad;
 });
+// Resolve and measure in one JS turn: the rosters re-render while animations play, so a Playwright
+// element handle can go stale between lookup and measurement.
+const height = (page, selector) => page.evaluate(sel => document.querySelector(sel)?.getBoundingClientRect().height ?? 0, selector);
 async function pad(page, index) {
   // Synchronize with the real controller poll. A fixed 55 ms pulse can fall
   // entirely between WebKit frames, especially immediately after a screenshot.
@@ -52,13 +55,15 @@ try {
     check(rosterText.length === 12 && rosterText.every(text => !/%|\d+\/\d+|Active/.test(text)), `Roster entries show no HP numbers and no Active text: ${rosterText.join(' | ')}`);
     check(await page.locator('#switch-1[data-active=true]').count() === 1 && await page.locator('#roster [data-active=true]').count() === 1, 'The active Pokémon is marked by attribute, not text');
     check((await page.locator('#opponent-3 strong').innerText()).replace(/\s+/g, ' ') === 'Rotom-Wash PAR', 'Status sits on the name line of the roster button');
-    check(await page.locator('#switch-1 strong').evaluate(el => parseFloat(getComputedStyle(el).fontSize)) >= 14.5, 'Roster names are larger');
+    check(await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('#switch-1 strong')).fontSize)) >= 14.5, 'Roster names are larger');
     check(await page.locator('.team-row + .team-row').evaluate(el => parseFloat(getComputedStyle(el).borderTopWidth)) >= 2, 'A divider separates your row from the opponent row');
     check(await page.locator('#battle-timer').evaluate(el => getComputedStyle(el).color) !== 'rgb(17, 17, 17)', 'Timer is no longer black');
-    const barHeight = id => page.locator(`${id} .team-hp`).evaluate(el => el.getBoundingClientRect().height);
-    check(await barHeight('#switch-1') >= 8 && await barHeight('#opponent-1') >= 8, 'Roster HP bars are at least 8px tall');
+    check(await page.locator('.moves > #tera').count() === 1 && await page.locator('.command-heading, #prompt').count() === 0 && await page.locator('#tera').evaluate(el => el.getBoundingClientRect().right > document.querySelector('#move-4').getBoundingClientRect().right), 'Tera sits at the right end of the move row and the heading row is gone');
+    const cueStyle = await page.evaluate(() => { const el = document.querySelector('#switch-1'); return ({border: parseFloat(getComputedStyle(el).borderTopWidth), image: getComputedStyle(el).backgroundImage, cue: el.dataset.cue}); });
+    check(cueStyle.cue && cueStyle.border >= 3 && (cueStyle.image.match(/gradient/g) || []).length >= 2, `Speed cue uses a thick two-tone gradient border: ${JSON.stringify(cueStyle)}`);
+    check(await height(page, '#switch-1') >= 60, 'Roster buttons are at least 60px tall');
+    check(await height(page, '#switch-1 .team-hp') >= 8 && await height(page, '#opponent-1 .team-hp') >= 8, 'Roster HP bars are at least 8px tall');
     check(await page.locator('#switch-4').getAttribute('data-fainted') === 'true' && (await page.locator('#switch-4').getAttribute('aria-label')).includes('Fainted') && await page.locator('#switch-4 .status-tag').count() === 0, 'Fainted Pokémon are styled and announced, with no tag or numbers');
-    check(await page.locator('#switch-1').evaluate(el => el.getBoundingClientRect().height) >= 50, 'Roster buttons are taller than before');
     await page.screenshot({path: `test-results/${engineName}-battle-${viewport.width}-${viewport.height}.png`});
     check(!(await fit(page)).length, `Battle and header controls fit ${viewport.width}×${viewport.height}: ${await fit(page)}`);
     await page.locator('#setup').focus(); await pad(page, 8);
@@ -73,13 +78,14 @@ try {
     await page.waitForSelector('#info-content');
     check(await page.locator('[data-info-tab], #prev-info-page, .inspection-note').count() === 0, 'Own Pokémon have one flat page: no Overview tab, no paging, no footnote');
     check((await page.locator('#modal-title').innerText()) === 'Grumpig · Lv 92', 'R3 shows name and level without gender');
-    check((await page.locator('.inspection-banner').innerText()).includes('Thick Fat') && await page.locator('.identity-types .type-badge').innerText() === 'Psychic', 'Ability and types are prominent');
+    check((await page.locator('.inspection-banner').innerText()).includes('297/297') && await page.locator('.identity-types .type-badge').innerText() === 'Psychic', 'Types and exact HP share the banner');
     for (const label of ['Attack', 'Defense', 'Sp. Atk', 'Sp. Def']) {
       check(await page.locator('.info-facts > div').filter({has: page.getByText(label, {exact: true})}).locator('dd').innerText() === '150', `Exact private ${label} remains available`);
     }
     check(await page.locator('.compact-move').count() === 4 && await page.locator('.compact-move button').count() === 0, 'Four compact moves cannot open a nested menu');
     check(JSON.stringify(await page.locator('.stats-layout dt').allInnerTexts()) === JSON.stringify(['Attack', 'Defense', 'Sp. Atk', 'Sp. Def', 'Speed']) && await page.locator('.identity-speed').count() === 0, 'Stats read Attack, Defense, Sp. Atk, Sp. Def, Speed in one row');
-    check(JSON.stringify(await page.locator('.overview-layout > .info-facts dt').allInnerTexts()) === JSON.stringify(['Item', 'Tera', 'HP']) && !(await page.locator('#modal-body').innerText()).includes('IVs'), 'Own overview shows item, Tera and exact HP, without the IV note');
+    check(JSON.stringify(await page.locator('.overview-layout > .info-facts dt').allInnerTexts()) === JSON.stringify(['Ability', 'Item', 'Tera']) && (await page.locator('.overview-layout > .info-facts').innerText()).includes('Thick Fat') && !(await page.locator('#modal-body').innerText()).includes('IVs'), 'Own overview reads Ability, Item, Tera, without the IV note');
+    check(await height(page, '.overview-layout .compact-move') >= 0.85 * await height(page, '.stats-layout .info-facts > div'), 'R3 move entries are about as tall as the stat cells');
     check(await page.locator('.compact-moves').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length) === 4, 'Known moves sit in one row of four');
     if (viewport.height === 540) {
       const icons = await page.evaluate(async () => {
@@ -99,7 +105,7 @@ try {
     await pad(page, 15);
     check((await page.locator('#modal-title').innerText()).includes('Palossand'), 'D-pad right moves to the next Pokémon, matching the roster');
     await pad(page, 14); await pad(page, 14);
-    check((await page.locator('#modal-title').innerText()).includes('Iron Hands') && (await page.locator('#info-content').innerText()).includes('0 fnt'), 'D-pad left wraps to the sixth, fainted Pokémon');
+    check((await page.locator('#modal-title').innerText()).includes('Iron Hands') && (await page.locator('.identity-hp').innerText()).includes('0 fnt'), 'D-pad left wraps to the sixth, fainted Pokémon');
     await pad(page, 0);
     check(!await page.locator('#modal').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-1', 'One B closes the whole panel and restores the original roster focus');
     await page.locator('#move-2').focus(); await pad(page, 11);
@@ -109,7 +115,7 @@ try {
     await pad(page, 0);
     check(await page.evaluate(() => document.activeElement.id) === 'move-2', 'Move details close directly to the battle move');
     await page.locator('#opponent-1').focus(); await pad(page, 11);
-    check((await page.locator('#modal-title').innerText()) === 'Landorus · Lv 76' && (await page.locator('.identity-ability').innerText()).includes('Sheer Force'), 'Opponent identity shows level and revealed ability');
+    check((await page.locator('#modal-title').innerText()) === 'Landorus · Lv 76' && (await page.locator('.overview-layout > .info-facts').innerText()).includes('Sheer Force') && (await page.locator('.identity-hp').innerText()).includes('31%'), 'Opponent identity shows level, revealed ability and last shown HP');
     await page.waitForSelector('#info-tab-1'); await pad(page, 13);
     check(await page.locator('.role-layout').count() === 1, 'D-pad down opens the opponent possible-role page');
     const roleTitle = await page.locator('[aria-selected=true]').innerText();
@@ -119,7 +125,7 @@ try {
     check(!(await fit(page)).length, `Role fits without scrolling: ${await fit(page)}`);
     await page.screenshot({path: `test-results/${engineName}-possible-role-${viewport.width}-${viewport.height}.png`});
     await pad(page, 15); await pad(page, 15);
-    check((await page.locator('.identity-ability').innerText()).includes('Possible abilities') && (await page.locator('.identity-speed').innerText()).includes('estimated') && await page.locator('[aria-selected=true]').innerText() === 'Overview', 'Right moves to the next opponent and resets to Overview; unrevealed ability and Speed are labelled as estimates');
+    check((await page.locator('.overview-layout > .info-facts').innerText()).includes('Possible abilities') && (await page.locator('.identity-speed').innerText()).includes('estimated') && await page.locator('[aria-selected=true]').innerText() === 'Overview', 'Right moves to the next opponent and resets to Overview; unrevealed ability and Speed are labelled as estimates');
     await pad(page, 15);
     check(await page.locator('[data-info-tab]').count() === 0 && await page.locator('.type-badge, .compact-move').count() === 0, 'Unknown slots expose neither a guessed identity nor possible sets');
     await pad(page, 0);
@@ -254,7 +260,7 @@ try {
   const names = id => cancel.locator(`${id} strong`).evaluateAll(els => els.map(el => el.firstChild.textContent));
   check(JSON.stringify(await names('#roster')) === JSON.stringify(['Grumpig', 'Palossand', 'Excadrill', 'Breloom', 'Amoonguss', 'Iron Hands']), 'Own roster keeps the lead first after a switch');
   check(await cancel.locator('#switch-2').getAttribute('data-active') === 'true' && await cancel.locator('#switch-1').getAttribute('data-active') === 'false', 'The active marker follows the Pokémon, not the slot');
-  check(JSON.stringify(await names('#opponent-roster')) === JSON.stringify(['Landorus', 'Corviknight', 'Rotom-Wash', 'Raichu', 'Not revealed', 'Not revealed']), 'Opponent roster stays in order of first reveal after a switch');
+  check(JSON.stringify(await names('#opponent-roster')) === JSON.stringify(['Landorus', 'Corviknight', 'Rotom-Wash', 'Raichu', 'Unknown', 'Unknown']), 'Opponent roster stays in order of first reveal after a switch');
   await cancel.locator('#switch-1').focus(); await cancel.keyboard.press('i');
   check((await cancel.locator('#modal-title').innerText()).includes('Grumpig'), 'R3 on the first roster slot still opens the lead');
   await cancel.keyboard.press('Escape');
