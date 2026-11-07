@@ -52,22 +52,12 @@ function closeModal() {
 $('modal-close').onclick = closeModal;
 modal.addEventListener('cancel', event => { event.preventDefault(); closeModal(); });
 
+// The secondary controls live in the header. Select (or H) hides and shows them.
 function showTools(open, focusId) {
-  if (open) showControlBar(true);
-  $('utility').hidden = !open;
-  $('toggle-tools').setAttribute('aria-expanded', String(open));
-  $('toggle-tools').textContent = open ? 'Fewer controls' : 'More controls';
-  if (focusId) $(focusId)?.focus({preventScroll: true});
-  arena?.resize();
-}
-$('toggle-tools').onclick = () => showTools($('utility').hidden);
-
-// Select hides the whole bottom button row; the battlefield takes the space.
-function showControlBar(show) {
-  const bar = document.querySelector('.controller-bar');
-  bar.hidden = !show;
-  if (!show && bar.contains(document.activeElement)) document.querySelector('#choices button:not(:disabled)')?.focus({preventScroll: true});
-  arena?.resize();
+  const tools = $('utility');
+  tools.hidden = !open;
+  if (!open && tools.contains(document.activeElement)) document.querySelector('#choices button:not(:disabled)')?.focus({preventScroll: true});
+  if (open && focusId) $(focusId)?.focus({preventScroll: true});
 }
 
 function setup() {
@@ -161,9 +151,9 @@ function showInfo(page) {
     pages = movePages(move);
   } else {
     const slot = teamSlots(page.side)[page.index - 1];
-    title = slot.revealed ? `${slot.name} ${slot.gender === 'M' ? '♂' : slot.gender === 'F' ? '♀' : '⚲'} · Lv ${slot.level}` : `Unknown Pokémon · slot ${page.index}`;
+    title = slot.revealed ? `${slot.name} · Lv ${slot.level}` : `Unknown Pokémon · slot ${page.index}`;
     if (!slot.revealed) {
-      banner = `<div class="inspection-banner"><strong>${page.side === 'own' ? 'Your team' : 'Opponent'} · ${page.index}/6</strong></div>`;
+      banner = `<div class="inspection-banner"><strong>${page.side === 'own' ? 'Your team' : 'Opponent'} · slot ${page.index}</strong></div>`;
       pages = [{key: 'overview', label: 'Overview', content: '<p class="empty-info">This Pokémon has not been revealed.</p>', note: 'Species, abilities, Speed and moves are unknown.'}];
     } else {
       const own = page.side === 'own', p = own ? ownTeam()[page.index - 1] : slot;
@@ -178,39 +168,52 @@ function showInfo(page) {
       const ranks = stats && !stats.label.startsWith('Original') ? statRanks([...stats.entries, ['Speed', p.stats?.spe]]) : {};
       const speedLabel = speed.kind === 'estimate' ? 'Speed · estimated' : 'Speed';
       const speedInfo = `<div class="identity-speed" data-cue="${ranks.Speed || ''}"><small>${escape(speedLabel)}</small><strong>${escape(speed.value)}</strong>${speed.kind === 'estimate' ? '<small>before modifiers</small>' : speed.modified != null && speed.modified !== speed.value ? `<small>Current: ${escape(speed.modified)}</small>` : ''}</div>`;
-      banner = `<div class="inspection-banner"><div class="identity-types">${typeBadges(own ? species.types : p.types)}<small data-identified="${!!inference?.identified}">${own ? 'Your team' : 'Opponent'} · ${page.index}/6${inference?.identified ? ' · Role identified' : ''}</small></div>
+      // Same reading order as the main screen: who it is, what it holds, how fast, what it can do.
+      banner = `<div class="inspection-banner"><div class="identity-types">${typeBadges(own ? species.types : p.types)}${inference?.identified ? '<small data-identified="true">Role identified</small>' : ''}</div>
         <div class="identity-ability"><small>${!own && !ability ? 'Possible abilities' : 'Ability'}</small><strong>${escape(abilityText)}</strong></div></div>`;
-      const summary = own ? [['HP / status', p.condition], ['Item', effectName('items', p.item) || 'No item', {item: true}], ['Tera', p.teraType || 'Unknown', p.teraType]] :
-        [['Last shown HP', p.health], ['Status', p.status || 'None shown'], ['Item', p.item || (p.previousItem ? `Lost ${p.previousItem}` : 'Not revealed'), {item: !!p.item}],
-          inference?.teraType ? ['Tera · inferred', inference.teraType, {type: inference.teraType, cue: 'green', hint: 'All remaining set definitions have this Tera type'}] : ['Tera', p.teraType || 'Not revealed', p.teraType]];
+      const summary = own ? [['Item', effectName('items', p.item) || 'No item', {item: true}], ['Tera', p.teraType || 'Unknown', p.teraType], ['HP', arena.ownHealth(p).condition]] :
+        [['Item', p.item || (p.previousItem ? `Lost ${p.previousItem}` : 'Not revealed'), {item: !!p.item}],
+          inference?.teraType ? ['Tera · inferred', inference.teraType, {type: inference.teraType, cue: 'green', hint: 'All remaining set definitions have this Tera type'}] : ['Tera', p.teraType || 'Not revealed', p.teraType],
+          ['Last shown HP', p.health], ['Status', p.status || 'None shown']];
+      const statCells = stats ? [...stats.entries.map(([name, value]) => [name, value, {cue: ranks[name]}]),
+        ['Speed', speed.kind === 'known' && speed.modified != null && speed.modified !== speed.value ? `${speed.value} → ${speed.modified}` : speed.value, {cue: ranks.Speed}]] : null;
       const moves = knownMoves(page.side, page.index);
       const count = Math.max(1, Math.ceil(moves.length / 4));
       pages = Array.from({length: count}, (_, i) => ({key: `overview:${i}`, label: count > 1 ? `Overview ${i + 1}/${count}` : 'Overview',
-        content: `<div class="overview-layout"><section>${facts(summary)}<h3>${stats?.label.startsWith('Original') ? 'Original stats · before Transform' : stats ? 'Stats (before battle modifiers)' : 'Speed estimate · before battle modifiers'}</h3><div class="stats-layout">${stats ? facts(stats.entries.map(([name, value]) => [name, value, {cue: ranks[name]}])) : ''}${speedInfo}</div></section>
-          <section><h3>${own ? 'Your moves' : 'Revealed moves'}</h3>${moveList(moves.slice(i * 4, i * 4 + 4), 4)}</section></div>`,
-        note: moves.some(m => m.copied) ? '* Copied move' : own ? 'Exact team stats include IVs, EVs and nature.' : inference?.identified ? `Role inferred: ${inference.role}. Unrevealed moves/items remain candidates.` : inference?.status === 'unmatched' ? 'Reveals do not match this snapshot; showing all candidates.' : 'Unrevealed information stays unknown.'}));
+        content: `<div class="overview-layout">${facts(summary)}<h3>${stats?.label.startsWith('Original') ? 'Original stats · before Transform' : stats ? 'Stats (before modifiers)' : 'Speed estimate · before modifiers'}</h3>
+          ${statCells ? `<div class="stats-layout">${facts(statCells)}</div>` : `<div class="stats-layout">${speedInfo}</div>`}
+          <h3>${own ? 'Moves' : 'Revealed moves'}</h3>${moveList(moves.slice(i * 4, i * 4 + 4), 4)}</div>`,
+        note: moves.some(m => m.copied) ? '* Copied move' : own ? '' : inference?.identified ? `Role inferred: ${inference.role}. Unrevealed moves/items remain candidates.` : inference?.status === 'unmatched' ? 'Reveals do not match this snapshot; showing all candidates.' : 'Unrevealed information stays unknown.'}));
       if (!own) pages.push(...rolePages(sets, slot.name, slot.level, speedInfo, inference));
     }
   }
   const tab = Math.max(0, Math.min(page.tab || 0, pages.length - 1));
   const current = pages[tab];
-  const tabs = `<div class="inspection-tabs" role="tablist" aria-label="Information pages">${pages.map((p, i) => `<button id="info-tab-${i}" role="tab" aria-selected="${i === tab}" aria-controls="info-content" data-info-tab="${i}">${escape(p.label)}</button>`).join('')}</div>`;
-  const nav = `<div class="inspection-footer"><div class="inspection-paging"><button id="prev-info-page" aria-label="Previous page" ${pages.length < 2 ? 'disabled' : ''}>←</button><span>Page ${tab + 1} / ${pages.length}</span><button id="next-info-page" aria-label="Next page" ${pages.length < 2 ? 'disabled' : ''}>→</button></div>
-    ${page.kind === 'pokemon' ? '<div class="inspection-paging"><button id="prev-info-mon" aria-label="Previous Pokémon">↑</button><span>Pokémon</span><button id="next-info-mon" aria-label="Next Pokémon">↓</button></div>' : ''}<span><kbd>B</kbd> Close</span></div>`;
-  showModal(title, `${banner}${tabs}<div id="info-content" role="tabpanel" aria-labelledby="info-tab-${tab}">${current.content}</div><p class="inspection-note">${escape(current.note)}</p>${nav}`, page.kind);
+  const single = pages.length < 2;
+  // Own Pokémon have one page: no tab strip, no page footer. Left/right moves between Pokémon like the roster.
+  const tabs = single ? '' : `<div class="inspection-tabs" role="tablist" aria-label="Information pages">${pages.map((p, i) => `<button id="info-tab-${i}" role="tab" aria-selected="${i === tab}" aria-controls="info-content" data-info-tab="${i}">${escape(p.label)}</button>`).join('')}</div>`;
+  const pagingArrows = page.kind === 'pokemon' ? ['↑', '↓'] : ['←', '→'];
+  const nav = `<div class="inspection-footer">${single ? '' : `<div class="inspection-paging"><button id="prev-info-page" aria-label="Previous page">${pagingArrows[0]}</button><span>Page ${tab + 1} / ${pages.length}</span><button id="next-info-page" aria-label="Next page">${pagingArrows[1]}</button></div>`}
+    ${page.kind === 'pokemon' ? '<div class="inspection-paging"><button id="prev-info-mon" aria-label="Previous Pokémon">←</button><span>Pokémon</span><button id="next-info-mon" aria-label="Next Pokémon">→</button></div>' : ''}<span><kbd>B</kbd> Close</span></div>`;
+  showModal(title, `${banner}${tabs}<div id="info-content" role="tabpanel"${single ? '' : ` aria-labelledby="info-tab-${tab}"`}>${current.content}</div>${current.note ? `<p class="inspection-note">${escape(current.note)}</p>` : ''}${nav}`, page.kind);
   infoPage = {...page, tab, total: pages.length};
   for (const button of modal.querySelectorAll('[data-info-tab]')) button.onclick = () => showInfo({...infoPage, tab: Number(button.dataset.infoTab)});
-  $('prev-info-page').onclick = () => navigateInfo('left'); $('next-info-page').onclick = () => navigateInfo('right');
-  if ($('prev-info-mon')) { $('prev-info-mon').onclick = () => navigateInfo('up'); $('next-info-mon').onclick = () => navigateInfo('down'); }
+  if ($('prev-info-page')) { $('prev-info-page').onclick = () => turnPage(-1); $('next-info-page').onclick = () => turnPage(1); }
+  if ($('prev-info-mon')) { $('prev-info-mon').onclick = () => navigateInfo('left'); $('next-info-mon').onclick = () => navigateInfo('right'); }
   if ($('retry-sets')) {
     $('retry-sets').onclick = () => { const loading = sets.load(); showInfo(infoPage); void loading.then(refreshInformation); };
     $('retry-sets').focus({preventScroll: true});
   }
 }
 
+const turnPage = step => showInfo({...infoPage, tab: (infoPage.tab + step + infoPage.total) % infoPage.total});
+// Pokémon panels follow the roster: left/right is the next Pokémon, up/down the next page.
+// Move panels have no siblings, so left/right turns their pages.
 function navigateInfo(direction) {
-  if (direction === 'left' || direction === 'right') showInfo({...infoPage, tab: (infoPage.tab + (direction === 'left' ? -1 : 1) + infoPage.total) % infoPage.total});
-  else if (infoPage.kind === 'pokemon') showInfo({...infoPage, index: (infoPage.index - 1 + (direction === 'up' ? -1 : 1) + 6) % 6 + 1, tab: 0});
+  const step = direction === 'left' || direction === 'up' ? -1 : 1;
+  if (infoPage.kind !== 'pokemon') { if (direction === 'left' || direction === 'right') turnPage(step); return; }
+  if (direction === 'up' || direction === 'down') turnPage(step);
+  else showInfo({...infoPage, index: (infoPage.index - 1 + step + 6) % 6 + 1, tab: 0});
 }
 function refreshInformation() { if (modal.open && infoPage) showInfo(infoPage); }
 
@@ -229,15 +232,8 @@ document.addEventListener('focusin', event => {
   if (move) selectedMoveId = move.id;
 });
 
-// The heading HP follows the renderer too, so it drains with the animation.
-function refreshHpLabel() {
-  const activePokemon = ownTeam().find(p => p.active);
-  $('turn-label').textContent = activePokemon ? `HP ${arena ? arena.ownHealth(activePokemon).condition : activePokemon.condition}` : '';
-}
-
 function renderRoster() {
   if (!$('roster')) return;
-  refreshHpLabel();
   const focusId = document.activeElement?.id;
   const request = currentRequest();
   const disabled = !fixture && (!state.authenticated || state.pending || state.recovering || state.ended || !request || request.wait);
@@ -253,12 +249,13 @@ function renderRoster() {
     roster.innerHTML = team.map(p => {
       const inference = rosterSide === 'opponent' && p.revealed ? narrowSets(sets.snapshot, p.name, p.level, p) : null;
       const speed = rosterSide === 'own' ? arena.speedHint(p.serverIndex, sets.snapshot) : inference?.identified ? {cue: 'green', label: `Role inferred: ${inference.role}${inference.teraType ? `; Tera inferred: ${inference.teraType}` : ''}. Open details.`} : {};
-      // No HP numbers on the roster: the bar shows HP, the text shows state only.
-      const status = !p.revealed ? `Slot ${p.index}` : p.fainted ? 'Fainted' : [p.active ? 'Active' : '', (p.status || '').toUpperCase()].filter(Boolean).join(' · ');
-      const spoken = !p.revealed ? status : p.fainted ? 'Fainted' : `${p.active ? 'Active, ' : ''}${p.health}`;
+      // No HP numbers or "Active" text on the roster: the bar shows HP, the
+      // status tag sits on the name line, and the active Pokémon is marked by style.
+      const status = p.revealed && !p.fainted ? (p.status || '').toUpperCase() : '';
+      const spoken = !p.revealed ? `Slot ${p.index}` : p.fainted ? 'Fainted' : `${p.active ? 'Active, ' : ''}${p.health}`;
       const icon = p.revealed ? `<span class="picon" aria-hidden="true" style="${escape(arena.icon(p.name))}"></span>` : '<span class="unknown-pokemon" aria-hidden="true">?</span>';
-      return btn(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`, `${icon}<strong>${escape(p.name)}</strong><small>${escape(status)}</small>${p.percent != null ? `<span class="team-hp" aria-hidden="true" data-health="${p.percent <= 20 ? 'critical' : p.percent <= 50 ? 'low' : 'healthy'}"><span style="width:${p.percent}%"></span></span>` : ''}`, `team-${rosterSide}`, false,
-        `data-unavailable="${!p.canSwitch}" data-fainted="${!!p.fainted}" data-cue="${speed.cue || ''}" title="${escape(speed.label || '')}" aria-label="${rosterSide === 'opponent' ? `Opponent slot ${p.index}, ` : ''}${escape(p.name)}, ${escape(spoken)}. ${escape(speed.label || '')} ${p.canSwitch ? 'Switch Pokémon' : 'View details'}"`);
+      return btn(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`, `${icon}<strong><span class="mon-name">${escape(p.name)}</span>${status ? `<small class="status-tag">${escape(status)}</small>` : ''}</strong>${p.percent != null ? `<span class="team-hp" aria-hidden="true" data-health="${p.percent <= 20 ? 'critical' : p.percent <= 50 ? 'low' : 'healthy'}"><span style="width:${p.percent}%"></span></span>` : ''}`, `team-${rosterSide}`, false,
+        `data-unavailable="${!p.canSwitch}" data-fainted="${!!p.fainted}" data-active="${!!p.active}" data-cue="${speed.cue || ''}" title="${escape(speed.label || '')}" aria-label="${rosterSide === 'opponent' ? `Opponent slot ${p.index}, ` : ''}${escape(p.name)}, ${escape(spoken)}. ${escape(speed.label || '')} ${p.canSwitch ? 'Switch Pokémon' : 'View details'}"`);
     }).join('');
     for (const p of team) $(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`).onclick = () => {
       if (rosterSide === 'opponent') showInfo({kind: 'pokemon', side: 'opponent', index: p.index});
@@ -309,8 +306,7 @@ function render() {
   $('undo').hidden = !canCancel;
   $('undo').disabled = !canCancel;
   $('arena-wrap').dataset.room = state.room || '';
-  refreshHpLabel();
-  $('prompt').textContent = fixture ? `What will ${activePokemon.details.split(',')[0]} do?` : state.ended ? 'Battle complete' : state.recovering ? 'Restoring your battle…' : state.pending || request?.wait ? 'Waiting for the next turn' : request?.forceSwitch ? 'Choose a Pokémon' : activePokemon ? `What will ${activePokemon.details.split(',')[0]} do?` : state.searching ? 'Finding an opponent…' : 'Let’s play';
+  $('prompt').textContent = fixture ? `What will ${activePokemon.details.split(',')[0]} do?` : state.ended ? '' : state.recovering ? 'Restoring your battle…' : state.pending || request?.wait ? 'Waiting for the next turn' : request?.forceSwitch ? 'Choose a Pokémon' : activePokemon ? `What will ${activePokemon.details.split(',')[0]} do?` : state.searching ? 'Finding an opponent…' : 'Let’s play';
   const redundantNotice = state.ended && /won the battle\.$|ended in a tie\.$/.test(state.notice || '') || state.notice === 'Choice sent. Waiting for the server.';
   $('notice').textContent = localNotice || (!redundantNotice && state.notice) || (!fixture && state.recovering ? 'Restoring your battle…' : !fixture && !state.authenticated ? state.status : '');
   $('notice').parentElement.hidden = !$('notice').textContent;
@@ -328,10 +324,10 @@ function render() {
   refreshMoveHints();
   const inBattle = fixture || !!state.room && !state.ended;
   $('utility').innerHTML = `
-    ${btn('timer-toggle', `Timer: ${(fixture ? fixtureTimer : state.timerOn) ? 'on' : 'off'}`, 'tools', !inBattle || !fixture && (!state.authenticated || state.recovering || state.timerPending), `aria-pressed="${!!(fixture ? fixtureTimer : state.timerOn)}"`)}
-    ${btn('rating', rating?.label || 'Rating', 'tools')}${btn('forfeit', 'Forfeit…', 'tools', !inBattle || !fixture && !state.authenticated)}
-    ${state.ended ? btn('replay', 'Replay', 'tools') : ''}${btn('setup', 'Setup', 'tools')}${btn('diagnostics', 'Controller check', 'tools')}
-    <a id="source" data-nav data-row="tools" href="./source.zip" download>Source</a>`;
+    ${btn('timer-toggle', `Timer: ${(fixture ? fixtureTimer : state.timerOn) ? 'on' : 'off'}`, 'header', !inBattle || !fixture && (!state.authenticated || state.recovering || state.timerPending), `aria-pressed="${!!(fixture ? fixtureTimer : state.timerOn)}"`)}
+    ${btn('rating', rating?.label || 'Rating', 'header')}${btn('forfeit', 'Forfeit…', 'header', !inBattle || !fixture && !state.authenticated)}
+    ${state.ended ? btn('replay', 'Replay', 'header') : ''}${btn('setup', 'Setup', 'header')}${btn('diagnostics', 'Controller check', 'header')}
+    <a id="source" data-nav data-row="header" href="./source.zip" download>Source</a>`;
   for (const move of choices.moves) $(`move-${move.index}`).onclick = () => choose('move', move.index);
   $('tera').onclick = () => { tera = !tera; render(); };
   $('undo').onclick = () => safe(() => {
@@ -406,7 +402,7 @@ async function init() {
     }
     if (modal.open) return;
     ({tera: () => $('tera')?.click(), timer: () => showTools(true, 'timer-toggle'), menu: forfeit, info,
-      tools: () => showControlBar(document.querySelector('.controller-bar').hidden)})[action]?.();
+      tools: () => showTools($('utility').hidden)})[action]?.();
   }});
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { music.update(false); return; }

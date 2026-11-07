@@ -24,7 +24,7 @@ export class Arena {
     this.fit = 'wide';
     this.observer = new ResizeObserver(() => this.resize());
     this.observer.observe(frame.parentElement);
-    for (const selector of ['.app-header', '.arena-top', '.command-panel', '.controller-bar', 'footer']) this.observer.observe(document.querySelector(selector));
+    for (const selector of ['.app-header', '.arena-top', '.command-panel', 'footer']) { const el = document.querySelector(selector); if (el) this.observer.observe(el); }
     window.addEventListener('resize', () => this.resize());
     window.visualViewport?.addEventListener('resize', () => this.resize());
   }
@@ -40,7 +40,7 @@ export class Arena {
   resize() {
     const parent = this.frame.parentElement;
     const width = parent.clientWidth;
-    const below = ['.command-panel', '.controller-bar', 'footer'].reduce((sum, selector) => sum + document.querySelector(selector).offsetHeight, 0);
+    const below = ['.command-panel', 'footer'].reduce((sum, selector) => sum + (document.querySelector(selector)?.offsetHeight || 0), 0);
     // visualViewport follows Safari's toolbars. Reserve measured controls, never
     // cover the player's Pokémon with the dock or retain a stale maximum height.
     const viewportHeight = window.visualViewport?.height || window.innerHeight;

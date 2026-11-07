@@ -47,38 +47,40 @@ try {
     check(await page.locator('#all-moves, #info, #move-details').count() === 0, 'Duplicate menus and separate Move info button are removed');
     check(await page.locator('#roster button').count() === 6 && await page.locator('#opponent-roster button').count() === 6, 'Both six-slot teams are always visible');
     check(await page.locator('#view-own, #view-opponent, #skip, #music, #display, #reconnect, .controller-bar kbd').count() === 0, 'Redundant controls and hints are removed');
-    check(!await page.locator('#diagnostics').isVisible() && !await page.locator('#source').isVisible(), 'Extra controls start collapsed');
-    const rosterText = await page.locator('#roster small, #opponent-roster small').allInnerTexts();
-    check(rosterText.length === 12 && rosterText.every(text => !/%|\d+\/\d+/.test(text)) && rosterText.some(text => text.includes('Active')), `Roster entries show state words, never HP numbers: ${rosterText.join(' | ')}`);
+    check(await page.locator('.app-header #utility #diagnostics').isVisible() && await page.locator('.app-header #source').isVisible() && await page.locator('#toggle-tools, .controller-bar, #turn-label').count() === 0, 'Secondary controls sit in the header, always visible, with no More controls row');
+    const rosterText = await page.locator('#roster button, #opponent-roster button').allInnerTexts();
+    check(rosterText.length === 12 && rosterText.every(text => !/%|\d+\/\d+|Active/.test(text)), `Roster entries show no HP numbers and no Active text: ${rosterText.join(' | ')}`);
+    check(await page.locator('#switch-1[data-active=true]').count() === 1 && await page.locator('#roster [data-active=true]').count() === 1, 'The active Pokémon is marked by attribute, not text');
+    check((await page.locator('#opponent-3 strong').innerText()).replace(/\s+/g, ' ') === 'Rotom-Wash PAR', 'Status sits on the name line of the roster button');
+    check(await page.locator('#switch-1 strong').evaluate(el => parseFloat(getComputedStyle(el).fontSize)) >= 14.5, 'Roster names are larger');
+    check(await page.locator('.team-row + .team-row').evaluate(el => parseFloat(getComputedStyle(el).borderTopWidth)) >= 2, 'A divider separates your row from the opponent row');
+    check(await page.locator('#battle-timer').evaluate(el => getComputedStyle(el).color) !== 'rgb(17, 17, 17)', 'Timer is no longer black');
     const barHeight = id => page.locator(`${id} .team-hp`).evaluate(el => el.getBoundingClientRect().height);
     check(await barHeight('#switch-1') >= 8 && await barHeight('#opponent-1') >= 8, 'Roster HP bars are at least 8px tall');
-    check(await page.locator('#switch-4').getAttribute('data-fainted') === 'true' && (await page.locator('#switch-4 small').innerText()) === 'Fainted', 'Fainted roster state survives without numbers');
-    const arenaBefore = (await page.locator('#arena-wrap').boundingBox()).height;
-    await page.locator('#toggle-tools').focus(); await pad(page, 8);
-    check(!await page.locator('.controller-bar').isVisible() && (await page.locator('#arena-wrap').boundingBox()).height > arenaBefore + 10, 'Select hides the bottom button row and the battlefield grows into the space');
-    check(await page.evaluate(() => document.activeElement.closest('#choices') !== null), 'Hiding the focused bottom row moves focus back to the battle choices');
-    check(!(await fit(page)).length, `Hidden bottom row still fits ${viewport.width}×${viewport.height}: ${await fit(page)}`);
-    await page.screenshot({path: `test-results/${engineName}-no-bottom-row-${viewport.width}-${viewport.height}.png`});
-    await pad(page, 8);
-    check(await page.locator('.controller-bar').isVisible() && Math.abs((await page.locator('#arena-wrap').boundingBox()).height - arenaBefore) < 2, 'Select again restores the bottom row and the battlefield size');
-    await pad(page, 8); await pad(page, 10);
-    check(await page.locator('.controller-bar').isVisible() && await page.evaluate(() => document.activeElement.id) === 'timer-toggle', 'The timer shortcut reveals the hidden bottom row');
-    await page.locator('#toggle-tools').click();
+    check(await page.locator('#switch-4').getAttribute('data-fainted') === 'true' && (await page.locator('#switch-4').getAttribute('aria-label')).includes('Fainted') && await page.locator('#switch-4 .status-tag').count() === 0, 'Fainted Pokémon are styled and announced, with no tag or numbers');
+    check(await page.locator('#switch-1').evaluate(el => el.getBoundingClientRect().height) >= 50, 'Roster buttons are taller than before');
     await page.screenshot({path: `test-results/${engineName}-battle-${viewport.width}-${viewport.height}.png`});
-    await page.locator('#toggle-tools').click();
-    await page.screenshot({path: `test-results/${engineName}-tools-${viewport.width}-${viewport.height}.png`});
-    check(!(await fit(page)).length, `Battle and expanded controls fit ${viewport.width}×${viewport.height}: ${await fit(page)}`);
+    check(!(await fit(page)).length, `Battle and header controls fit ${viewport.width}×${viewport.height}: ${await fit(page)}`);
+    await page.locator('#setup').focus(); await pad(page, 8);
+    check(!await page.locator('#utility').isVisible() && await page.locator('#primary').isVisible(), 'Select hides the secondary header controls but keeps Find Random Battle');
+    check(await page.evaluate(() => document.activeElement.closest('#choices') !== null), 'Hiding the focused controls moves focus back to the battle choices');
+    await page.screenshot({path: `test-results/${engineName}-no-tools-${viewport.width}-${viewport.height}.png`});
+    await pad(page, 8);
+    check(await page.locator('#utility').isVisible(), 'Select again restores the secondary controls');
+    await pad(page, 8); await pad(page, 10);
+    check(await page.locator('#utility').isVisible() && await page.evaluate(() => document.activeElement.id) === 'timer-toggle', 'The timer shortcut reveals the hidden controls');
     await page.locator('#switch-1').focus(); await pad(page, 11);
-    await page.waitForSelector('#info-tab-0');
-    check(await page.locator('[data-info-tab]').count() === 1, 'Own Pokémon have only known information; possible sets are hidden');
-    check((await page.locator('#modal-title').innerText()).includes('Grumpig ♀ · Lv 92'), 'R3 shows name, gender and level');
+    await page.waitForSelector('#info-content');
+    check(await page.locator('[data-info-tab], #prev-info-page, .inspection-note').count() === 0, 'Own Pokémon have one flat page: no Overview tab, no paging, no footnote');
+    check((await page.locator('#modal-title').innerText()) === 'Grumpig · Lv 92', 'R3 shows name and level without gender');
     check((await page.locator('.inspection-banner').innerText()).includes('Thick Fat') && await page.locator('.identity-types .type-badge').innerText() === 'Psychic', 'Ability and types are prominent');
     for (const label of ['Attack', 'Defense', 'Sp. Atk', 'Sp. Def']) {
       check(await page.locator('.info-facts > div').filter({has: page.getByText(label, {exact: true})}).locator('dd').innerText() === '150', `Exact private ${label} remains available`);
     }
     check(await page.locator('.compact-move').count() === 4 && await page.locator('.compact-move button').count() === 0, 'Four compact moves cannot open a nested menu');
-    check(await page.locator('.stats-layout .identity-speed').count() === 1 && await page.locator('.inspection-banner .identity-speed').count() === 0, 'Speed is under the stats heading');
-    check(JSON.stringify(await page.locator('.stats-layout dt').allInnerTexts()) === JSON.stringify(['Attack', 'Defense', 'Sp. Atk', 'Sp. Def']) && await page.locator('.stats-layout > :last-child').getAttribute('class') === 'identity-speed', 'Stats read Attack, Defense, Sp. Atk, Sp. Def, then Speed last');
+    check(JSON.stringify(await page.locator('.stats-layout dt').allInnerTexts()) === JSON.stringify(['Attack', 'Defense', 'Sp. Atk', 'Sp. Def', 'Speed']) && await page.locator('.identity-speed').count() === 0, 'Stats read Attack, Defense, Sp. Atk, Sp. Def, Speed in one row');
+    check(JSON.stringify(await page.locator('.overview-layout > .info-facts dt').allInnerTexts()) === JSON.stringify(['Item', 'Tera', 'HP']) && !(await page.locator('#modal-body').innerText()).includes('IVs'), 'Own overview shows item, Tera and exact HP, without the IV note');
+    check(await page.locator('.compact-moves').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length) === 4, 'Known moves sit in one row of four');
     if (viewport.height === 540) {
       const icons = await page.evaluate(async () => {
         const {itemLabel} = await import('/src/info-components.mjs');
@@ -92,12 +94,12 @@ try {
     }
     check(!(await fit(page)).length, `Overview fits without scrolling: ${await fit(page)}`);
     await page.screenshot({path: `test-results/${engineName}-overview-${viewport.width}-${viewport.height}.png`});
-    await pad(page, 15);
-    check(await page.locator('.role-layout').count() === 0 && await page.locator('[aria-selected=true]').innerText() === 'Overview', 'Left/right cannot reveal own possible sets');
     await pad(page, 13);
-    check((await page.locator('#modal-title').innerText()).includes('Palossand') && await page.locator('[aria-selected=true]').innerText() === 'Overview', 'D-pad down changes Pokémon and resets to Overview');
-    await pad(page, 12); await pad(page, 12);
-    check((await page.locator('#modal-title').innerText()).includes('Iron Hands') && (await page.locator('#info-content').innerText()).includes('0 fnt'), 'D-pad up wraps to the sixth, fainted Pokémon');
+    check((await page.locator('#modal-title').innerText()).includes('Grumpig') && await page.locator('.role-layout').count() === 0, 'Down on an own Pokémon has no pages to reveal');
+    await pad(page, 15);
+    check((await page.locator('#modal-title').innerText()).includes('Palossand'), 'D-pad right moves to the next Pokémon, matching the roster');
+    await pad(page, 14); await pad(page, 14);
+    check((await page.locator('#modal-title').innerText()).includes('Iron Hands') && (await page.locator('#info-content').innerText()).includes('0 fnt'), 'D-pad left wraps to the sixth, fainted Pokémon');
     await pad(page, 0);
     check(!await page.locator('#modal').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-1', 'One B closes the whole panel and restores the original roster focus');
     await page.locator('#move-2').focus(); await pad(page, 11);
@@ -107,19 +109,19 @@ try {
     await pad(page, 0);
     check(await page.evaluate(() => document.activeElement.id) === 'move-2', 'Move details close directly to the battle move');
     await page.locator('#opponent-1').focus(); await pad(page, 11);
-    check((await page.locator('#modal-title').innerText()).includes('Landorus ♂') && (await page.locator('.identity-ability').innerText()).includes('Sheer Force'), 'Opponent identity preserves public gender and revealed ability');
-    await page.waitForSelector('#info-tab-1'); await pad(page, 15);
-    check(await page.locator('.role-layout').count() === 1, 'Opponent possible-role pages remain available');
+    check((await page.locator('#modal-title').innerText()) === 'Landorus · Lv 76' && (await page.locator('.identity-ability').innerText()).includes('Sheer Force'), 'Opponent identity shows level and revealed ability');
+    await page.waitForSelector('#info-tab-1'); await pad(page, 13);
+    check(await page.locator('.role-layout').count() === 1, 'D-pad down opens the opponent possible-role page');
     const roleTitle = await page.locator('[aria-selected=true]').innerText();
     await page.locator('.compact-move').first().click(); await pad(page, 11);
     check(await page.locator('[aria-selected=true]').innerText() === roleTitle, 'R3 on a role move never opens another menu');
     check(await page.locator('#info-content .move-description, #info-content .move-metrics, #info-content .move-summary, #info-content .info-facts').count() === 0, 'Role move lists omit power and descriptions');
     check(!(await fit(page)).length, `Role fits without scrolling: ${await fit(page)}`);
     await page.screenshot({path: `test-results/${engineName}-possible-role-${viewport.width}-${viewport.height}.png`});
-    await pad(page, 13); await pad(page, 13);
-    check((await page.locator('.identity-ability').innerText()).includes('Possible abilities') && (await page.locator('.identity-speed').innerText()).includes('estimated'), 'Unrevealed ability and Speed are labelled as possibilities/estimates');
-    await pad(page, 13);
-    check(await page.locator('[data-info-tab]').count() === 1 && await page.locator('.type-badge, .compact-move').count() === 0, 'Unknown slots expose neither a guessed identity nor possible sets');
+    await pad(page, 15); await pad(page, 15);
+    check((await page.locator('.identity-ability').innerText()).includes('Possible abilities') && (await page.locator('.identity-speed').innerText()).includes('estimated') && await page.locator('[aria-selected=true]').innerText() === 'Overview', 'Right moves to the next opponent and resets to Overview; unrevealed ability and Speed are labelled as estimates');
+    await pad(page, 15);
+    check(await page.locator('[data-info-tab]').count() === 0 && await page.locator('.type-badge, .compact-move').count() === 0, 'Unknown slots expose neither a guessed identity nor possible sets');
     await pad(page, 0);
     for (const id of ['setup', 'diagnostics']) {
       await page.locator(`#${id}`).click();
@@ -137,7 +139,7 @@ try {
   const pools = await browser.newPage({viewport: {width: 1024, height: 540}, hasTouch: true, isMobile: true});
   await pools.goto(base); await pools.waitForSelector('#switch-1');
   await pools.locator('#opponent-1').focus(); await pools.keyboard.press('i');
-  await pools.waitForSelector('#info-tab-1'); await pools.keyboard.press('ArrowRight');
+  await pools.waitForSelector('#info-tab-1'); await pools.keyboard.press('ArrowDown');
   const coverage = await pools.evaluate(async () => {
     const {rolePages} = await import('/src/info-components.mjs');
     const {narrowSets} = await import('/src/possible-sets.mjs');
@@ -176,7 +178,7 @@ try {
   check(await failed.locator('.compact-move').count() === 4, 'Known moves survive unavailable set data');
   check(await failed.locator('#retry-sets').count() === 0, 'Own Pokémon never show a set-data retry page');
   await failed.keyboard.press('Escape'); await failed.locator('#opponent-1').focus(); await failed.keyboard.press('i');
-  await failed.keyboard.press('ArrowRight'); await failed.waitForSelector('#retry-sets');
+  await failed.keyboard.press('ArrowDown'); await failed.waitForSelector('#retry-sets');
   await failed.unroute('**/data/gen9randombattle.json'); await failed.keyboard.press('Enter');
   await failed.waitForSelector('.role-layout');
   check(await failed.locator('.role-layout').count() === 1, 'Retry restores a possible-role page at the same depth');
@@ -200,7 +202,6 @@ try {
   check((await cancel.locator('#test-commands').innerText()).includes('/choose move 1|1'), 'Battle choices still submit immediately');
   await cancel.keyboard.press('Escape');
   check((await cancel.locator('#test-commands').innerText()).includes('/undo |1'), 'Existing B / Escape still invokes Showdown undo');
-  await cancel.locator('#toggle-tools').click();
   await cancel.locator('#timer-toggle').click();
   await cancel.waitForFunction(() => document.querySelector('#timer-toggle').getAttribute('aria-pressed') === 'true');
   check((await cancel.locator('#test-commands').innerText()).includes('/timer on'), 'Single timer toggle sends Showdown timer-on');
@@ -235,10 +236,10 @@ try {
     const hurt = {...demoRequest, rqid: 2, side: {...demoRequest.side, pokemon: demoRequest.side.pokemon.map(p => p.ident === 'p1: Grumpig' ? {...p, condition: '150/297'} : p)}};
     window.testSocket.onmessage({data: `>battle-gen9randombattle-12345\n|request|${JSON.stringify(hurt)}`});
   });
-  check(await barWidth('#switch-1') === 100 && (await cancel.locator('#turn-label').innerText()) === 'HP 297/297', 'A request that already knows the damage does not drain the roster bar early');
+  check(await barWidth('#switch-1') === 100, 'A request that already knows the damage does not drain the roster bar early');
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|move|p2a: Raichu|Thunderbolt|p1a: Grumpig\n|-damage|p1a: Grumpig|150/297\n|turn|20'}));
   check(await barWidth('#switch-1') === 100, 'The roster bar still waits while the attack animation plays');
-  await cancel.waitForFunction(() => document.querySelector('#turn-label').textContent === 'HP 150/297', null, {timeout: 15000});
+  await cancel.waitForFunction(() => parseFloat(document.querySelector('#switch-1 .team-hp > span').style.width) < 100, null, {timeout: 15000});
   check(Math.abs(await barWidth('#switch-1') - 150 / 297 * 100) < 0.01, 'After the hit lands the roster bar drains to the renderer HP');
 
   // Switching reorders the server request (active first); the roster keeps the lead first.
@@ -249,10 +250,11 @@ try {
     window.testSocket.onmessage({data: `>battle-gen9randombattle-12345\n|request|${JSON.stringify(swapped)}`});
     window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|switch|p1a: Palossand|Palossand, L80|118/324\n|switch|p2a: Rotom|Rotom-Wash, L80|34/100 par\n|turn|21'});
   });
-  await cancel.waitForFunction(() => document.querySelector('#turn-label').textContent === 'HP 118/324', null, {timeout: 15000});
-  check(JSON.stringify(await cancel.locator('#roster strong').allInnerTexts()) === JSON.stringify(['Grumpig', 'Palossand', 'Excadrill', 'Breloom', 'Amoonguss', 'Iron Hands']), 'Own roster keeps the lead first after a switch');
-  check((await cancel.locator('#switch-2 small').innerText()) === 'Active' && (await cancel.locator('#switch-1 small').innerText()) === '', 'The active marker follows the Pokémon, not the slot');
-  check(JSON.stringify(await cancel.locator('#opponent-roster strong').allInnerTexts()) === JSON.stringify(['Landorus', 'Corviknight', 'Rotom-Wash', 'Raichu', 'Not revealed', 'Not revealed']), 'Opponent roster stays in order of first reveal after a switch');
+  await cancel.waitForFunction(() => document.querySelector('#switch-2')?.dataset.active === 'true', null, {timeout: 15000});
+  const names = id => cancel.locator(`${id} strong`).evaluateAll(els => els.map(el => el.firstChild.textContent));
+  check(JSON.stringify(await names('#roster')) === JSON.stringify(['Grumpig', 'Palossand', 'Excadrill', 'Breloom', 'Amoonguss', 'Iron Hands']), 'Own roster keeps the lead first after a switch');
+  check(await cancel.locator('#switch-2').getAttribute('data-active') === 'true' && await cancel.locator('#switch-1').getAttribute('data-active') === 'false', 'The active marker follows the Pokémon, not the slot');
+  check(JSON.stringify(await names('#opponent-roster')) === JSON.stringify(['Landorus', 'Corviknight', 'Rotom-Wash', 'Raichu', 'Not revealed', 'Not revealed']), 'Opponent roster stays in order of first reveal after a switch');
   await cancel.locator('#switch-1').focus(); await cancel.keyboard.press('i');
   check((await cancel.locator('#modal-title').innerText()).includes('Grumpig'), 'R3 on the first roster slot still opens the lead');
   await cancel.keyboard.press('Escape');
@@ -260,7 +262,7 @@ try {
   check((await cancel.locator('#test-commands').innerText()).includes('/choose switch 2|3'), 'Switching to the displayed lead sends its current server index');
   await cancel.keyboard.press('Escape');
   await cancel.keyboard.press('h');
-  check(!await cancel.locator('.controller-bar').isVisible(), 'Keyboard H hides the bottom row too');
+  check(!await cancel.locator('#utility').isVisible(), 'Keyboard H hides the header controls too');
   await cancel.keyboard.press('h');
   await cancel.close();
 

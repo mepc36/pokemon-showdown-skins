@@ -10,12 +10,12 @@
   <div id="app">
     <header class="app-header">
       <button id="primary" class="primary" data-nav data-row="header" disabled>Connect to Showdown</button>
+      <div id="utility" role="group" aria-label="Battle controls"></div>
       <div id="battle-timer" aria-label="Battle timer"><svg class="timer-icon" aria-hidden="true" width="20" height="24" viewBox="0 0 20 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2h14M3 22h14M5 2v4c0 3 5 4 5 6s-5 3-5 6v4M15 2v4c0 3-5 4-5 6s5 3 5 6v4M6 19h8M7 5h6"/></svg><span id="timer-value">Timer off</span><span id="timer-warning" role="status" aria-live="polite"></span></div>
     </header>
     <main>
       <div class="arena-card"><div class="arena-top" hidden><p id="notice" role="status" aria-live="polite"></p></div><div id="arena-wrap"><div id="arena" class="battle" aria-label="Battle animation"></div></div><div id="hidden-log" hidden></div></div>
-      <section class="command-panel" aria-label="Battle choices"><div class="command-heading"><h2 id="prompt">Try the controls</h2><span id="turn-label">No live match</span><button id="tera" data-nav data-row="move-info" aria-pressed="false" hidden>Tera: Unknown</button><button id="undo" data-nav data-row="move-info" hidden>Cancel</button></div><div id="choices"></div></section>
-      <div class="controller-bar"><div id="utility" hidden></div><button id="toggle-tools" data-nav data-row="tools" aria-expanded="false" aria-controls="utility">More controls</button></div>
+      <section class="command-panel" aria-label="Battle choices"><div class="command-heading"><h2 id="prompt">Try the controls</h2><button id="tera" data-nav data-row="move-info" aria-pressed="false" hidden>Tera: Unknown</button><button id="undo" data-nav data-row="move-info" hidden>Cancel</button></div><div id="choices"></div></section>
     </main>
     <footer>Independent frontend · Official battle visuals · Chat hidden · Registered bots blocked in live searches</footer>
   </div>
