@@ -18,6 +18,7 @@ const btn = (id, label, row, disabled = false, extra = '') => `<button id="${id}
 let arena, session, auth, config, state = {}, fixture = true, tera = false, lastRequest, selectedRequest, localNotice = '', ignoreButtons = new Set();
 let diagnosticLines = [];
 let ownOrder = [];
+let shownTeam = 'own';
 let modalReturnFocus = '';
 let selectedMoveId = '', infoPage = null, rating = null, ratingPage = false, fixtureTimer = false;
 const modal = $('modal');
@@ -169,12 +170,13 @@ function showInfo(page) {
       const speedLabel = speed.kind === 'estimate' ? 'Speed · estimated' : 'Speed';
       const speedInfo = `<div class="identity-speed" data-cue="${ranks.Speed || ''}"><small>${escape(speedLabel)}</small><strong>${escape(speed.value)}</strong>${speed.kind === 'estimate' ? '<small>before modifiers</small>' : speed.modified != null && speed.modified !== speed.value ? `<small>Current: ${escape(speed.modified)}</small>` : ''}</div>`;
       // Same reading order as the main screen: who it is, what it holds, how fast, what it can do.
+      const hp = own ? arena.ownHealth(p).condition : `${p.health}${p.status ? ` · ${p.status.toUpperCase()}` : ''}`;
       banner = `<div class="inspection-banner"><div class="identity-types">${typeBadges(own ? species.types : p.types)}${inference?.identified ? '<small data-identified="true">Role identified</small>' : ''}</div>
-        <div class="identity-ability"><small>${!own && !ability ? 'Possible abilities' : 'Ability'}</small><strong>${escape(abilityText)}</strong></div></div>`;
-      const summary = own ? [['Item', effectName('items', p.item) || 'No item', {item: true}], ['Tera', p.teraType || 'Unknown', p.teraType], ['HP', arena.ownHealth(p).condition]] :
-        [['Item', p.item || (p.previousItem ? `Lost ${p.previousItem}` : 'Not revealed'), {item: !!p.item}],
-          inference?.teraType ? ['Tera · inferred', inference.teraType, {type: inference.teraType, cue: 'green', hint: 'All remaining set definitions have this Tera type'}] : ['Tera', p.teraType || 'Not revealed', p.teraType],
-          ['Last shown HP', p.health], ['Status', p.status || 'None shown']];
+        <div class="identity-hp"><small>${own ? 'HP' : 'Last shown HP'}</small><strong>${escape(hp)}</strong></div></div>`;
+      const abilityEntry = [!own && !ability ? 'Possible abilities' : 'Ability', abilityText];
+      const summary = own ? [abilityEntry, ['Item', effectName('items', p.item) || 'No item', {item: true}], ['Tera', p.teraType || 'Unknown', p.teraType]] :
+        [abilityEntry, ['Item', p.item || (p.previousItem ? `Lost ${p.previousItem}` : 'Not revealed'), {item: !!p.item}],
+          inference?.teraType ? ['Tera · inferred', inference.teraType, {type: inference.teraType, cue: 'green', hint: 'All remaining set definitions have this Tera type'}] : ['Tera', p.teraType || 'Not revealed', p.teraType]];
       const statCells = stats ? [...stats.entries.map(([name, value]) => [name, value, {cue: ranks[name]}]),
         ['Speed', speed.kind === 'known' && speed.modified != null && speed.modified !== speed.value ? `${speed.value} → ${speed.modified}` : speed.value, {cue: ranks.Speed}]] : null;
       const moves = knownMoves(page.side, page.index);
@@ -254,7 +256,7 @@ function renderRoster() {
       const status = p.revealed && !p.fainted ? (p.status || '').toUpperCase() : '';
       const spoken = !p.revealed ? `Slot ${p.index}` : p.fainted ? 'Fainted' : `${p.active ? 'Active, ' : ''}${p.health}`;
       const icon = p.revealed ? `<span class="picon" aria-hidden="true" style="${escape(arena.icon(p.name))}"></span>` : '<span class="unknown-pokemon" aria-hidden="true">?</span>';
-      return btn(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`, `${icon}<strong><span class="mon-name">${escape(p.name)}</span>${status ? `<small class="status-tag">${escape(status)}</small>` : ''}</strong>${p.percent != null ? `<span class="team-hp" aria-hidden="true" data-health="${p.percent <= 20 ? 'critical' : p.percent <= 50 ? 'low' : 'healthy'}"><span style="width:${p.percent}%"></span></span>` : ''}`, `team-${rosterSide}`, false,
+      return btn(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`, `${icon}<strong><span class="mon-name">${p.revealed ? escape(p.name) : 'Unknown'}</span>${status ? `<small class="status-tag">${escape(status)}</small>` : ''}</strong>${p.percent != null ? `<span class="team-hp" aria-hidden="true" data-health="${p.percent <= 20 ? 'critical' : p.percent <= 50 ? 'low' : 'healthy'}"><span style="width:${p.percent}%"></span></span>` : ''}`, `team-${rosterSide}`, false,
         `data-unavailable="${!p.canSwitch}" data-fainted="${!!p.fainted}" data-active="${!!p.active}" data-cue="${speed.cue || ''}" title="${escape(speed.label || '')}" aria-label="${rosterSide === 'opponent' ? `Opponent slot ${p.index}, ` : ''}${escape(p.name)}, ${escape(spoken)}. ${escape(speed.label || '')} ${p.canSwitch ? 'Switch Pokémon' : 'View details'}"`);
     }).join('');
     for (const p of team) $(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`).onclick = () => {
@@ -264,6 +266,16 @@ function renderRoster() {
     };
   }
   if (!modal.open && focusId) $(focusId)?.focus({preventScroll: true});
+}
+
+// One team row shows at a time; the right stick (or F) flips between them.
+// Focus carries over to the same slot so the cursor does not vanish.
+function showTeam(side = shownTeam === 'own' ? 'opponent' : 'own') {
+  shownTeam = side;
+  const focused = document.activeElement?.id.match(/^(switch|opponent)-(\d+)$/);
+  for (const row of document.querySelectorAll('.team-row')) row.hidden = row.dataset.side !== side;
+  if (focused) $(`${side === 'own' ? 'switch' : 'opponent'}-${focused[2]}`)?.focus({preventScroll: true});
+  arena?.resize();
 }
 
 function forfeit() {
@@ -306,20 +318,24 @@ function render() {
   $('undo').hidden = !canCancel;
   $('undo').disabled = !canCancel;
   $('arena-wrap').dataset.room = state.room || '';
-  $('prompt').textContent = fixture ? `What will ${activePokemon.details.split(',')[0]} do?` : state.ended ? '' : state.recovering ? 'Restoring your battle…' : state.pending || request?.wait ? 'Waiting for the next turn' : request?.forceSwitch ? 'Choose a Pokémon' : activePokemon ? `What will ${activePokemon.details.split(',')[0]} do?` : state.searching ? 'Finding an opponent…' : 'Let’s play';
+  // The heading row is gone; the few states worth words share the notice strip.
+  const prompt = fixture || state.ended ? '' : state.recovering ? 'Restoring your battle…' : state.pending || request?.wait ? 'Waiting for the next turn' : request?.forceSwitch ? 'Choose a Pokémon' : activePokemon ? '' : state.searching ? 'Finding an opponent…' : '';
   const redundantNotice = state.ended && /won the battle\.$|ended in a tie\.$/.test(state.notice || '') || state.notice === 'Choice sent. Waiting for the server.';
-  $('notice').textContent = localNotice || (!redundantNotice && state.notice) || (!fixture && state.recovering ? 'Restoring your battle…' : !fixture && !state.authenticated ? state.status : '');
+  $('notice').textContent = localNotice || (!redundantNotice && state.notice) || (!fixture && !state.authenticated ? state.status : prompt);
   $('notice').parentElement.hidden = !$('notice').textContent;
   const primary = $('primary');
   primary.disabled = false;
   primary.textContent = fixture || session?.stopped ? 'Connect to Showdown' : !state.authenticated ? 'Sign in with Showdown' : state.searching ? 'Cancel search' : 'Find Random Battle';
   if (!fixture && !session?.stopped) primary.disabled = !state.authenticated ? !state.challenge : !!state.room && !state.ended;
+  $('action-slots').append($('tera'), $('undo'));
   $('choices').innerHTML = `<div class="moves" role="group" aria-label="Moves">${choices.moves.map(move => {
     const type = window.BattleMovedex[move.id]?.type || '';
     return btn(`move-${move.index}`, `<strong>${escape(move.move)}</strong><small><span class="move-type">${escape(type)}</span><span>${escape(move.pp ?? '—')} / ${escape(move.maxpp ?? '—')} PP</span></small>`, 'moves', disabled || !move.enabled, `data-type="${escape(type)}" aria-description="R3 or I for move information"`);
   }).join('')}</div>
-    <div class="team-row"><span class="team-label">You</span><div id="roster" class="team" role="group" aria-label="Your six Pokémon"></div></div>
-    <div class="team-row"><span class="team-label">Foe</span><div id="opponent-roster" class="team" role="group" aria-label="Opponent’s six Pokémon"></div></div>`;
+    <div class="team-row" data-side="own" ${shownTeam === 'own' ? '' : 'hidden'}><span class="team-label">You</span><div id="roster" class="team" role="group" aria-label="Your six Pokémon"></div></div>
+    <div class="team-row" data-side="opponent" ${shownTeam === 'opponent' ? '' : 'hidden'}><span class="team-label">Foe</span><div id="opponent-roster" class="team" role="group" aria-label="Opponent’s six Pokémon"></div></div>`;
+  // Tera and Cancel keep their nodes and handlers; they sit at the end of the move row.
+  $('choices').querySelector('.moves').append($('tera'), $('undo'));
   renderRoster();
   refreshMoveHints();
   const inBattle = fixture || !!state.room && !state.ended;
@@ -401,7 +417,7 @@ async function init() {
       return;
     }
     if (modal.open) return;
-    ({tera: () => $('tera')?.click(), timer: () => showTools(true, 'timer-toggle'), menu: forfeit, info,
+    ({tera: () => $('tera')?.click(), timer: () => showTools(true, 'timer-toggle'), menu: forfeit, info, team: () => showTeam(),
       tools: () => showTools($('utility').hidden)})[action]?.();
   }});
   document.addEventListener('visibilitychange', () => {
