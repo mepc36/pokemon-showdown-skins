@@ -33,11 +33,21 @@ async function pad(page, index) {
   await page.evaluate(i => window.testPad.buttons[i].pressed = false, index);
   await page.waitForFunction(i => !window.testPadObserved[i], index, {polling: 10});
 }
+// Right-stick push, synchronized with the poll the same way pad() is: a fixed
+// 120 ms wait can straddle WebKit frames and the flip is never observed.
+async function stick(page, value) {
+  await page.waitForFunction(() => window.testPadObserved);
+  await page.evaluate(v => { window.testPad.axes[2] = v; window.testAxisObserved = null; }, value);
+  await page.waitForFunction(v => window.testAxisObserved === v, value, {polling: 10});
+  await page.evaluate(() => { window.testPad.axes[2] = 0; });
+  await page.waitForFunction(() => window.testAxisObserved === 0, null, {polling: 10});
+}
 async function gamepad(page) {
   await page.addInitScript(() => {
     window.testPad = {id: 'Controller fixture', mapping: 'standard', axes: [0, 0, 0, 0], buttons: Array.from({length: 16}, () => ({pressed: false, value: 0}))};
     navigator.getGamepads = () => {
       window.testPadObserved = window.testPad.buttons.map(button => button.pressed);
+      window.testAxisObserved = window.testPad.axes[2];
       return [window.testPad];
     };
   });
@@ -54,7 +64,7 @@ try {
     const rosterText = await page.locator('#roster button, #opponent-roster button').allInnerTexts();
     check(rosterText.length === 12 && rosterText.every(text => !/%|\d+\/\d+|Active/.test(text)), `Roster entries show no HP numbers and no Active text: ${rosterText.join(' | ')}`);
     check(await page.locator('#switch-1[data-active=true]').count() === 1 && await page.locator('#roster [data-active=true]').count() === 1, 'The active Pokémon is marked by attribute, not text');
-    await page.locator('#switch-3').focus(); await page.evaluate(() => { window.testPad.axes[2] = 1; }); await page.waitForTimeout(120); await page.evaluate(() => { window.testPad.axes[2] = 0; }); await page.waitForTimeout(60);
+    await page.locator('#switch-3').focus(); await stick(page, 1);
     check(await page.locator('#opponent-roster').isVisible() && !await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'opponent-3', 'Right stick flips to the opponent row and keeps the same slot focused');
     check((await page.locator('#opponent-3 strong').innerText()).replace(/\s+/g, ' ') === 'Rotom-Wash PAR', 'Status sits on the name line of the roster button');
     await page.keyboard.press('f');
@@ -121,7 +131,7 @@ try {
     check((await page.locator('#modal-title').innerText()).includes('Grumpig') && await page.locator('.role-layout').count() === 0, 'Down on an own Pokémon has no pages to reveal');
     await pad(page, 15);
     check((await page.locator('#modal-title').innerText()).includes('Palossand'), 'D-pad right moves to the next Pokémon, matching the roster');
-    await page.evaluate(() => { window.testPad.axes[2] = -1; }); await page.waitForTimeout(120); await page.evaluate(() => { window.testPad.axes[2] = 0; }); await page.waitForTimeout(60);
+    await stick(page, -1);
     check((await page.locator('#modal-title').innerText()).includes('Corviknight') && await page.locator('#info-tab-0').count() === 1, 'Right stick inside R3 jumps to the other team, same slot number');
     await page.keyboard.press('f');
     check((await page.locator('#modal-title').innerText()).includes('Palossand'), 'F flips back to your own Pokémon in R3');
