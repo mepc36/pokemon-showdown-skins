@@ -211,6 +211,16 @@ function showInfo(page) {
 const turnPage = step => showInfo({...infoPage, tab: (infoPage.tab + step + infoPage.total) % infoPage.total});
 // Pokémon panels follow the roster: left/right is the next Pokémon, up/down the next page.
 // Move panels have no siblings, so left/right turns their pages.
+// Inside a Pokémon panel the right stick means the same as on the main screen:
+// the other team, same slot number. The roster row follows so B lands there.
+function flipInfoTeam() {
+  if (infoPage?.kind !== 'pokemon') return;
+  const side = infoPage.side === 'own' ? 'opponent' : 'own';
+  showTeam(side);
+  // Keep the slot that opened the panel; only the team changes.
+  modalReturnFocus = modalReturnFocus.replace(/^(switch|opponent)-/, `${side === 'own' ? 'switch' : 'opponent'}-`);
+  showInfo({...infoPage, side, tab: 0});
+}
 function navigateInfo(direction) {
   const step = direction === 'left' || direction === 'up' ? -1 : 1;
   if (infoPage.kind !== 'pokemon') { if (direction === 'left' || direction === 'right') turnPage(step); return; }
@@ -411,6 +421,7 @@ async function init() {
       else $('undo')?.click();
       return;
     }
+    if (action === 'team' && modal.open) { flipInfoTeam(); return; }
     if (action === 'confirm') {
       if (document.activeElement?.matches('[data-nav], [data-info-tab], .inspection-footer button')) document.activeElement.click();
       else navigate('right');

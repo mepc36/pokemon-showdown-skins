@@ -109,10 +109,18 @@ try {
     check((await page.locator('#modal-title').innerText()).includes('Grumpig') && await page.locator('.role-layout').count() === 0, 'Down on an own Pokémon has no pages to reveal');
     await pad(page, 15);
     check((await page.locator('#modal-title').innerText()).includes('Palossand'), 'D-pad right moves to the next Pokémon, matching the roster');
+    await page.evaluate(() => { window.testPad.axes[2] = -1; }); await page.waitForTimeout(120); await page.evaluate(() => { window.testPad.axes[2] = 0; }); await page.waitForTimeout(60);
+    check((await page.locator('#modal-title').innerText()).includes('Corviknight') && await page.locator('#info-tab-0').count() === 1, 'Right stick inside R3 jumps to the other team, same slot number');
+    await page.keyboard.press('f');
+    check((await page.locator('#modal-title').innerText()).includes('Palossand'), 'F flips back to your own Pokémon in R3');
     await pad(page, 14); await pad(page, 14);
     check((await page.locator('#modal-title').innerText()).includes('Iron Hands') && (await page.locator('.identity-hp').innerText()).includes('0 fnt'), 'D-pad left wraps to the sixth, fainted Pokémon');
     await pad(page, 0);
     check(!await page.locator('#modal').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-1', 'One B closes the whole panel and restores the original roster focus');
+    await page.locator('#switch-2').focus(); await pad(page, 11); await page.keyboard.press('f'); await pad(page, 0);
+    check(await page.locator('#opponent-roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'opponent-2', 'Closing after a flip inside R3 lands on that opponent slot');
+    await page.keyboard.press('f');
+    check(!await page.locator('#arena .leftbar').isVisible() && !await page.locator('#arena .rightbar').isVisible(), 'Renderer side bars are hidden');
     await page.locator('#move-2').focus(); await pad(page, 11);
     check(await page.locator('#modal-title').innerText() === 'Shadow Ball' && (await page.locator('#info-content').innerText()).includes('20%'), 'R3 on a main move opens its detailed effects');
     check(!(await fit(page)).length, `Move details fit: ${await fit(page)}`);
