@@ -82,8 +82,8 @@ try {
     check(JSON.stringify(await panelNames('#matchup-own')) === '["Grumpig","Landorus"]' && JSON.stringify(await panelNames('#matchup-foe')) === '["Landorus","Grumpig"]', 'Both panels name the attacker on the left and the defender on the right');
     check(await page.locator('.matchup-names span').evaluateAll(els => els.every(el => getComputedStyle(el).textOverflow === 'ellipsis' && getComputedStyle(el).overflow === 'hidden')), 'Panel names clip with an ellipsis');
     const cues = async id => page.locator(`${id} .stat-box`).evaluateAll(els => els.map(el => `${el.querySelector('small').textContent}:${el.dataset.stat}`));
-    check(JSON.stringify(await cues('#matchup-own')) === '["Atk:","Def:","SpA:","SpD:low","Spe:"]', `Left panel marks their lower defense red and leaves your tied attack stats uncued: ${await cues('#matchup-own')}`);
-    check(JSON.stringify(await cues('#matchup-foe')) === '["Atk:high","Def:","SpA:","SpD:","Spe:"]', `Right panel puts their attack stats left, marking the higher one green: ${await cues('#matchup-foe')}`);
+    check(JSON.stringify(await cues('#matchup-own')) === '["Atk:","Def:high","SpA:","SpD:low","Spe:"]', `Left panel marks their higher defense green and lower red, your tied attack stats uncued: ${await cues('#matchup-own')}`);
+    check(JSON.stringify(await cues('#matchup-foe')) === '["Atk:high","Def:","SpA:low","SpD:","Spe:"]', `Right panel puts their attack stats left, higher green and lower red: ${await cues('#matchup-foe')}`);
     check(await page.evaluate(() => { const style = el => getComputedStyle(el); const high = document.querySelector('.stat-box[data-stat=high]'), low = document.querySelector('.stat-box[data-stat=low]'), plain = document.querySelector('.stat-box[data-stat=""]'); const key = el => style(el).borderTopColor + style(el).backgroundColor; return key(high) !== key(plain) && key(low) !== key(plain) && key(high) !== key(low); }), 'Cued stat boxes look different from plain ones and from each other');
     const pairs = await page.locator('#matchup-own .stat-pair small').allInnerTexts();
     check(JSON.stringify(pairs) === JSON.stringify(['Atk', 'Def', 'SpA', 'SpD', 'Spe']) && (await page.locator('#matchup-own .stat-pair strong').allInnerTexts()).slice(0, 2).join() === '150,~' + (Math.floor(Math.floor(2 * 90 + 31 + 21) * 76 / 100) + 5), 'Left panel pairs your Attack with their estimated Defense');
@@ -167,7 +167,7 @@ try {
     await pad(page, 15);
     check((await page.locator('#modal-title').innerText()).includes('Palossand'), 'D-pad right moves to the next Pokémon, matching the roster');
     await stick(page, -1);
-    check((await page.locator('#modal-title').innerText()).includes('Corviknight') && await page.locator('#info-tab-0').count() === 1, 'Right stick inside R3 jumps to the other team, same slot number');
+    check((await page.locator('#modal-title').innerText()).includes('Corviknight') && await page.locator('.role-layout').count() === 1, 'Right stick inside R3 jumps to the other team, same slot number');
     await page.keyboard.press('f');
     check((await page.locator('#modal-title').innerText()).includes('Palossand'), 'F flips back to your own Pokémon in R3');
     await pad(page, 14); await pad(page, 14);
@@ -185,17 +185,16 @@ try {
     await pad(page, 0);
     check(await page.evaluate(() => document.activeElement.id) === 'move-2', 'Move details close directly to the battle move');
     await page.keyboard.press('f'); await page.locator('#opponent-1').focus(); await pad(page, 11);
-    check((await page.locator('#modal-title').innerText()) === 'Landorus · Lv 76' && (await page.locator('.overview-layout > .info-facts').innerText()).includes('Sheer Force') && (await page.locator('.identity-hp').innerText()).includes('31%'), 'Opponent identity shows level, revealed ability and last shown HP');
-    await page.waitForSelector('#info-tab-1'); await pad(page, 13);
-    check(await page.locator('.role-layout').count() === 1, 'D-pad down opens the opponent possible-role page');
-    const roleTitle = await page.locator('[aria-selected=true]').innerText();
+    check((await page.locator('#modal-title').innerText()) === 'Landorus · Lv 76' && (await page.locator('.merged-overview .info-facts').innerText()).includes('Sheer Force') && (await page.locator('.identity-hp').innerText()).includes('31%'), 'Opponent identity shows level, revealed ability and last shown HP');
+    check(await page.locator('.role-layout').count() === 1 && await page.locator('.compact-move[data-revealed="true"]').count() >= 1, 'The opponent page shows the possible role under the facts, with revealed moves marked');
+    const roleTitle = await page.locator('#modal-title').innerText();
     await page.locator('.compact-move').first().click(); await pad(page, 11);
-    check(await page.locator('[aria-selected=true]').innerText() === roleTitle, 'R3 on a role move never opens another menu');
-    check(await page.locator('#info-content .move-description, #info-content .move-metrics, #info-content .move-summary, #info-content .info-facts').count() === 0, 'Role move lists omit power and descriptions');
+    check(await page.locator('#modal-title').innerText() === roleTitle && await page.locator('.role-layout').count() === 1, 'R3 on a role move never opens another menu');
+    check(await page.locator('#info-content .move-description, #info-content .move-metrics, #info-content .move-summary').count() === 0, 'Role move lists omit power and descriptions');
     check(!(await fit(page)).length, `Role fits without scrolling: ${await fit(page)}`);
     await page.screenshot({path: `test-results/${engineName}-possible-role-${viewport.width}-${viewport.height}.png`});
     await pad(page, 15); await pad(page, 15);
-    check((await page.locator('.overview-layout > .info-facts').innerText()).includes('Possible abilities') && (await page.locator('.identity-speed').innerText()).includes('estimated') && await page.locator('[aria-selected=true]').innerText() === 'Overview', 'Right moves to the next opponent and resets to Overview; unrevealed ability and Speed are labelled as estimates');
+    check((await page.locator('.merged-overview .info-facts').innerText()).includes('Possible abilities') && (await page.locator('.identity-speed').innerText()).includes('estimated'), 'Right moves to the next opponent; unrevealed ability and Speed are labelled as estimates');
     await pad(page, 15);
     check(await page.locator('[data-info-tab]').count() === 0 && await page.locator('#modal .type-badge, #modal .compact-move').count() === 0, 'Unknown slots expose neither a guessed identity nor possible sets');
     await pad(page, 0); await page.keyboard.press('f');
@@ -215,14 +214,16 @@ try {
   const pools = await browser.newPage({viewport: {width: 1024, height: 540}, hasTouch: true, isMobile: true});
   await pools.goto(base); await pools.waitForSelector('#switch-1');
   await pools.keyboard.press('f'); await pools.locator('#opponent-1').focus(); await pools.keyboard.press('i');
-  await pools.waitForSelector('#info-tab-1'); await pools.keyboard.press('ArrowDown');
+  await pools.waitForSelector('.role-layout');
   const coverage = await pools.evaluate(async () => {
-    const {rolePages} = await import('/src/info-components.mjs');
+    const {rolePages, facts} = await import('/src/info-components.mjs');
+    // Same facts block the live opponent page puts above the role.
+    const overview = `<div class="merged-overview">${facts([['Possible abilities', 'Levitate / Pressure'], ['Item', 'Not revealed'], ['Tera', 'Not revealed']])}</div>`;
     const {narrowSets} = await import('/src/possible-sets.mjs');
     const snapshot = await fetch('/data/gen9randombattle.json').then(r => r.json());
     const failures = []; let count = 0;
     const speedInfo = '<div class="identity-speed"><small>Speed (estimated)</small><strong>312 or 376</strong><small>before modifiers</small></div>';
-    for (const [name, pokemon] of Object.entries(snapshot.pokemon)) for (const page of rolePages({snapshot}, name, pokemon.level, speedInfo, narrowSets(snapshot, name, pokemon.level))) {
+    for (const [name, pokemon] of Object.entries(snapshot.pokemon)) for (const page of rolePages({snapshot}, name, pokemon.level, speedInfo, narrowSets(snapshot, name, pokemon.level), {overview})) {
       const el = document.querySelector('#info-content'); el.innerHTML = page.content;
       if (el.scrollHeight > el.clientHeight + 2 || el.scrollWidth > el.clientWidth + 2) failures.push(`${name}/${page.label}: ${el.scrollHeight}/${el.clientHeight}`);
       count++;
@@ -295,7 +296,7 @@ try {
   await cancel.waitForSelector('.identity-types small[data-identified=true]');
   const inferredTera = cancel.locator('.info-facts > div').filter({has: cancel.getByText('Tera · inferred', {exact: true})});
   check(await inferredTera.locator('dd').innerText() === 'Ice' && await inferredTera.getAttribute('data-cue') === 'green', 'A unique live move infers the fixed Tera and marks it green');
-  check(await cancel.locator('[data-info-tab]').count() === 2 && (await cancel.locator('.inspection-note').innerText()).includes('Tera Blast user'), 'Live inference removes incompatible sibling pages');
+  check(await cancel.locator('[data-info-tab]').count() === 0 && await cancel.locator('.role-layout').count() === 1 && (await cancel.locator('.role-heading').innerText()).includes('Tera Blast user'), 'Live inference removes incompatible sibling pages, leaving one role page');
   check(await cancel.locator('#opponent-4').getAttribute('data-cue') === 'green', 'Identified opponent gets a green roster border');
   check(!(await fit(cancel)).length, `Inferred overview fits the smallest viewport: ${await fit(cancel)}`);
   await cancel.screenshot({path: `test-results/${engineName}-inferred-set.png`});
@@ -373,7 +374,7 @@ try {
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|win|Opponent'}));
   await cancel.waitForFunction(() => document.querySelector('#tera').hidden);
   check(await cancel.locator('#tera').count() === 1 && !await cancel.locator('#tera').isVisible(), 'Tera is hidden once the battle ends');
-  check(await cancel.locator('.moves #replay, .moves #first-turn, .moves #prev-turn, .moves #next-turn, .moves #end-turn').count() === 5 && await cancel.locator('#upload-replay, #download-replay, #rematch, #main-menu').count() === 0 && await cancel.locator('#replay').innerText() === 'Replay battle', 'After the battle the move row holds Replay battle, First turn, Prev turn, Next turn and End');
+  check(await cancel.locator('.moves #replay, .moves #first-turn, .moves #prev-turn, .moves #next-turn, .moves #end-turn').count() === 5 && await cancel.locator('#upload-replay, #download-replay, #rematch, #main-menu').count() === 0 && await cancel.locator('#replay').innerText() === 'Replay battle', 'After the battle the move row holds Replay battle, First turn, Prev turn, Next turn and Last turn');
   check((await cancel.locator('#test-commands').innerText()).includes('|/savereplay'), 'The replay is saved automatically when the battle ends');
   await cancel.locator('#first-turn').click(); await cancel.locator('#prev-turn').click(); await cancel.locator('#next-turn').click(); await cancel.locator('#end-turn').click();
   check(await cancel.locator('.moves #first-turn').count() === 1, 'First turn and Prev turn seek without error');

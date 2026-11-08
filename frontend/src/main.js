@@ -214,7 +214,8 @@ function showInfo(page) {
           ${statCells ? `<div class="stats-layout">${facts(statCells)}</div>` : `<div class="stats-layout">${speedInfo}</div>`}
           <h3>${own ? 'Moves' : 'Revealed moves'}</h3>${moveList(moves.slice(i * 4, i * 4 + 4), 4)}</div>`,
         note: moves.some(m => m.copied) ? '* Copied move' : own ? '' : inference?.identified ? `Role inferred: ${inference.role}. Unrevealed moves/items remain candidates.` : inference?.status === 'unmatched' ? 'Reveals do not match this snapshot; showing all candidates.' : 'Unrevealed information stays unknown.'}));
-      if (!own) pages.push(...rolePages(sets, slot.name, slot.level, speedInfo, inference));
+      // Opponents get one page per role: revealed facts on top, that role's possible sets below, revealed moves highlighted.
+      if (!own) pages = rolePages(sets, slot.name, slot.level, speedInfo, inference, {overview: `<div class="merged-overview">${facts(summary)}</div>`, revealed: new Set(moves.map(m => moveInformation(m.id).id))});
     }
   }
   const tab = Math.max(0, Math.min(page.tab || 0, pages.length - 1));
@@ -323,9 +324,9 @@ function renderMatchup() {
   const own = data?.own || arena.ownStats?.(pokemon?.serverIndex) || {};
   const foe = data?.foe || {};
   const box = (label, value, estimate = false, cue = '') => `<div class="stat-box" data-stat="${cue}"><small>${escape(label)}</small><strong>${value == null ? '—' : `${estimate ? '~' : ''}${escape(value)}`}</strong></div>`;
-  // Green: the attacker's higher attacking stat. Red: the defender's lower defensive stat. Ties and unknowns get no cue.
-  const higher = (a, b) => a != null && b != null && a !== b ? (a > b ? ['high', ''] : ['', 'high']) : ['', ''];
-  const lower = (a, b) => a != null && b != null && a !== b ? (a < b ? ['low', ''] : ['', 'low']) : ['', ''];
+  // Every column shows one green and one red: the higher of the pair is green, the lower red. Ties and unknowns get no cue.
+  const higher = (a, b) => a != null && b != null && a !== b ? (a > b ? ['high', 'low'] : ['low', 'high']) : ['', ''];
+  const lower = higher;
   const [ownAtk, ownSpa] = higher(own.atk, own.spa), [foeDef, foeSpd] = lower(foe.def, foe.spd);
   const [foeAtk, foeSpa] = higher(foe.atk, foe.spa), [ownDef, ownSpd] = lower(own.def, own.spd);
   const badge = side => !data || data.first === 'tie' ? '<div class="speed-badge" data-first="true"><span aria-hidden="true">🐇</span>1</div>'
@@ -462,8 +463,8 @@ function render() {
   $('notice').parentElement.hidden = !$('notice').textContent;
   $('action-slots').append($('tera'), $('undo'));
   // After the battle the move row holds the replay controls instead of moves.
-  const endControls = !fixture && state.ended ? [btn('replay', 'Replay battle', 'moves'), btn('first-turn', 'First turn', 'moves'), btn('prev-turn', 'Prev turn', 'moves'), btn('next-turn', 'Next turn', 'moves'), btn('end-turn', 'End', 'moves')].map(html => html.replace('<button ', '<button class="end-control" ')).join('') : '';
-  $('choices').innerHTML = `<div class="moves" role="group" aria-label="Moves">${endControls}${choices.moves.map(move => {
+  const endControls = !fixture && state.ended ? [btn('replay', 'Replay battle', 'moves'), btn('first-turn', 'First turn', 'moves'), btn('prev-turn', 'Prev turn', 'moves'), btn('next-turn', 'Next turn', 'moves'), btn('end-turn', 'Last turn', 'moves')].map(html => html.replace('<button ', '<button class="end-control" ')).join('') : '';
+  $('choices').innerHTML = `<div class="moves${endControls ? ' end-row' : ''}" role="group" aria-label="Moves">${endControls}${choices.moves.map(move => {
     const type = window.BattleMovedex[move.id]?.type || '';
     return btn(`move-${move.index}`, `<strong>${escape(move.move)}</strong><small><span class="move-type">${escape(type)}</span><span>${escape(move.pp ?? '—')} / ${escape(move.maxpp ?? '—')} PP</span></small>`, 'moves', disabled || !waiting && !move.enabled, `data-type="${escape(type)}" data-locked="${waiting || !move.enabled}" aria-description="R3 or I for move information"`);
   }).join('')}</div>
