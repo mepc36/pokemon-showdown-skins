@@ -58,12 +58,15 @@ export function stableOwnOrder(team, previousOrder = []) {
 // Renderer HP for the player's own Pokémon. The request already knows the
 // result of the turn before the hit animates, so roster bars read the
 // renderer's copy, which only changes when the damage line plays.
-export function ownDisplayedHealth(battle, pokemon) {
+// During a replay the renderer is the only truthful source: a Pokémon it has not
+// shown yet is at full health with no status, never the server's end state.
+export function ownDisplayedHealth(battle, pokemon, replaying = false) {
   const client = battle?.mySide?.pokemon?.find(p => p.ident === pokemon?.ident);
   if (client && Number.isFinite(client.hp) && client.maxhp > 0) {
     return {percent: client.fainted ? 0 : Math.max(0, Math.min(100, client.hp / client.maxhp * 100)),
       fainted: !!client.fainted, condition: client.fainted ? '0 fnt' : `${client.hp}/${client.maxhp}${client.status ? ` ${client.status}` : ''}`};
   }
+  if (replaying) { const maxhp = pokemon?.condition?.match(/\/(\d+)/)?.[1]; return {percent: 100, fainted: false, condition: maxhp ? `${maxhp}/${maxhp}` : ''}; }
   const health = pokemon?.condition?.match(/^(\d+)\/(\d+)/), fainted = /fnt/.test(pokemon?.condition || '');
   return {percent: fainted ? 0 : health ? Math.max(0, Math.min(100, Number(health[1]) / Number(health[2]) * 100)) : 100,
     fainted, condition: pokemon?.condition || ''};

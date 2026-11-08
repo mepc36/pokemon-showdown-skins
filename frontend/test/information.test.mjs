@@ -184,5 +184,7 @@ test('own roster HP follows the renderer copy and falls back to the request when
   // Bench Pokémon the renderer has never seen use the request.
   assert.deepEqual(ownDisplayedHealth(battle, {ident: 'p1: Breloom', condition: '118/324'}).percent, Math.max(0, 118 / 324 * 100));
   assert.equal(ownDisplayedHealth(null, {ident: 'p1: Breloom', condition: '0 fnt'}).fainted, true);
+  assert.deepEqual(ownDisplayedHealth(battle, {ident: 'p1: Breloom', condition: '0 fnt par'}, true), {percent: 100, fainted: false, condition: ''}, 'a replay shows unseen Pokémon at full health with no status');
+  assert.deepEqual(ownDisplayedHealth(battle, {ident: 'p1: Breloom', condition: '12/324 par'}, true), {percent: 100, fainted: false, condition: '324/324'});
   assert.equal(ownDisplayedHealth(null, {ident: 'p1: Breloom', condition: '0 fnt'}).percent, 0);
 });
