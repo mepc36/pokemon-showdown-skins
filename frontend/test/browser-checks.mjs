@@ -78,7 +78,7 @@ try {
     check(await page.evaluate(() => { const widths = [...document.querySelectorAll('.moves > button')].map(b => Math.round(b.getBoundingClientRect().width)).filter(Boolean); return widths.length === 5 && new Set(widths).size === 1 && !document.querySelector('.moves > #undo'); }), 'Four moves and Tera share one width; there is no Cancel button in the row');
     check(await page.locator('#roster button[data-cue]:not([data-cue=""])').count() === 0, 'Own roster no longer carries speed cue borders');
     await page.waitForFunction(() => document.querySelector('#matchup-foe .matchup-names span:first-child')?.textContent === 'Landorus', null, {timeout: 20000});
-    await pad(page, 12);
+    await pad(page, 0); // B ends the bench preview; up now stays on the benched Pokémon's moves
     const panelNames = async id => page.locator(`${id} .matchup-names > span`).allInnerTexts();
     check(JSON.stringify(await panelNames('#matchup-own')) === '["Grumpig","Landorus"]' && JSON.stringify(await panelNames('#matchup-foe')) === '["Landorus","Grumpig"]', 'Both panels name the attacker on the left and the defender on the right');
     check(await page.locator('.matchup-names span').evaluateAll(els => els.every(el => getComputedStyle(el).textOverflow === 'ellipsis' && getComputedStyle(el).overflow === 'hidden')), 'Panel names clip with an ellipsis');
@@ -93,7 +93,7 @@ try {
     check((await panelNames('#matchup-own'))[0] === 'Palossand' && await page.locator('.move-preview').count() === 4 && !await page.locator('#move-1').isVisible() && (await page.locator('.move-preview strong').allInnerTexts()).includes('Earth Power'), 'Cursor on a bench Pokémon previews its moves and matchup');
     check(await page.locator('#tera .tera-type').innerText() === 'Water' && (await page.locator('#tera .tera-gem').getAttribute('src')).endsWith('TeraWater.png'), 'The Tera button follows the previewed Pokémon, name plus gem');
     check(await page.locator('.form-tag').count() === 0 && await page.evaluate(() => { const name = document.querySelector('#switch-1 .mon-name'); return name.scrollWidth <= name.clientWidth + 1; }), 'Roster names fit; no region tags on the demo team');
-    await pad(page, 12);
+    await pad(page, 0);
     await page.locator('#switch-2').focus(); await pad(page, 13);
     check(/^preview-move-\d$/.test(await page.evaluate(() => document.activeElement.id)) && await page.locator('.move-preview').count() === 4, 'The cursor can move onto a previewed move without ending the preview');
     check(await page.locator('#preview-move-1').evaluate(el => getComputedStyle(el).opacity) === '1', 'Previewed moves are not grayed out');
@@ -101,7 +101,9 @@ try {
     check(await page.locator('.move-preview').count() === 4 && !(await page.locator('#notice').innerText()).includes('selected'), 'Pressing a previewed move selects nothing');
     await page.locator('#switch-2').focus();
     await pad(page, 12);
-    check(await page.locator('.move-preview').count() === 0 && await page.locator('#move-1').isVisible() && await page.evaluate(() => document.activeElement.id === 'move-1'), 'Up from the bench returns to the active Pokémon\'s real moves');
+    check(await page.locator('.move-preview').count() === 4 && /^preview-move-\d$/.test(await page.evaluate(() => document.activeElement.id)) && await page.locator('.move-preview').first().evaluate(el => getComputedStyle(el).borderTopStyle) === 'solid', 'Up from the bench lands on the benched Pokémon\'s moves, drawn solid and gray');
+    await pad(page, 0);
+    check(await page.locator('.move-preview').count() === 0 && await page.locator('#move-1').isVisible(), 'B ends the preview and brings back the active Pokémon\'s real moves');
     check(await page.locator('#tera .tera-type').innerText() === 'Psychic', 'Leaving the preview restores the active Pokémon\'s Tera type');
     await page.locator('#switch-2').focus(); await pad(page, 0);
     check(await page.locator('.move-preview').count() === 0 && await page.evaluate(() => document.activeElement.id === 'switch-1'), 'B ends the preview and lands on the active Pokémon');
@@ -179,7 +181,7 @@ try {
     check(await page.locator('#opponent-roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'opponent-2', 'Closing after a flip inside R3 lands on that opponent slot');
     await page.keyboard.press('f');
     check(!await page.locator('#arena .leftbar').isVisible() && !await page.locator('#arena .rightbar').isVisible(), 'Renderer side bars are hidden');
-    await pad(page, 12); await page.locator('#move-2').focus(); await pad(page, 11);
+    await pad(page, 0); await page.locator('#move-2').focus(); await pad(page, 11);
     check(await page.locator('#modal-title').innerText() === 'Shadow Ball' && (await page.locator('#info-content').innerText()).includes('20%'), 'R3 on a main move opens its detailed effects');
     check(!(await fit(page)).length, `Move details fit: ${await fit(page)}`);
     await page.screenshot({path: `test-results/${engineName}-move-${viewport.width}-${viewport.height}.png`});
@@ -279,7 +281,7 @@ try {
   check(await cancel.locator('dialog[open]').count() === 0, 'Find Random Battle closes the menu');
   await cancel.locator('#switch-2').focus(); await cancel.keyboard.press('i'); await cancel.keyboard.press('ArrowRight'); await cancel.keyboard.press('ArrowDown'); await cancel.keyboard.press('Escape');
   check(!(await cancel.locator('#test-commands').innerText()).includes('/choose'), 'Flat information navigation never sends a battle choice');
-  await cancel.keyboard.press('ArrowUp'); await cancel.locator('#move-1').click();
+  await cancel.keyboard.press('Escape'); await cancel.locator('#move-1').click();
   check((await cancel.locator('#test-commands').innerText()).includes('/choose move 1|1'), 'Battle choices still submit immediately');
   await cancel.keyboard.press('ArrowLeft'); await cancel.locator('#move-2').click();
   check(await cancel.locator('#move-2').evaluate(el => !el.disabled && el.dataset.locked === 'true' && document.activeElement === el) && !(await cancel.locator('#test-commands').innerText()).includes('/choose move 2'), 'Moves stay focusable for review while a choice is pending but cannot be chosen');

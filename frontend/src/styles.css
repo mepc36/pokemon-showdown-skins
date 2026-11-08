@@ -323,3 +323,8 @@ dialog[data-view] #modal-body:has(.inspection-footer){display:flex;flex-directio
 
 /* The strip above the field never renders. */
 .arena-top{display:none!important}
+
+/* Previewed bench moves: solid border, gray and disabled-looking, never dashed. */
+.move-preview,.move-preview[data-cue]:not([data-cue=""]){border-style:solid}
+.move-preview{border-color:#b9c2cb;background:#eceff2;color:#7b838d}.move-preview strong{color:#7b838d}.move-preview small{color:#8e969f}
+.move-preview .move-type{color:#8e969f}
