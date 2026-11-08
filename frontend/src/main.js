@@ -19,6 +19,7 @@ let diagnosticLines = [];
 let ownOrder = [];
 let shownTeam = 'own';
 let previewIndex = null;
+let teraLabel = null; // Tera button text for the active Pokémon, restored after a bench preview
 let modalReturnFocus = '';
 let selectedMoveId = '', infoPage = null, rating = null, ratingPage = false, fixtureTimer = false;
 const modal = $('modal');
@@ -125,7 +126,6 @@ function refreshMoveHints() {
 function showRating(load = true, force = false) {
   if (load) void rating.load(force).then(() => {
     if (ratingPage && modal.open) showRating(false);
-    if ($('rating')) $('rating').textContent = rating.label;
   });
   const value = rating.value;
   const details = rating.status === 'loading' ? '<p>Loading your public ladder rating…</p>' :
@@ -267,6 +267,10 @@ function renderMovePreview() {
   if (!row) return;
   for (const el of row.querySelectorAll('.move-preview')) el.remove();
   row.dataset.preview = String(!!previewIndex);
+  // The Tera button follows the previewed Pokémon too, and returns to the active one's type.
+  const previewed = previewIndex ? ownTeam()[previewIndex - 1] : null;
+  if (previewed) { const type = previewed.terastallized || previewed.teraType || 'Unknown'; $('tera').textContent = `Tera: ${type}`; $('tera').dataset.type = type; }
+  else if (teraLabel) { $('tera').textContent = teraLabel.text; $('tera').dataset.type = teraLabel.type; }
   if (!previewIndex) return;
   const moves = knownMoves('own', previewIndex);
   row.insertAdjacentHTML('afterbegin', Array.from({length: 4}, (_, i) => {
@@ -314,6 +318,7 @@ function renderRoster() {
     const team = rosterSide === 'own' ? ownTeam().map((p, i) => {
       const shown = arena.ownHealth(p);
       return {index: i + 1, serverIndex: p.serverIndex, name: p.details.split(',')[0], revealed: true, fainted: shown.fainted, active: p.active, item: p.item || '',
+        ability: effectName('abilities', p.ability || p.baseAbility) || '', teraType: p.terastallized || p.teraType || '',
         percent: shown.percent, health: shown.fainted ? 'Fainted' : shown.condition, status: shown.condition.match(/ (\w{3})$/)?.[1] || '',
         canSwitch: !disabled && choices.switches.some(choice => choice.index === p.serverIndex && choice.enabled)};
     }) : arena.opponents();
@@ -326,10 +331,15 @@ function renderRoster() {
       const status = p.revealed && !p.fainted ? (p.status || '').toUpperCase() : '';
       const spoken = !p.revealed ? `Slot ${p.index}` : p.fainted ? 'Fainted' : `${p.active ? 'Active, ' : ''}${p.health}`;
       const icon = p.revealed ? `<span class="picon" aria-hidden="true" style="${escape(arena.icon(p.name))}"></span>` : '<span class="unknown-pokemon" aria-hidden="true">?</span>';
-      // The held item, when known, sits in the button's top-right corner as a sprite.
+      // Below the name: ability as small text, then the held item sprite and a Tera type badge.
+      // Opponents show each only once revealed (or, for Tera, once inferred).
+      const ability = p.revealed && !p.fainted ? p.ability || '' : '';
       const held = p.revealed && !p.fainted && p.item ? itemIcon(p.item, 'item-icon roster-item') : '';
-      return btn(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`, `${icon}${held}<strong><span class="mon-name">${p.revealed ? escape(p.name) : 'Unknown'}</span>${status ? `<small class="status-tag">${escape(status)}</small>` : ''}</strong>${p.percent != null ? `<span class="team-hp" aria-hidden="true" data-health="${p.percent <= 20 ? 'critical' : p.percent <= 50 ? 'low' : 'healthy'}"><span style="width:${p.percent}%"></span></span>` : ''}`, `team-${rosterSide}`, false,
-        `data-unavailable="${!p.canSwitch}" data-fainted="${!!p.fainted}" data-active="${!!p.active}" data-cue="${speed.cue || ''}" title="${escape(speed.label || '')}" aria-label="${rosterSide === 'opponent' ? `Opponent slot ${p.index}, ` : ''}${escape(p.name)}, ${escape(spoken)}. ${escape(speed.label || '')} ${p.canSwitch ? 'Switch Pokémon' : 'View details'}"`);
+      const teraType = p.revealed && !p.fainted ? p.teraType || inference?.teraType || '' : '';
+      const teraBadge = teraType ? `<span class="type-badge roster-tera" data-type="${escape(teraType)}" title="Tera ${escape(teraType)}">${escape(teraType)}</span>` : '';
+      const details = ability || held || teraBadge ? `<span class="roster-details" aria-hidden="true"><small class="roster-ability">${escape(ability)}</small><span class="roster-held">${held}${teraBadge}</span></span>` : '';
+      return btn(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`, `${icon}<strong><span class="mon-name">${p.revealed ? escape(p.name) : 'Unknown'}</span>${status ? `<small class="status-tag">${escape(status)}</small>` : ''}</strong>${details}${p.percent != null ? `<span class="team-hp" aria-hidden="true" data-health="${p.percent <= 20 ? 'critical' : p.percent <= 50 ? 'low' : 'healthy'}"><span style="width:${p.percent}%"></span></span>` : ''}`, `team-${rosterSide}`, false,
+        `data-unavailable="${!p.canSwitch}" data-fainted="${!!p.fainted}" data-active="${!!p.active}" data-cue="${speed.cue || ''}" title="${escape(speed.label || '')}" aria-label="${rosterSide === 'opponent' ? `Opponent slot ${p.index}, ` : ''}${escape(p.name)}, ${escape(spoken)}.${ability ? ` ${escape(ability)}.` : ''}${p.item ? ` ${escape(p.item)}.` : ''}${teraType ? ` Tera ${escape(teraType)}.` : ''} ${escape(speed.label || '')} ${p.canSwitch ? 'Switch Pokémon' : 'View details'}"`);
     }).join('');
     for (const p of team) $(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`).onclick = () => {
       if (rosterSide === 'opponent') showInfo({kind: 'pokemon', side: 'opponent', index: p.index});
@@ -385,6 +395,7 @@ function render() {
   $('tera').disabled = disabled || !choices.tera;
   $('tera').textContent = `Tera: ${teraType}${activePokemon?.terastallized ? ' · active' : tera ? ' · selected' : ''}`;
   $('tera').dataset.type = teraType;
+  teraLabel = {text: $('tera').textContent, type: teraType};
   $('tera').setAttribute('aria-pressed', String(tera));
   $('tera').title = choices.tera ? 'Toggle Terastallize for your next move (X)' : 'This Pokémon’s Tera type; Terastallize is unavailable right now.';
   const canCancel = !fixture && state.pending && request && !request.noCancel && state.authenticated && !state.recovering && !state.ended;
@@ -415,7 +426,7 @@ function render() {
   const inBattle = fixture || !!state.room && !state.ended;
   $('utility').innerHTML = `
     ${btn('timer-toggle', `Timer: ${(fixture ? fixtureTimer : state.timerOn) ? 'on' : 'off'}`, 'header', !inBattle || !fixture && (!state.authenticated || state.recovering || state.timerPending), `aria-pressed="${!!(fixture ? fixtureTimer : state.timerOn)}"`)}
-    ${btn('rating', rating?.label || 'Rating', 'header')}${btn('forfeit', 'Forfeit…', 'header', !inBattle || !fixture && !state.authenticated)}
+    ${btn('rating', 'Rating', 'header')}${btn('forfeit', 'Forfeit…', 'header', !inBattle || !fixture && !state.authenticated)}
     ${state.ended ? btn('replay', 'Replay', 'header') : ''}${btn('setup', 'Setup', 'header')}${btn('diagnostics', 'Controller check', 'header')}
     <a id="source" data-nav data-row="header" href="./source.zip" download>Source</a>`;
   for (const move of choices.moves) $(`move-${move.index}`).onclick = () => choose('move', move.index);

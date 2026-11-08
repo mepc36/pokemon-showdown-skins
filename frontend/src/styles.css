@@ -245,3 +245,14 @@ dialog[data-view] #modal-body:has(.inspection-footer){display:flex;flex-directio
 .move-preview[data-cue]:not([data-cue=""]){border-style:dashed}
 .speed-badge,.speed-badge[data-first=true],.speed-badge[data-first=false]{border:1px solid #c4cdd5;background:#fff}
 #matchup-own .stat-pair>.stat-box:first-child,#matchup-foe .stat-pair>.stat-box:last-child{border-color:#c4cdd5;background:#fff}
+
+/* Roster buttons carry name, ability, item and Tera; the battlefield gives up the height. */
+.team button{min-height:104px;padding:4px 6px 20px;grid-template-columns:44px minmax(0,1fr);grid-template-rows:auto auto;align-content:start;row-gap:1px}
+.team .picon{grid-row:span 2;align-self:center;transform:scale(1.25)}
+.team button .roster-item{position:static;transform:none;width:24px;height:24px}
+.roster-details{display:flex;flex-direction:column;gap:2px;min-width:0;text-align:left}
+.roster-ability{display:block;font-size:11px;line-height:1.2;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:13px}
+.roster-held{display:flex;align-items:center;gap:4px;min-height:24px}
+.roster-tera{margin:0;padding:2px 6px;font-size:11px;line-height:1.2;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.team-hp{height:11px;bottom:5px}
+@media(min-width:900px) and (max-height:620px){.team button{min-height:96px;padding-bottom:18px}}
