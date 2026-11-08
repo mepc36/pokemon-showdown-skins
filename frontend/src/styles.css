@@ -266,7 +266,6 @@ dialog[data-view] #modal-body:has(.inspection-footer){display:flex;flex-directio
 .menu-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.menu-grid button{white-space:nowrap}
 #battle-timer{position:absolute;right:calc(16% + 10px);bottom:8px;margin:0;z-index:2;padding:3px 10px;border:2px solid #1d4e89;border-radius:8px;background:#eef2f5e6;font-size:20px}
 .matchup-names{display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:clamp(11px,1.1vw,14px)}.matchup-names span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
-.stat-box[data-stat=high]{border-color:#238c4f;box-shadow:inset 0 0 0 1px #238c4f}.stat-box[data-stat=low]{border-color:#c51e26;box-shadow:inset 0 0 0 1px #c51e26}
 
 /* Previewed bench moves read like real moves; they take focus but cannot be chosen. */
 .move-preview{opacity:1;cursor:default;font:inherit;color:#27303b}.move-preview strong{font-weight:600}
