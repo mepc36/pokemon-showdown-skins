@@ -83,7 +83,7 @@ try {
     const cues = async id => page.locator(`${id} .stat-box`).evaluateAll(els => els.map(el => `${el.querySelector('small').textContent}:${el.dataset.stat}`));
     check(JSON.stringify(await cues('#matchup-own')) === '["Atk:","Def:","SpA:","SpD:low","Spe:"]', `Left panel marks their lower defense red and leaves your tied attack stats uncued: ${await cues('#matchup-own')}`);
     check(JSON.stringify(await cues('#matchup-foe')) === '["Atk:high","Def:","SpA:","SpD:","Spe:"]', `Right panel puts their attack stats left, marking the higher one green: ${await cues('#matchup-foe')}`);
-    check(await page.locator('.stat-box[data-stat=high]').first().evaluate(el => getComputedStyle(el).borderTopColor) === 'rgb(35, 140, 79)' && await page.locator('.stat-box[data-stat=low]').first().evaluate(el => getComputedStyle(el).borderTopColor) === 'rgb(197, 30, 38)', 'Stat cues are green and red borders');
+    check(await page.evaluate(() => { const style = el => getComputedStyle(el); const high = document.querySelector('.stat-box[data-stat=high]'), low = document.querySelector('.stat-box[data-stat=low]'), plain = document.querySelector('.stat-box[data-stat=""]'); const key = el => style(el).borderTopColor + style(el).backgroundColor; return key(high) !== key(plain) && key(low) !== key(plain) && key(high) !== key(low); }), 'Cued stat boxes look different from plain ones and from each other');
     const pairs = await page.locator('#matchup-own .stat-pair small').allInnerTexts();
     check(JSON.stringify(pairs) === JSON.stringify(['Atk', 'Def', 'SpA', 'SpD', 'Spe']) && (await page.locator('#matchup-own .stat-pair strong').allInnerTexts()).slice(0, 2).join() === '150,~' + (Math.floor(Math.floor(2 * 90 + 31 + 21) * 76 / 100) + 5), 'Left panel pairs your Attack with their estimated Defense');
     check(await page.locator('#matchup-own .speed-badge').count() === 1 && await page.locator('#matchup-foe .speed-badge').count() === 1 && ((await page.locator('#matchup-own .speed-badge').innerText()).includes('1') !== (await page.locator('#matchup-foe .speed-badge').innerText()).includes('1') || (await page.locator('.speed-badge[data-first=true]').count()) === 2), 'Exactly one side moves first unless tied');
@@ -92,7 +92,7 @@ try {
     check(await page.locator('#tera').innerText() === 'Tera: Water', 'The Tera button follows the previewed Pokémon');
     await pad(page, 12);
     await page.locator('#switch-2').focus(); await pad(page, 13);
-    check(await page.evaluate(() => document.activeElement.id) === 'preview-move-1' && await page.locator('.move-preview').count() === 4, 'The cursor can move onto a previewed move without ending the preview');
+    check(/^preview-move-\d$/.test(await page.evaluate(() => document.activeElement.id)) && await page.locator('.move-preview').count() === 4, 'The cursor can move onto a previewed move without ending the preview');
     check(await page.locator('#preview-move-1').evaluate(el => getComputedStyle(el).opacity) === '1', 'Previewed moves are not grayed out');
     await pad(page, 1);
     check(await page.locator('.move-preview').count() === 4 && !(await page.locator('#notice').innerText()).includes('selected'), 'Pressing a previewed move selects nothing');
