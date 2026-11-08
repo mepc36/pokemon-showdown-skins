@@ -58,7 +58,7 @@ try {
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     await page.goto(base); await page.waitForSelector('#switch-1');
     check(await page.locator('#all-moves, #info, #move-details').count() === 0, 'Duplicate menus and separate Move info button are removed');
-    check(await page.evaluate(() => window.Dex?.fxPrefix === 'https://play.pokemonshowdown.com/fx/'), 'The animation module sees Dex, so effect sprites load from the Showdown fx folder');
+    check(await page.evaluate(async () => { const source = await fetch('/vendor/pokemon-showdown/battle-animations.ts').then(r => r.text()); return source.includes("'//play.pokemonshowdown.com/fx/' + BattleEffects[id].url") && !source.includes('if (!window.Dex || !Dex.resourcePrefix) return;'); }), 'Effect sprite URLs are prefixed with the Showdown fx folder regardless of window.Dex');
     check(await page.locator('#roster button').count() === 6 && await page.locator('#opponent-roster button').count() === 6 && await page.locator('#roster').isVisible() && !await page.locator('#opponent-roster').isVisible(), 'Six slots per team; your row shows first, one row at a time');
     check(await page.locator('#view-own, #view-opponent, #skip, #music, #display, #reconnect, .controller-bar kbd').count() === 0, 'Redundant controls and hints are removed');
     check(await page.locator('.app-header, #utility, #timer-toggle, #toggle-tools, .controller-bar, #turn-label').count() === 0, 'The header row and the Timer button are gone');
@@ -78,7 +78,7 @@ try {
     check(await page.locator('#roster button[data-cue]:not([data-cue=""])').count() === 0, 'Own roster no longer carries speed cue borders');
     await page.waitForFunction(() => document.querySelector('#matchup-foe .matchup-names span:first-child')?.textContent === 'Landorus', null, {timeout: 20000});
     await pad(page, 12);
-    const panelNames = async id => page.locator(`${id} .matchup-names span`).allInnerTexts();
+    const panelNames = async id => page.locator(`${id} .matchup-names > span`).allInnerTexts();
     check(JSON.stringify(await panelNames('#matchup-own')) === '["Grumpig","Landorus"]' && JSON.stringify(await panelNames('#matchup-foe')) === '["Landorus","Grumpig"]', 'Both panels name the attacker on the left and the defender on the right');
     check(await page.locator('.matchup-names span').evaluateAll(els => els.every(el => getComputedStyle(el).textOverflow === 'ellipsis' && getComputedStyle(el).overflow === 'hidden')), 'Panel names clip with an ellipsis');
     const cues = async id => page.locator(`${id} .stat-box`).evaluateAll(els => els.map(el => `${el.querySelector('small').textContent}:${el.dataset.stat}`));
