@@ -268,7 +268,7 @@ try {
   const rendererResult = await renderer.locator('#results').innerText();
   check(!rendererResult.includes('FAIL'), rendererResult); await renderer.close();
 
-  const cancel = await browser.newPage();
+  const cancel = await browser.newPage(); await gamepad(cancel);
   await cancel.goto(`${base}/test/cancel.html`); await cancel.waitForSelector('#switch-1');
   await cancel.keyboard.press('h'); await cancel.locator('#primary').click();
   await cancel.waitForFunction(() => document.querySelector('#arena-wrap').dataset.room.includes('12345'));
