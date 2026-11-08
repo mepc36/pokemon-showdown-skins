@@ -7,12 +7,14 @@ import {startController, navigate} from './controller.mjs';
 import {PlayerRating} from './rating.mjs';
 import {Music, musicActive} from './music.js';
 import {PossibleSets, possibleSets, narrowSets} from './possible-sets.mjs';
-import {escapeHtml, facts, typeBadges, moveList, rolePages, movePages, itemIcon} from './info-components.mjs';
+import {escapeHtml, facts, typeBadges, moveList, rolePages, movePages, itemIcon, regionalForm} from './info-components.mjs';
 import {demoLines, demoRequest} from './demo.mjs';
 import {moveInformation, effectName, knownOwnMoves, speciesInformation, stableOwnOrder} from './information.mjs';
 
 const $ = id => document.getElementById(id);
 const escape = escapeHtml;
+// Species name with a small region tag for regional forms.
+const nameTag = (name, tagClass = 'form-tag') => { const form = regionalForm(name); return `<span class="mon-name">${escapeHtml(form.base)}</span>${form.region ? `<small class="${tagClass}">${escapeHtml(form.region.toUpperCase())}</small>` : ''}`; };
 const btn = (id, label, row, disabled = false, extra = '') => `<button id="${id}" data-nav data-row="${row}" ${disabled ? 'disabled' : ''} ${extra}>${label}</button>`;
 let arena, session, auth, config, state = {}, fixture = true, tera = false, lastRequest, selectedRequest, localNotice = '', ignoreButtons = new Set();
 let diagnosticLines = [];
@@ -55,6 +57,7 @@ $('modal-close').onclick = closeModal;
 modal.addEventListener('cancel', event => { event.preventDefault(); closeModal(); });
 
 // Chat drawer: slides over the right edge of the field. Header button or C toggles it.
+function scrollChat(step) { const drawer = $('chat-drawer'); if (!drawer.hidden) drawer.scrollTop += step; }
 function showChat(open = $('chat-drawer').hidden) {
   const drawer = $('chat-drawer');
   drawer.hidden = !open;
@@ -68,9 +71,10 @@ function showMenu() {
   const inBattle = fixture || !!state.room && !state.ended;
   const primaryLabel = fixture || session?.stopped ? 'Connect to Showdown' : !state.authenticated ? 'Sign in with Showdown' : state.searching ? 'Cancel search' : 'Find Random Battle';
   const primaryDisabled = !fixture && !session?.stopped && (!state.authenticated ? !state.challenge : !!state.room && !state.ended);
-  showModal('Menu', `<div class="menu-grid">${btn('primary', primaryLabel, 'menu', primaryDisabled, 'class="primary"')}
-    ${btn('chat', 'Chat', 'menu', false, `aria-pressed="${!$('chat-drawer').hidden}"`)}${btn('rating', 'Rating', 'menu')}${btn('forfeit', 'Forfeit…', 'menu', !inBattle || !fixture && !state.authenticated)}
-    ${state.ended ? btn('replay', 'Replay', 'menu') : ''}${btn('setup', 'Setup', 'menu')}${btn('diagnostics', 'Controller check', 'menu')}${btn('source', 'Source', 'menu')}</div>`, 'menu');
+  // Two rows of four so the d-pad moves between rows instead of jumping to the close button.
+  showModal('Menu', `<div class="menu-grid">${btn('primary', primaryLabel, 'menu-1', primaryDisabled, 'class="primary"')}
+    ${btn('chat', 'Chat', 'menu-1', false, `aria-pressed="${!$('chat-drawer').hidden}"`)}${btn('rating', 'Rating', 'menu-1')}${btn('forfeit', 'Forfeit…', 'menu-1', !inBattle || !fixture && !state.authenticated)}
+    ${btn('setup', 'Setup', 'menu-2')}${btn('diagnostics', 'Controller check', 'menu-2')}${btn('source', 'Source', 'menu-2')}</div>`, 'menu');
   $('primary').onclick = () => safe(() => {
     localNotice = ''; closeModal();
     if (fixture || session.stopped) { startLive(); return; }
@@ -83,7 +87,6 @@ function showMenu() {
   $('forfeit').onclick = forfeit;
   $('setup').onclick = setup; $('diagnostics').onclick = diagnostics;
   $('source').onclick = () => { const link = document.createElement('a'); link.href = './source.zip'; link.download = ''; link.click(); };
-  if ($('replay')) $('replay').onclick = () => { closeModal(); arena.replay(); };
   if (!reopen) modal.querySelector('.menu-grid button:not(:disabled)')?.focus({preventScroll: true});
 }
 
@@ -328,7 +331,7 @@ function renderMatchup() {
   const cols = (first, second) => `<div class="matchup-cols" aria-hidden="true"><span>${first}</span><span>${second}</span></div>`;
   const name = pokemon ? pokemon.details.split(',')[0] : '—', foeName = data?.foeName || '—';
   // Both names sit above the columns: the attacker over ⚔️, the defender over 🛡️.
-  const names = (first, second) => `<h4 class="matchup-names"><span>${escape(first)}</span><span>${escape(second)}</span></h4>`;
+  const names = (first, second) => `<h4 class="matchup-names"><span>${nameTag(first, 'form-tag panel-form-tag')}</span><span>${nameTag(second, 'form-tag panel-form-tag')}</span></h4>`;
   left.innerHTML = `${names(name, foeName)}${cols('⚔️', '🛡️')}
     <div class="stat-pair">${box('Atk', own.atk, false, ownAtk)}${box('Def', foe.def, true, foeDef)}</div>
     <div class="stat-pair">${box('SpA', own.spa, false, ownSpa)}${box('SpD', foe.spd, true, foeSpd)}</div>
@@ -365,13 +368,17 @@ function renderRoster() {
       const icon = p.revealed ? `<span class="picon" aria-hidden="true" style="${escape(arena.icon(p.name))}"></span>` : '<span class="unknown-pokemon" aria-hidden="true">?</span>';
       // Below the name: ability as small text, then the held item sprite and a Tera type badge.
       // Opponents show each only once revealed (or, for Tera, once inferred).
-      const ability = p.revealed && !p.fainted ? p.ability || '' : '';
-      const held = p.revealed && !p.fainted && p.item ? itemIcon(p.item, 'item-icon roster-item') : '';
-      const teraType = p.revealed && !p.fainted ? p.teraType || inference?.teraType || '' : '';
-      const teraBadge = teraType ? `<span class="type-badge roster-tera" data-type="${escape(teraType)}" title="Tera ${escape(teraType)}">${escape(teraType)}</span>` : '';
-      const details = ability || held || teraBadge ? `<span class="roster-details" aria-hidden="true"><small class="roster-ability">${escape(ability)}</small><span class="roster-held">${held}${teraBadge}</span></span>` : '';
-      return btn(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`, `${icon}<strong><span class="mon-name">${p.revealed ? escape(p.name) : 'Unknown'}</span>${status ? `<small class="status-tag">${escape(status)}</small>` : ''}</strong>${details}${p.percent != null ? `<span class="team-hp" aria-hidden="true" data-health="${p.percent <= 20 ? 'critical' : p.percent <= 50 ? 'low' : 'healthy'}"><span style="width:${p.percent}%"></span></span>` : ''}`, `team-${rosterSide}`, false,
-        `data-unavailable="${!p.canSwitch}" data-fainted="${!!p.fainted}" data-active="${!!p.active}" data-cue="${speed.cue || ''}" title="${escape(speed.label || '')}" aria-label="${rosterSide === 'opponent' ? `Opponent slot ${p.index}, ` : ''}${escape(p.name)}, ${escape(spoken)}.${ability ? ` ${escape(ability)}.` : ''}${p.item ? ` ${escape(p.item)}.` : ''}${teraType ? ` Tera ${escape(teraType)}.` : ''} ${escape(speed.label || '')} ${p.canSwitch ? 'Switch Pokémon' : 'View details'}"`);
+      // Opponents: revealed values first; otherwise what every remaining set agrees on, marked inferred.
+      const shown = p.revealed && !p.fainted;
+      const abilityInferred = shown && !p.ability && !!inference?.ability, itemInferred = shown && !p.item && !!inference?.item;
+      const ability = shown ? p.ability || inference?.ability || '' : '';
+      const itemName = shown ? p.item || inference?.item || '' : '';
+      const held = itemName ? itemIcon(itemName, `item-icon roster-item${itemInferred ? ' inferred' : ''}`) : '';
+      const teraType = shown ? p.teraType || inference?.teraType || '' : '';
+      const teraBadge = teraType ? `<span class="type-badge roster-tera${!p.teraType && inference?.teraType ? ' inferred' : ''}" data-type="${escape(teraType)}" title="Tera ${escape(teraType)}">${escape(teraType)}</span>` : '';
+      const details = ability || held || teraBadge ? `<span class="roster-details" aria-hidden="true"><small class="roster-ability${abilityInferred ? ' inferred' : ''}">${escape(ability)}</small><span class="roster-held">${held}${teraBadge}</span></span>` : '';
+      return btn(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`, `${icon}<strong>${p.revealed ? nameTag(p.name) : '<span class="mon-name">Unknown</span>'}${status ? `<small class="status-tag">${escape(status)}</small>` : ''}</strong>${details}${p.percent != null ? `<span class="team-hp" aria-hidden="true" data-health="${p.percent <= 20 ? 'critical' : p.percent <= 50 ? 'low' : 'healthy'}"><span style="width:${p.percent}%"></span></span>` : ''}`, `team-${rosterSide}`, false,
+        `data-unavailable="${!p.canSwitch}" data-fainted="${!!p.fainted}" data-active="${!!p.active}" data-cue="${speed.cue || ''}" title="${escape(speed.label || '')}" aria-label="${rosterSide === 'opponent' ? `Opponent slot ${p.index}, ` : ''}${escape(p.name)}, ${escape(spoken)}.${ability ? ` ${abilityInferred ? 'Likely ' : ''}${escape(ability)}.` : ''}${itemName ? ` ${itemInferred ? 'Likely ' : ''}${escape(itemName)}.` : ''}${teraType ? ` Tera ${escape(teraType)}.` : ''} ${escape(speed.label || '')} ${p.canSwitch ? 'Switch Pokémon' : 'View details'}"`);
     }).join('');
     for (const p of team) $(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`).onclick = () => {
       if (rosterSide === 'opponent') showInfo({kind: 'pokemon', side: 'opponent', index: p.index});
@@ -440,7 +447,10 @@ function render() {
   $('notice').textContent = localNotice || (!redundantNotice && state.notice) || (!fixture && !state.authenticated ? state.status : prompt);
   $('notice').parentElement.hidden = !$('notice').textContent;
   $('action-slots').append($('tera'), $('undo'));
-  $('choices').innerHTML = `<div class="moves" role="group" aria-label="Moves">${choices.moves.map(move => {
+  // After the battle the move row holds the replay controls instead of moves.
+  const endControls = !fixture && state.ended ? [btn('replay', 'Replay', 'moves'), btn('first-turn', 'First turn', 'moves'), btn('prev-turn', 'Prev turn', 'moves'),
+    btn('upload-replay', 'Upload replay', 'moves', !state.authenticated || !state.room)].map(html => html.replace('<button ', '<button class="end-control" ')).join('') : '';
+  $('choices').innerHTML = `<div class="moves" role="group" aria-label="Moves">${endControls}${choices.moves.map(move => {
     const type = window.BattleMovedex[move.id]?.type || '';
     return btn(`move-${move.index}`, `<strong>${escape(move.move)}</strong><small><span class="move-type">${escape(type)}</span><span>${escape(move.pp ?? '—')} / ${escape(move.maxpp ?? '—')} PP</span></small>`, 'moves', disabled || !move.enabled, `data-type="${escape(type)}" aria-description="R3 or I for move information"`);
   }).join('')}</div>
@@ -452,6 +462,12 @@ function render() {
   refreshMoveHints();
   renderMovePreview();
   for (const move of choices.moves) $(`move-${move.index}`).onclick = () => choose('move', move.index);
+  if (endControls) {
+    $('replay').onclick = () => arena.replay();
+    $('first-turn').onclick = () => arena.seekTurn(0);
+    $('prev-turn').onclick = () => arena.seekTurn(arena.turn - 1);
+    $('upload-replay').onclick = () => safe(() => { session.roomCommand('/savereplay'); localNotice = 'Uploading replay…'; render(); });
+  }
   $('tera').onclick = () => { tera = !tera; render(); };
   $('undo').onclick = () => safe(() => {
     localNotice = ''; session.undo();
@@ -524,7 +540,8 @@ async function init() {
       return;
     }
     if (modal.open) return;
-    ({tera: () => $('tera')?.click(), menu: forfeit, info, team: () => showTeam(), tools: showMenu, chat: () => showChat()})[action]?.();
+    ({tera: () => $('tera')?.click(), menu: forfeit, info, team: () => showTeam(), tools: showMenu, chat: () => showChat(),
+      chatUp: () => scrollChat(-80), chatDown: () => scrollChat(80)})[action]?.();
   }});
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { music.update(false); return; }

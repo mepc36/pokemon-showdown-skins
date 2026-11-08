@@ -127,9 +127,13 @@ export function narrowSets(snapshot, name, level, reveals = {}, rules = setRules
     return [{...set, roles}];
   });
   const teraTypes = [...new Set(matching.flatMap(({rule}) => rule.teraTypes))];
+  // Ability and item are inferred the same way: only when every remaining definition agrees.
+  const abilities = [...new Set(matching.flatMap(({rule}) => rule.abilities))];
+  const items = [...new Set(sets.flatMap(set => set.roles.flatMap(role => Object.keys(role.items || {}))))];
   return {sets, status: matching.length === 1 ? 'identified' : 'ambiguous', identified: matching.length === 1,
     role: matching.length === 1 ? matching[0].rule.role : '', count: matching.length,
-    teraType: !tera && teraTypes.length === 1 ? teraTypes[0] : ''};
+    teraType: !tera && teraTypes.length === 1 ? teraTypes[0] : '',
+    ability: !ability && abilities.length === 1 ? abilities[0] : '', item: items.length === 1 ? items[0] : ''};
 }
 
 export const percent = weight => weight === 0 ? '0% observed' : weight < 0.001 ? '<0.1%' :

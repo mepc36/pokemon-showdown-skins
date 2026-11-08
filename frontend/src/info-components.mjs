@@ -3,6 +3,12 @@ import {possibleSets} from './possible-sets.mjs';
 import {Dex} from '@pkmn/dex';
 import uiData from './showdown-ui-data.json' with {type: 'json'};
 
+// Regional forms: "Ninetales-Alola" shows as Ninetales with an ALOLA tag so the region never gets clipped.
+export function regionalForm(name) {
+  const match = String(name || '').match(/^(.+?)-(Alola|Galar|Hisui|Paldea)(?:-(.+))?$/);
+  if (!match) return {base: name || '', region: ''};
+  return {base: match[3] ? `${match[1]}-${match[3]}` : match[1], region: match[2]};
+}
 export const escapeHtml = text => String(text ?? '').replace(/[&<>"']/g,
   char => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[char]));
 const escape = escapeHtml;

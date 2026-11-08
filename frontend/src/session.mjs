@@ -216,7 +216,7 @@ export class ShowdownSession {
   }
   roomCommand(command) {
     if (!this.state.authenticated || !this.state.room || this.state.ended || this.state.recovering) return;
-    if (!['/timer on', '/timer off', '/forfeit'].includes(command)) throw new Error('Unsupported command.');
+    if (!['/timer on', '/timer off', '/forfeit', '/savereplay'].includes(command)) throw new Error('Unsupported command.');
     this.send(command, this.state.room);
   }
 }
