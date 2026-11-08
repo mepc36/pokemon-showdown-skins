@@ -103,6 +103,12 @@ try {
     check(!await page.locator('#utility').isVisible(), 'L3 is unmapped and no longer jumps to the timer');
     await page.keyboard.press('t');
     check(await page.locator('#utility').isVisible() && await page.evaluate(() => document.activeElement.id) === 'timer-toggle', 'The T key still reveals the controls and focuses the timer');
+    const fieldBefore = await page.locator('#arena').evaluate(el => el.getBoundingClientRect().width);
+    await page.locator('#chat').click();
+    check(await page.locator('#chat-drawer').isVisible() && await page.locator('#chat').getAttribute('aria-pressed') === 'true' && await page.locator('#arena').evaluate(el => el.getBoundingClientRect().width) === fieldBefore, 'Chat button opens the drawer over the field without resizing it');
+    check(await page.locator('#chat-drawer').evaluate(el => { const r = el.getBoundingClientRect(), w = el.parentElement.getBoundingClientRect(); return Math.abs(r.right - w.right) < 2 && r.width < w.width / 2; }), 'Chat drawer sits on the right side');
+    await page.keyboard.press('c');
+    check(!await page.locator('#chat-drawer').isVisible() && await page.locator('#chat').getAttribute('aria-pressed') === 'false', 'C closes the chat drawer');
     await page.locator('#switch-1').focus(); await pad(page, 11);
     await page.waitForSelector('#info-content');
     check(await page.locator('[data-info-tab], #prev-info-page, .inspection-note').count() === 0, 'Own Pokémon have one flat page: no Overview tab, no paging, no footnote');

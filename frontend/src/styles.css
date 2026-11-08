@@ -15,7 +15,7 @@ button[aria-pressed=true]{background:#fbe1eb;color:#961b43;border-color:var(--ac
 #mode{flex-shrink:0;font-size:10px;letter-spacing:.09em;font-weight:700;color:#556575}#notice{margin:0;color:#56606c;font-size:12px;text-align:right;line-height:1.35}#notice:empty{display:none}
 #arena-wrap{width:100%;height:420px;overflow:hidden;position:relative;background:#dae5df}
 #arena.battle{position:absolute;top:0;left:0;width:640px;height:360px;transform-origin:top left;border:0;border-radius:0;font-family:Arial,sans-serif;box-sizing:content-box;color:#222}
-#arena *{box-sizing:content-box}#hidden-log{display:none!important}
+#arena *{box-sizing:content-box}
 .command-panel{padding:7px 16px 8px;border-top:1px solid #adb8c0;background:#eef2f5}
 .command-heading{display:flex;align-items:center;justify-content:center;gap:12px;min-height:23px;margin-bottom:6px}h2{margin:0;font-size:16px}#turn-label{font-size:11px;color:var(--muted)}
 .moves{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
@@ -256,3 +256,8 @@ dialog[data-view] #modal-body:has(.inspection-footer){display:flex;flex-directio
 .roster-tera{margin:0;padding:2px 6px;font-size:11px;line-height:1.2;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .team-hp{height:11px;bottom:5px}
 @media(min-width:900px) and (max-height:620px){.team button{min-height:96px;padding-bottom:18px}}
+
+/* Chat drawer: overlays the right side of the battlefield; the field never resizes. */
+.chat-drawer{position:absolute;top:0;right:0;bottom:0;width:36%;min-width:280px;z-index:3;background:#f7f9fbf5;border-left:1px solid #b9c2cb;overflow:auto;padding:6px 10px;font-size:13px;line-height:1.35;color:#27303b;box-shadow:-4px 0 12px #0002}
+.chat-drawer .battle-log,.chat-drawer .inner{height:auto!important;position:static!important;overflow:visible!important}
+.chat-drawer .battle-history{opacity:.85}.chat-drawer h2{font-size:14px;margin:6px 0}

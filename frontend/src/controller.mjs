@@ -4,7 +4,7 @@ export const risingEdges = (current, previous) => current.flatMap((pressed, inde
 
 export function startController({action, diagnostic, ignored = () => new Set()}) {
   let previous = [], device = '', repeatAt = 0, heldDirection = '', heldFlip = '';
-  const keys = {ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Enter: 'confirm', Escape: 'cancel', x: 'tera', t: 'timer', i: 'info', h: 'tools', f: 'team'};
+  const keys = {ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Enter: 'confirm', Escape: 'cancel', x: 'tera', t: 'timer', i: 'info', h: 'tools', f: 'team', c: 'chat'};
   document.addEventListener('keydown', event => {
     if (/INPUT|TEXTAREA|SELECT/.test(event.target.tagName)) return;
     diagnostic(`Key ${event.code} · cancelable ${event.cancelable}`);
