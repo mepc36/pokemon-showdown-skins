@@ -273,7 +273,7 @@ dialog[data-view] #modal-body:has(.inspection-footer){display:flex;flex-directio
 
 /* End-of-battle controls in the move row, menu rows, region tags, inferred roster details. */
 .moves .end-control{min-height:44px;font-size:15px;white-space:nowrap;justify-content:center;align-items:center}
-.moves button[aria-disabled="true"]:not(:disabled){opacity:.6}
+.moves button[aria-disabled="true"]:not(:disabled):not(.move-preview){opacity:.6}
 .form-tag{font-size:10px;font-weight:700;letter-spacing:.04em;padding:1px 4px;border-radius:4px;background:#dfe6ee;color:#2e4a66;white-space:nowrap;flex-shrink:0}
 .panel-form-tag{margin-left:3px;vertical-align:middle}
 .roster-ability.inferred,.roster-item.inferred,.roster-tera.inferred{opacity:.7;font-style:italic}
