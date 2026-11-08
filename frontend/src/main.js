@@ -55,6 +55,14 @@ $('modal-close').onclick = closeModal;
 modal.addEventListener('cancel', event => { event.preventDefault(); closeModal(); });
 
 // The secondary controls live in the header. Select (or H) hides and shows them.
+// Chat drawer: slides over the right edge of the field. Header button or C toggles it.
+function showChat(open = $('chat-drawer').hidden) {
+  const drawer = $('chat-drawer');
+  drawer.hidden = !open;
+  $('chat')?.setAttribute('aria-pressed', String(open));
+  if (open) drawer.scrollTop = drawer.scrollHeight;
+  else if (drawer.contains(document.activeElement)) $('chat')?.focus({preventScroll: true});
+}
 function showTools(open, focusId) {
   const tools = $('utility');
   tools.hidden = !open;
@@ -426,7 +434,7 @@ function render() {
   const inBattle = fixture || !!state.room && !state.ended;
   $('utility').innerHTML = `
     ${btn('timer-toggle', `Timer: ${(fixture ? fixtureTimer : state.timerOn) ? 'on' : 'off'}`, 'header', !inBattle || !fixture && (!state.authenticated || state.recovering || state.timerPending), `aria-pressed="${!!(fixture ? fixtureTimer : state.timerOn)}"`)}
-    ${btn('rating', 'Rating', 'header')}${btn('forfeit', 'Forfeit…', 'header', !inBattle || !fixture && !state.authenticated)}
+    ${btn('chat', 'Chat', 'header', false, `aria-pressed="${!$('chat-drawer').hidden}"`)}${btn('rating', 'Rating', 'header')}${btn('forfeit', 'Forfeit…', 'header', !inBattle || !fixture && !state.authenticated)}
     ${state.ended ? btn('replay', 'Replay', 'header') : ''}${btn('setup', 'Setup', 'header')}${btn('diagnostics', 'Controller check', 'header')}
     <a id="source" data-nav data-row="header" href="./source.zip" download>Source</a>`;
   for (const move of choices.moves) $(`move-${move.index}`).onclick = () => choose('move', move.index);
@@ -437,6 +445,7 @@ function render() {
     if (previous) $(`move-${previous.index}`)?.focus({preventScroll: true});
   });
   $('rating').onclick = () => showRating();
+  $('chat').onclick = () => showChat();
   $('forfeit').onclick = forfeit;
   $('setup').onclick = setup; $('diagnostics').onclick = diagnostics;
   $('timer-toggle').onclick = () => fixture ? (fixtureTimer = !fixtureTimer, render()) : safe(() => session.toggleTimer());
@@ -510,7 +519,7 @@ async function init() {
     }
     if (modal.open) return;
     ({tera: () => $('tera')?.click(), timer: () => showTools(true, 'timer-toggle'), menu: forfeit, info, team: () => showTeam(),
-      tools: () => showTools($('utility').hidden)})[action]?.();
+      tools: () => showTools($('utility').hidden), chat: () => showChat()})[action]?.();
   }});
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { music.update(false); return; }
