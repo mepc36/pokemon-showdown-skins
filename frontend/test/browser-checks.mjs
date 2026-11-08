@@ -58,7 +58,7 @@ try {
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     await page.goto(base); await page.waitForSelector('#switch-1');
     check(await page.locator('#all-moves, #info, #move-details').count() === 0, 'Duplicate menus and separate Move info button are removed');
-    check(await page.evaluate(async () => { const source = await fetch('/vendor/pokemon-showdown/battle-animations.ts').then(r => r.text()); return source.includes("'//play.pokemonshowdown.com/fx/' + BattleEffects[id].url") && !source.includes('if (!window.Dex || !Dex.resourcePrefix) return;'); }), 'Effect sprite URLs are prefixed with the Showdown fx folder regardless of window.Dex');
+    check(await page.evaluate(async () => { const source = await fetch('/vendor/pokemon-showdown/battle-animations.ts').then(r => r.text()); return /pokemonshowdown\.com\/fx\/["'] \+ BattleEffects\[id\]\.url/.test(source) && !source.includes('window.Dex'); }), 'Effect sprite URLs are prefixed with the Showdown fx folder regardless of window.Dex');
     check(await page.locator('#roster button').count() === 6 && await page.locator('#opponent-roster button').count() === 6 && await page.locator('#roster').isVisible() && !await page.locator('#opponent-roster').isVisible(), 'Six slots per team; your row shows first, one row at a time');
     check(await page.locator('#view-own, #view-opponent, #skip, #music, #display, #reconnect, .controller-bar kbd').count() === 0, 'Redundant controls and hints are removed');
     check(await page.locator('.app-header, #utility, #timer-toggle, #toggle-tools, .controller-bar, #turn-label').count() === 0, 'The header row and the Timer button are gone');
