@@ -75,7 +75,7 @@ try {
     check(await page.locator('#battle-timer').evaluate(el => getComputedStyle(el).color) !== 'rgb(17, 17, 17)', 'Timer is no longer black');
     check(await page.locator('.moves > #tera').count() === 1 && await page.locator('.command-heading, #prompt').count() === 0 && await page.locator('#tera').evaluate(el => el.getBoundingClientRect().right > document.querySelector('#move-4').getBoundingClientRect().right), 'Tera sits at the right end of the move row and the heading row is gone');
     check(await page.locator('#roster button[data-cue]:not([data-cue=""])').count() === 0, 'Own roster no longer carries speed cue borders');
-    await page.waitForFunction(() => document.querySelector('#matchup-foe .matchup-names span:last-child')?.textContent === 'Landorus', null, {timeout: 20000});
+    await page.waitForFunction(() => document.querySelector('#matchup-foe .matchup-names span:first-child')?.textContent === 'Landorus', null, {timeout: 20000});
     await pad(page, 12);
     const panelNames = async id => page.locator(`${id} .matchup-names span`).allInnerTexts();
     check(JSON.stringify(await panelNames('#matchup-own')) === '["Grumpig","Landorus"]' && JSON.stringify(await panelNames('#matchup-foe')) === '["Landorus","Grumpig"]', 'Both panels name the attacker on the left and the defender on the right');
@@ -330,7 +330,7 @@ try {
     window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|move|p1a: Palossand|Earth Power|p2a: Rotom\n|-damage|p2a: Rotom|0 fnt\n|faint|p2a: Rotom'});
     window.testSocket.onmessage({data: `>battle-gen9randombattle-12345\n|request|${JSON.stringify(waiting)}`});
   });
-  await cancel.waitForFunction(() => document.querySelector('#matchup-foe .matchup-names span:last-child')?.textContent === '—', null, {timeout: 15000});
+  await cancel.waitForFunction(() => document.querySelector('#matchup-foe .matchup-names span:first-child')?.textContent === '—', null, {timeout: 15000});
   await cancel.locator('#switch-2').focus();
   check(await cancel.locator('#matchup-own').isVisible() && await cancel.locator('#matchup-foe').isVisible() && await cancel.locator('#matchup-own .matchup-names span').first().innerText() === 'Palossand' && /^\d+$/.test(await cancel.locator('#matchup-own .stat-box strong').first().innerText()) && (await cancel.locator('#matchup-foe .stat-box strong').first().innerText()) === '—', 'Side panels stay while the opponent picks a replacement, keeping my columns');
   await cancel.evaluate(async () => {
@@ -339,7 +339,7 @@ try {
     window.testSocket.onmessage({data: `>battle-gen9randombattle-12345\n|request|${JSON.stringify({...demoRequest, rqid: 3, side: {...demoRequest.side, pokemon: [team[1], team[0], ...team.slice(2)]}})}`});
     window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|switch|p2a: Raichu|Raichu, L88, M|100/100\n|turn|22'});
   });
-  await cancel.waitForFunction(() => document.querySelector('#matchup-foe .matchup-names span:last-child')?.textContent === 'Raichu', null, {timeout: 15000});
+  await cancel.waitForFunction(() => document.querySelector('#matchup-foe .matchup-names span:first-child')?.textContent === 'Raichu', null, {timeout: 15000});
   await cancel.locator('#switch-1').focus(); await cancel.keyboard.press('i');
   check((await cancel.locator('#modal-title').innerText()).includes('Grumpig'), 'R3 on the first roster slot still opens the lead');
   await cancel.keyboard.press('Escape');
