@@ -78,11 +78,11 @@ try {
     await page.waitForFunction(() => document.querySelector('#matchup-foe .matchup-names span:last-child')?.textContent === 'Landorus', null, {timeout: 20000});
     await pad(page, 12);
     const panelNames = async id => page.locator(`${id} .matchup-names span`).allInnerTexts();
-    check(JSON.stringify(await panelNames('#matchup-own')) === '["Grumpig","Landorus"]' && JSON.stringify(await panelNames('#matchup-foe')) === '["Grumpig","Landorus"]', 'Both panels name the Pokémon above both columns, defaulting to your active one against theirs');
+    check(JSON.stringify(await panelNames('#matchup-own')) === '["Grumpig","Landorus"]' && JSON.stringify(await panelNames('#matchup-foe')) === '["Landorus","Grumpig"]', 'Both panels name the attacker on the left and the defender on the right');
     check(await page.locator('.matchup-names span').evaluateAll(els => els.every(el => getComputedStyle(el).textOverflow === 'ellipsis' && getComputedStyle(el).overflow === 'hidden')), 'Panel names clip with an ellipsis');
     const cues = async id => page.locator(`${id} .stat-box`).evaluateAll(els => els.map(el => `${el.querySelector('small').textContent}:${el.dataset.stat}`));
     check(JSON.stringify(await cues('#matchup-own')) === '["Atk:","Def:","SpA:","SpD:low","Spe:"]', `Left panel marks their lower defense red and leaves your tied attack stats uncued: ${await cues('#matchup-own')}`);
-    check(JSON.stringify(await cues('#matchup-foe')) === '["Def:","Atk:high","SpD:","SpA:","Spe:"]', `Right panel keeps your defense in the left column and marks their higher attack green: ${await cues('#matchup-foe')}`);
+    check(JSON.stringify(await cues('#matchup-foe')) === '["Atk:high","Def:","SpA:","SpD:","Spe:"]', `Right panel puts their attack stats left, marking the higher one green: ${await cues('#matchup-foe')}`);
     check(await page.locator('.stat-box[data-stat=high]').first().evaluate(el => getComputedStyle(el).borderTopColor) === 'rgb(35, 140, 79)' && await page.locator('.stat-box[data-stat=low]').first().evaluate(el => getComputedStyle(el).borderTopColor) === 'rgb(197, 30, 38)', 'Stat cues are green and red borders');
     const pairs = await page.locator('#matchup-own .stat-pair small').allInnerTexts();
     check(JSON.stringify(pairs) === JSON.stringify(['Atk', 'Def', 'SpA', 'SpD', 'Spe']) && (await page.locator('#matchup-own .stat-pair strong').allInnerTexts()).slice(0, 2).join() === '150,~' + (Math.floor(Math.floor(2 * 90 + 31 + 21) * 76 / 100) + 5), 'Left panel pairs your Attack with their estimated Defense');

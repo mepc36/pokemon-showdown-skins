@@ -334,11 +334,11 @@ function renderMatchup() {
     <div class="stat-pair">${box('Atk', own.atk, false, ownAtk)}${box('Def', foe.def, true, foeDef)}</div>
     <div class="stat-pair">${box('SpA', own.spa, false, ownSpa)}${box('SpD', foe.spd, true, foeSpd)}</div>
     <div class="stat-pair">${box('Spe', own.spe)}${data ? badge('own') : box('Spe', null)}</div>`;
-  // Mirrored: your Pokémon stays in the left column on both panels, theirs in the right.
-  right.innerHTML = `${names(name, foeName)}${cols('🛡️', '⚔️')}
-    <div class="stat-pair">${box('Def', own.def, false, ownDef)}${box('Atk', foe.atk, true, foeAtk)}</div>
-    <div class="stat-pair">${box('SpD', own.spd, false, ownSpd)}${box('SpA', foe.spa, true, foeSpa)}</div>
-    <div class="stat-pair">${data ? badge('foe') : box('Spe', null)}${box('Spe', foe.spe, true)}</div>`;
+  // The attacker is always the left column: their name, ⚔️ and attack stats; yours defend on the right.
+  right.innerHTML = `${names(foeName, name)}${cols('⚔️', '🛡️')}
+    <div class="stat-pair">${box('Atk', foe.atk, true, foeAtk)}${box('Def', own.def, false, ownDef)}</div>
+    <div class="stat-pair">${box('SpA', foe.spa, true, foeSpa)}${box('SpD', own.spd, false, ownSpd)}</div>
+    <div class="stat-pair">${box('Spe', foe.spe, true)}${data ? badge('foe') : box('Spe', null)}</div>`;
 }
 
 function renderRoster() {
