@@ -215,7 +215,8 @@ export class ShowdownSession {
     this.emit();
   }
   roomCommand(command) {
-    if (!this.state.authenticated || !this.state.room || this.state.ended || this.state.recovering) return;
+    // Saving the replay is the one command that belongs after the battle ends.
+    if (!this.state.authenticated || !this.state.room || this.state.recovering || this.state.ended && command !== '/savereplay') return;
     if (!['/timer on', '/timer off', '/forfeit', '/savereplay'].includes(command)) throw new Error('Unsupported command.');
     this.send(command, this.state.room);
   }
