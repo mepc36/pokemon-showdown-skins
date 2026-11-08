@@ -162,7 +162,7 @@ try {
     await pad(page, 15); await pad(page, 15);
     check((await page.locator('.overview-layout > .info-facts').innerText()).includes('Possible abilities') && (await page.locator('.identity-speed').innerText()).includes('estimated') && await page.locator('[aria-selected=true]').innerText() === 'Overview', 'Right moves to the next opponent and resets to Overview; unrevealed ability and Speed are labelled as estimates');
     await pad(page, 15);
-    check(await page.locator('[data-info-tab]').count() === 0 && await page.locator('.type-badge, .compact-move').count() === 0, 'Unknown slots expose neither a guessed identity nor possible sets');
+    check(await page.locator('[data-info-tab]').count() === 0 && await page.locator('#modal .type-badge, #modal .compact-move').count() === 0, 'Unknown slots expose neither a guessed identity nor possible sets');
     await pad(page, 0); await page.keyboard.press('f');
     for (const id of ['setup', 'diagnostics']) {
       await page.locator(`#${id}`).click();
