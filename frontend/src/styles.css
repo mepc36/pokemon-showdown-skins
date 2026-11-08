@@ -270,7 +270,6 @@ dialog[data-view] #modal-body:has(.inspection-footer){display:flex;flex-directio
 /* Previewed bench moves read like real moves; they take focus but cannot be chosen. */
 .move-preview{opacity:1;cursor:default;font:inherit;color:#27303b}.move-preview strong{font-weight:600}
 .stat-box[data-stat=high]{background:#238c4f;color:#fff}.stat-box[data-stat=high] small{color:#e6f4ea}.stat-box[data-stat=low]{background:#c51e26;color:#fff}.stat-box[data-stat=low] small{color:#fbe3e4}
-.stat-box[data-stat=high]{border-color:#238c4f;box-shadow:inset 0 0 0 1px #238c4f}.stat-box[data-stat=low]{border-color:#c51e26;box-shadow:inset 0 0 0 1px #c51e26}
 
 /* End-of-battle controls in the move row, menu rows, region tags, inferred roster details. */
 .moves .end-control{min-height:44px;font-size:15px;white-space:nowrap}
