@@ -9,13 +9,8 @@
 </head>
 <body>
   <div id="app">
-    <header class="app-header">
-      <button id="primary" class="primary" data-nav data-row="header" disabled>Connect to Showdown</button>
-      <div id="utility" role="group" aria-label="Battle controls"></div>
-      <div id="battle-timer" aria-label="Battle timer"><svg class="timer-icon" aria-hidden="true" width="20" height="24" viewBox="0 0 20 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2h14M3 22h14M5 2v4c0 3 5 4 5 6s-5 3-5 6v4M15 2v4c0 3-5 4-5 6s5 3 5 6v4M6 19h8M7 5h6"/></svg><span id="timer-value">Timer off</span><span id="timer-warning" role="status" aria-live="polite"></span></div>
-    </header>
     <main>
-      <div class="arena-card"><div class="arena-top" hidden><p id="notice" role="status" aria-live="polite"></p></div><div id="arena-wrap"><div id="arena" class="battle" aria-label="Battle animation"></div><aside id="matchup-own" class="matchup" aria-label="Your Pokémon attacking"></aside><aside id="matchup-foe" class="matchup" aria-label="Opponent attacking"></aside><aside id="chat-drawer" class="chat-drawer" aria-label="Battle chat" hidden><div id="hidden-log"></div></aside></div></div>
+      <div class="arena-card"><div class="arena-top" hidden><p id="notice" role="status" aria-live="polite"></p></div><div id="arena-wrap"><div id="arena" class="battle" aria-label="Battle animation"></div><aside id="matchup-own" class="matchup" aria-label="Your Pokémon attacking"></aside><aside id="matchup-foe" class="matchup" aria-label="Opponent attacking"></aside><div id="battle-timer" aria-label="Battle timer"><svg class="timer-icon" aria-hidden="true" width="20" height="24" viewBox="0 0 20 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2h14M3 22h14M5 2v4c0 3 5 4 5 6s-5 3-5 6v4M15 2v4c0 3-5 4-5 6s5 3 5 6v4M6 19h8M7 5h6"/></svg><span id="timer-value">Timer off</span><span id="timer-warning" role="status" aria-live="polite"></span></div><aside id="chat-drawer" class="chat-drawer" aria-label="Battle chat" hidden><div id="hidden-log"></div></aside></div></div>
       <section class="command-panel" aria-label="Battle choices"><div id="choices"></div><div id="action-slots" hidden><button id="tera" data-nav data-row="moves" aria-pressed="false" hidden>Tera: Unknown</button><button id="undo" data-nav data-row="moves" hidden>Cancel</button></div></section>
     </main>
     <footer>Independent frontend · Official battle visuals · Chat hidden · Registered bots blocked in live searches</footer>
