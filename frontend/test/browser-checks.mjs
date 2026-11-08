@@ -82,7 +82,7 @@ try {
     check(await page.locator('.matchup-names span').evaluateAll(els => els.every(el => getComputedStyle(el).textOverflow === 'ellipsis' && getComputedStyle(el).overflow === 'hidden')), 'Panel names clip with an ellipsis');
     const cues = async id => page.locator(`${id} .stat-box`).evaluateAll(els => els.map(el => `${el.querySelector('small').textContent}:${el.dataset.stat}`));
     check(JSON.stringify(await cues('#matchup-own')) === '["Atk:","Def:","SpA:","SpD:low","Spe:"]', `Left panel marks their lower defense red and leaves your tied attack stats uncued: ${await cues('#matchup-own')}`);
-    check(JSON.stringify(await cues('#matchup-foe')) === '["Atk:high","Def:","SpA:","SpD:","Spe:"]', `Right panel marks their higher attack green and leaves your tied defense stats uncued: ${await cues('#matchup-foe')}`);
+    check(JSON.stringify(await cues('#matchup-foe')) === '["Def:","Atk:high","SpD:","SpA:","Spe:"]', `Right panel keeps your defense in the left column and marks their higher attack green: ${await cues('#matchup-foe')}`);
     check(await page.locator('.stat-box[data-stat=high]').first().evaluate(el => getComputedStyle(el).borderTopColor) === 'rgb(35, 140, 79)' && await page.locator('.stat-box[data-stat=low]').first().evaluate(el => getComputedStyle(el).borderTopColor) === 'rgb(197, 30, 38)', 'Stat cues are green and red borders');
     const pairs = await page.locator('#matchup-own .stat-pair small').allInnerTexts();
     check(JSON.stringify(pairs) === JSON.stringify(['Atk', 'Def', 'SpA', 'SpD', 'Spe']) && (await page.locator('#matchup-own .stat-pair strong').allInnerTexts()).slice(0, 2).join() === '150,~' + (Math.floor(Math.floor(2 * 90 + 31 + 21) * 76 / 100) + 5), 'Left panel pairs your Attack with their estimated Defense');
@@ -90,6 +90,13 @@ try {
     await page.locator('#switch-2').focus();
     check((await panelNames('#matchup-own'))[0] === 'Palossand' && await page.locator('.move-preview').count() === 4 && !await page.locator('#move-1').isVisible() && (await page.locator('.move-preview strong').allInnerTexts()).includes('Earth Power'), 'Cursor on a bench Pokémon previews its moves and matchup');
     check(await page.locator('#tera').innerText() === 'Tera: Water', 'The Tera button follows the previewed Pokémon');
+    await pad(page, 12);
+    await page.locator('#switch-2').focus(); await pad(page, 13);
+    check(await page.evaluate(() => document.activeElement.id) === 'preview-move-1' && await page.locator('.move-preview').count() === 4, 'The cursor can move onto a previewed move without ending the preview');
+    check(await page.locator('#preview-move-1').evaluate(el => getComputedStyle(el).opacity) === '1', 'Previewed moves are not grayed out');
+    await pad(page, 1);
+    check(await page.locator('.move-preview').count() === 4 && !(await page.locator('#notice').innerText()).includes('selected'), 'Pressing a previewed move selects nothing');
+    await page.locator('#switch-2').focus();
     await pad(page, 12);
     check(await page.locator('.move-preview').count() === 0 && await page.locator('#move-1').isVisible() && await page.evaluate(() => document.activeElement.id === 'move-1'), 'Up from the bench returns to the active Pokémon\'s real moves');
     check(await page.locator('#tera').innerText() === 'Tera: Psychic', 'Leaving the preview restores the active Pokémon\'s Tera type');

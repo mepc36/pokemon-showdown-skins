@@ -270,7 +270,7 @@ document.addEventListener('focusin', event => {
   // The cursor on a bench Pokémon previews it; anywhere in the move row or header returns to the active one.
   const own = id.match(/^switch-(\d+)$/);
   if (own) setPreview(Number(own[1]));
-  else if (move || event.target.closest('.moves')) setPreview(null);
+  else if (move || event.target.closest('.moves') && !event.target.classList.contains('move-preview')) setPreview(null);
 });
 
 // Preview: which own Pokémon the move row and side panels describe. null = the active one.
@@ -286,7 +286,8 @@ function endPreview(focusTarget) {
   if (focusTarget === 'moves') document.querySelector('#choices .moves button:not(:disabled):not([hidden])')?.focus({preventScroll: true});
   else { const active = ownTeam().findIndex(p => p.active) + 1; if (active) $(`switch-${active}`)?.focus({preventScroll: true}); }
 }
-// Bench preview: the focused Pokémon's four known moves, with effectiveness cues, not pressable.
+// Bench preview: the focused Pokémon's four known moves, with effectiveness cues. The cursor can
+// land on them, but pressing one does nothing; only the active Pokémon's moves can be chosen.
 function renderMovePreview() {
   const row = document.querySelector('#choices .moves');
   if (!row) return;
@@ -300,9 +301,9 @@ function renderMovePreview() {
   const moves = knownMoves('own', previewIndex);
   row.insertAdjacentHTML('afterbegin', Array.from({length: 4}, (_, i) => {
     const move = moves[i];
-    if (!move) return '<div class="move-preview unknown-move" aria-hidden="true">—</div>';
+    if (!move) return `<button id="preview-move-${i + 1}" class="move-preview unknown-move" data-nav data-row="moves" aria-disabled="true" aria-label="Unknown move">—</button>`;
     const type = move.type || window.BattleMovedex[move.id]?.type || '';
-    return `<div class="move-preview" data-type="${escape(type)}" data-cue="${escape(move.cue || '')}" title="${escape(move.label || '')}" aria-hidden="true"><strong>${escape(move.name)}</strong><small><span class="move-type">${escape(type)}</span><span>${move.current ? `${escape(move.current.pp ?? '—')} / ${escape(move.current.maxpp ?? '—')} PP` : ''}</span></small></div>`;
+    return `<button id="preview-move-${i + 1}" class="move-preview" data-nav data-row="moves" aria-disabled="true" data-type="${escape(type)}" data-cue="${escape(move.cue || '')}" title="${escape(move.label || '')}" aria-description="Not selectable: this Pokémon is on the bench"><strong>${escape(move.name)}</strong><small><span class="move-type">${escape(type)}</span><span>${move.current ? `${escape(move.current.pp ?? '—')} / ${escape(move.current.maxpp ?? '—')} PP` : ''}</span></small></button>`;
   }).join(''));
 }
 // Side panels: left is the shown own Pokémon attacking their active one, right is
@@ -333,10 +334,11 @@ function renderMatchup() {
     <div class="stat-pair">${box('Atk', own.atk, false, ownAtk)}${box('Def', foe.def, true, foeDef)}</div>
     <div class="stat-pair">${box('SpA', own.spa, false, ownSpa)}${box('SpD', foe.spd, true, foeSpd)}</div>
     <div class="stat-pair">${box('Spe', own.spe)}${data ? badge('own') : box('Spe', null)}</div>`;
+  // Mirrored: your Pokémon stays in the left column on both panels, theirs in the right.
   right.innerHTML = `${names(name, foeName)}${cols('🛡️', '⚔️')}
-    <div class="stat-pair">${box('Atk', foe.atk, true, foeAtk)}${box('Def', own.def, false, ownDef)}</div>
-    <div class="stat-pair">${box('SpA', foe.spa, true, foeSpa)}${box('SpD', own.spd, false, ownSpd)}</div>
-    <div class="stat-pair">${box('Spe', foe.spe, true)}${data ? badge('foe') : box('Spe', null)}</div>`;
+    <div class="stat-pair">${box('Def', own.def, false, ownDef)}${box('Atk', foe.atk, true, foeAtk)}</div>
+    <div class="stat-pair">${box('SpD', own.spd, false, ownSpd)}${box('SpA', foe.spa, true, foeSpa)}</div>
+    <div class="stat-pair">${data ? badge('foe') : box('Spe', null)}${box('Spe', foe.spe, true)}</div>`;
 }
 
 function renderRoster() {
