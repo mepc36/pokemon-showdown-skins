@@ -88,7 +88,9 @@ export class Arena {
     }, 250);
   }
   opponents() { return opponentSlots(this.battle?.farSide); }
-  ownHealth(pokemon) { return ownDisplayedHealth(this.battle, pokemon); }
+  // Replaying = the battle ended and the renderer is behind its queue end.
+  get replaying() { return !!this.battle?.ended && !this.battle.atQueueEnd; }
+  ownHealth(pokemon) { return ownDisplayedHealth(this.battle, pokemon, this.replaying); }
   speed(side, index) { return pokemonSpeed(this.battle, side, index); }
   stats(index) { return ownPokemonStats(this.battle, index); }
   ownView(index, tera = false) {
