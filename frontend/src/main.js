@@ -444,7 +444,7 @@ function render() {
   $('undo').disabled = !canCancel;
   $('arena-wrap').dataset.room = state.room || '';
   // The heading row is gone; the few states worth words share the notice strip.
-  const prompt = fixture || state.ended ? '' : state.recovering ? 'Restoring your battle…' : state.pending || request?.wait ? 'Waiting for the next turn' : request?.forceSwitch ? 'Choose a Pokémon' : activePokemon ? '' : state.searching ? 'Finding an opponent…' : '';
+  const prompt = fixture || state.ended ? '' : state.recovering ? 'Restoring your battle…' : state.pending || request?.wait ? '' : request?.forceSwitch ? 'Choose a Pokémon' : activePokemon ? '' : state.searching ? 'Finding an opponent…' : '';
   const redundantNotice = state.ended && /won the battle\.$|ended in a tie\.$/.test(state.notice || '') || state.notice === 'Choice sent. Waiting for the server.';
   $('notice').textContent = localNotice || (!redundantNotice && state.notice) || (!fixture && !state.authenticated ? state.status : prompt);
   $('notice').parentElement.hidden = !$('notice').textContent;
