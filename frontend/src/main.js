@@ -547,8 +547,6 @@ async function init() {
   }, action(action) {
     if (['up', 'down', 'left', 'right'].includes(action)) {
       if (modal.open && infoPage) { navigateInfo(action); return; }
-      // Up from a previewed bench Pokémon goes back to the active Pokémon's real moves.
-      if (action === 'up' && previewIndex && /^switch-\d+$/.test(document.activeElement?.id || '')) { endPreview('moves'); return; }
       navigate(action); return;
     }
     if (action === 'cancel') {
