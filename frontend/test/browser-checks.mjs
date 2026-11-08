@@ -116,7 +116,8 @@ try {
     check(JSON.stringify(await page.locator('.overview-layout > .info-facts dt').allInnerTexts()) === JSON.stringify(['Ability', 'Item', 'Tera']) && (await page.locator('.overview-layout > .info-facts').innerText()).includes('Thick Fat') && !(await page.locator('#modal-body').innerText()).includes('IVs'), 'Own overview reads Ability, Item, Tera, without the IV note');
     check(await height(page, '.overview-layout .compact-move') >= 0.85 * await height(page, '.stats-layout .info-facts > div'), 'R3 move entries are about as tall as the stat cells');
     check(await page.locator('.compact-moves').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length) === 4, 'Known moves sit in one row of four');
-    if (viewport.height === 540) {
+    // SKIP_REMOTE_ASSETS=1 skips this where play.pokemonshowdown.com is unreachable; CI always runs it.
+    if (viewport.height === 540 && !process.env.SKIP_REMOTE_ASSETS) {
       const icons = await page.evaluate(async () => {
         const {itemLabel} = await import('/src/info-components.mjs');
         const sprite = new Image(); sprite.src = 'https://play.pokemonshowdown.com/sprites/itemicons-sheet.png?v1';
@@ -298,6 +299,25 @@ try {
   check(JSON.stringify(await names('#roster')) === JSON.stringify(['Grumpig', 'Palossand', 'Excadrill', 'Breloom', 'Amoonguss', 'Iron Hands']), 'Own roster keeps the lead first after a switch');
   check(await cancel.locator('#switch-2').getAttribute('data-active') === 'true' && await cancel.locator('#switch-1').getAttribute('data-active') === 'false', 'The active marker follows the Pokémon, not the slot');
   check(JSON.stringify(await names('#opponent-roster')) === JSON.stringify(['Landorus', 'Corviknight', 'Rotom-Wash', 'Raichu', 'Unknown', 'Unknown']), 'Opponent roster stays in order of first reveal after a switch');
+
+  // The opponent's Pokémon faints and they pick the next one: the side panels stay, with my numbers and dashes for theirs.
+  await cancel.evaluate(async () => {
+    const {demoRequest} = await import('/src/demo.mjs');
+    const team = demoRequest.side.pokemon.map(p => ({...p, active: p.ident === 'p1: Palossand'}));
+    const waiting = {wait: true, rqid: 4, side: {...demoRequest.side, pokemon: [team[1], team[0], ...team.slice(2)]}};
+    window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|move|p1a: Palossand|Earth Power|p2a: Rotom\n|-damage|p2a: Rotom|0 fnt\n|faint|p2a: Rotom'});
+    window.testSocket.onmessage({data: `>battle-gen9randombattle-12345\n|request|${JSON.stringify(waiting)}`});
+  });
+  await cancel.waitForFunction(() => document.querySelector('#matchup-foe h4')?.textContent === '—', null, {timeout: 15000});
+  await cancel.locator('#switch-2').focus();
+  check(await cancel.locator('#matchup-own').isVisible() && await cancel.locator('#matchup-foe').isVisible() && await cancel.locator('#matchup-own h4').innerText() === 'Palossand' && /^\d+$/.test(await cancel.locator('#matchup-own .stat-box strong').first().innerText()) && (await cancel.locator('#matchup-foe .stat-box strong').first().innerText()) === '—', 'Side panels stay while the opponent picks a replacement, keeping my columns');
+  await cancel.evaluate(async () => {
+    const {demoRequest} = await import('/src/demo.mjs');
+    const team = demoRequest.side.pokemon.map(p => ({...p, active: p.ident === 'p1: Palossand'}));
+    window.testSocket.onmessage({data: `>battle-gen9randombattle-12345\n|request|${JSON.stringify({...demoRequest, rqid: 3, side: {...demoRequest.side, pokemon: [team[1], team[0], ...team.slice(2)]}})}`});
+    window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|switch|p2a: Raichu|Raichu, L88, M|100/100\n|turn|22'});
+  });
+  await cancel.waitForFunction(() => document.querySelector('#matchup-foe h4')?.textContent === 'Raichu', null, {timeout: 15000});
   await cancel.locator('#switch-1').focus(); await cancel.keyboard.press('i');
   check((await cancel.locator('#modal-title').innerText()).includes('Grumpig'), 'R3 on the first roster slot still opens the lead');
   await cancel.keyboard.press('Escape');

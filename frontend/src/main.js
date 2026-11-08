@@ -126,7 +126,6 @@ function refreshMoveHints() {
 function showRating(load = true, force = false) {
   if (load) void rating.load(force).then(() => {
     if (ratingPage && modal.open) showRating(false);
-    if ($('rating')) $('rating').textContent = rating.label;
   });
   const value = rating.value;
   const details = rating.status === 'loading' ? '<p>Loading your public ladder rating…</p>' :
@@ -427,7 +426,7 @@ function render() {
   const inBattle = fixture || !!state.room && !state.ended;
   $('utility').innerHTML = `
     ${btn('timer-toggle', `Timer: ${(fixture ? fixtureTimer : state.timerOn) ? 'on' : 'off'}`, 'header', !inBattle || !fixture && (!state.authenticated || state.recovering || state.timerPending), `aria-pressed="${!!(fixture ? fixtureTimer : state.timerOn)}"`)}
-    ${btn('rating', rating?.label || 'Rating', 'header')}${btn('forfeit', 'Forfeit…', 'header', !inBattle || !fixture && !state.authenticated)}
+    ${btn('rating', 'Rating', 'header')}${btn('forfeit', 'Forfeit…', 'header', !inBattle || !fixture && !state.authenticated)}
     ${state.ended ? btn('replay', 'Replay', 'header') : ''}${btn('setup', 'Setup', 'header')}${btn('diagnostics', 'Controller check', 'header')}
     <a id="source" data-nav data-row="header" href="./source.zip" download>Source</a>`;
   for (const move of choices.moves) $(`move-${move.index}`).onclick = () => choose('move', move.index);
