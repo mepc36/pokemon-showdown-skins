@@ -300,8 +300,10 @@ function renderMovePreview() {
   row.dataset.preview = String(!!previewIndex);
   // The Tera button follows the previewed Pokémon too, and returns to the active one's type.
   const previewed = previewIndex ? ownTeam()[previewIndex - 1] : null;
-  if (previewed) { const type = previewed.terastallized || previewed.teraType || 'Unknown'; $('tera').textContent = `Tera: ${type}`; $('tera').dataset.type = type; }
-  else if (teraLabel) { $('tera').textContent = teraLabel.text; $('tera').dataset.type = teraLabel.type; }
+  // Once anyone on the team has Terastallized, the previewed Pokémon's Tera button is grayed out too.
+  const teraUsed = ownTeam().some(p => p.terastallized);
+  if (previewed) { const type = previewed.terastallized || previewed.teraType || 'Unknown'; $('tera').textContent = `Tera: ${type}`; $('tera').dataset.type = type; $('tera').disabled = teraLabel ? teraLabel.disabled || teraUsed : teraUsed; }
+  else if (teraLabel) { $('tera').textContent = teraLabel.text; $('tera').dataset.type = teraLabel.type; $('tera').disabled = teraLabel.disabled; }
   if (!previewIndex) return;
   const moves = knownMoves('own', previewIndex);
   row.insertAdjacentHTML('afterbegin', Array.from({length: 4}, (_, i) => {
@@ -377,7 +379,7 @@ function renderRoster() {
       // Below the name: ability as small text, then the held item sprite and a Tera type badge.
       // Opponents show each only once revealed (or, for Tera, once inferred).
       // Opponents: revealed values first; otherwise what every remaining set agrees on, marked inferred.
-      const shown = p.revealed && !p.fainted;
+      const shown = p.revealed; // fainted Pokémon keep ability, item and Tera visible
       const abilityInferred = shown && !p.ability && !!inference?.ability, itemInferred = shown && !p.item && !!inference?.item;
       const ability = shown ? p.ability || inference?.ability || '' : '';
       const itemName = shown ? p.item || inference?.item || '' : '';
@@ -437,17 +439,17 @@ function render() {
   if (request !== selectedRequest) { selectedRequest = request; tera = false; }
   const choices = availableChoices(request);
   // While the opponent picks a replacement, keep showing the active Pokémon's four moves, locked.
-  if (!fixture && request?.wait && !state.ended && lastMovesRequest) choices.moves = availableChoices({...lastMovesRequest, wait: false}).moves;
+  if (!fixture && (request?.wait || request?.forceSwitch) && !state.ended && lastMovesRequest) choices.moves = availableChoices({...lastMovesRequest, wait: false}).moves;
   const disabled = !fixture && (!state.authenticated || state.recovering || state.ended || !request);
   // While a choice is pending or the opponent is moving, moves stay focusable for review but cannot be chosen.
-  const waiting = !fixture && !disabled && (state.pending || !!request.wait);
+  const waiting = !fixture && !disabled && (state.pending || !!request.wait || !!request.forceSwitch);
   const activePokemon = request?.side?.pokemon?.find(p => p.active) || lastRequest?.side?.pokemon?.find(p => p.active);
   const teraType = request?.active?.[0]?.canTerastallize || activePokemon?.teraType || 'Unknown';
   $('tera').hidden = !activePokemon || !!state.ended;
   $('tera').disabled = disabled || waiting || !choices.tera;
-  $('tera').textContent = `Tera: ${teraType}${activePokemon?.terastallized ? ' · active' : tera ? ' · selected' : ''}`;
+  $('tera').textContent = `Tera: ${teraType}${activePokemon?.terastallized ? ' · active' : ''}`;
   $('tera').dataset.type = teraType;
-  teraLabel = {text: $('tera').textContent, type: teraType};
+  teraLabel = {text: $('tera').textContent, type: teraType, disabled: $('tera').disabled};
   $('tera').setAttribute('aria-pressed', String(tera));
   $('tera').title = choices.tera ? 'Toggle Terastallize for your next move (X)' : 'This Pokémon’s Tera type; Terastallize is unavailable right now.';
   const canCancel = !fixture && state.pending && request && !request.noCancel && state.authenticated && !state.recovering && !state.ended;
