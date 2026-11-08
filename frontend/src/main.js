@@ -19,6 +19,7 @@ let diagnosticLines = [];
 let ownOrder = [];
 let shownTeam = 'own';
 let previewIndex = null;
+let teraLabel = null; // Tera button text for the active Pokémon, restored after a bench preview
 let modalReturnFocus = '';
 let selectedMoveId = '', infoPage = null, rating = null, ratingPage = false, fixtureTimer = false;
 const modal = $('modal');
@@ -267,6 +268,10 @@ function renderMovePreview() {
   if (!row) return;
   for (const el of row.querySelectorAll('.move-preview')) el.remove();
   row.dataset.preview = String(!!previewIndex);
+  // The Tera button follows the previewed Pokémon too, and returns to the active one's type.
+  const previewed = previewIndex ? ownTeam()[previewIndex - 1] : null;
+  if (previewed) { const type = previewed.terastallized || previewed.teraType || 'Unknown'; $('tera').textContent = `Tera: ${type}`; $('tera').dataset.type = type; }
+  else if (teraLabel) { $('tera').textContent = teraLabel.text; $('tera').dataset.type = teraLabel.type; }
   if (!previewIndex) return;
   const moves = knownMoves('own', previewIndex);
   row.insertAdjacentHTML('afterbegin', Array.from({length: 4}, (_, i) => {
@@ -391,6 +396,7 @@ function render() {
   $('tera').disabled = disabled || !choices.tera;
   $('tera').textContent = `Tera: ${teraType}${activePokemon?.terastallized ? ' · active' : tera ? ' · selected' : ''}`;
   $('tera').dataset.type = teraType;
+  teraLabel = {text: $('tera').textContent, type: teraType};
   $('tera').setAttribute('aria-pressed', String(tera));
   $('tera').title = choices.tera ? 'Toggle Terastallize for your next move (X)' : 'This Pokémon’s Tera type; Terastallize is unavailable right now.';
   const canCancel = !fixture && state.pending && request && !request.noCancel && state.authenticated && !state.recovering && !state.ended;

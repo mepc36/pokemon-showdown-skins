@@ -81,8 +81,10 @@ try {
     check(await page.locator('#matchup-own .speed-badge').count() === 1 && await page.locator('#matchup-foe .speed-badge').count() === 1 && ((await page.locator('#matchup-own .speed-badge').innerText()).includes('1') !== (await page.locator('#matchup-foe .speed-badge').innerText()).includes('1') || (await page.locator('.speed-badge[data-first=true]').count()) === 2), 'Exactly one side moves first unless tied');
     await page.locator('#switch-2').focus();
     check(await page.locator('#matchup-own h4').innerText() === 'Palossand' && await page.locator('.move-preview').count() === 4 && !await page.locator('#move-1').isVisible() && (await page.locator('.move-preview strong').allInnerTexts()).includes('Earth Power'), 'Cursor on a bench Pokémon previews its moves and matchup');
+    check(await page.locator('#tera').innerText() === 'Tera: Water', 'The Tera button follows the previewed Pokémon');
     await pad(page, 12);
     check(await page.locator('.move-preview').count() === 0 && await page.locator('#move-1').isVisible() && await page.evaluate(() => document.activeElement.id === 'move-1'), 'Up from the bench returns to the active Pokémon\'s real moves');
+    check(await page.locator('#tera').innerText() === 'Tera: Psychic', 'Leaving the preview restores the active Pokémon\'s Tera type');
     await page.locator('#switch-2').focus(); await pad(page, 0);
     check(await page.locator('.move-preview').count() === 0 && await page.evaluate(() => document.activeElement.id === 'switch-1'), 'B ends the preview and lands on the active Pokémon');
     check(await page.locator('.info-facts > div[data-cue]:not([data-cue=""])').count() === 0, 'No stale cue borders remain outside the panels');
