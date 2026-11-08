@@ -35,19 +35,19 @@ async function pad(page, index) {
 }
 // Right-stick push, synchronized with the poll the same way pad() is: a fixed
 // 120 ms wait can straddle WebKit frames and the flip is never observed.
-async function stick(page, value) {
+async function stick(page, value, axis = 2) {
   await page.waitForFunction(() => window.testPadObserved);
-  await page.evaluate(v => { window.testPad.axes[2] = v; window.testAxisObserved = null; }, value);
-  await page.waitForFunction(v => window.testAxisObserved === v, value, {polling: 10});
-  await page.evaluate(() => { window.testPad.axes[2] = 0; });
-  await page.waitForFunction(() => window.testAxisObserved === 0, null, {polling: 10});
+  await page.evaluate(([v, a]) => { window.testPad.axes[a] = v; window.testAxisObserved = null; }, [value, axis]);
+  await page.waitForFunction(([v, a]) => window.testAxisObserved?.[a] === v, [value, axis], {polling: 10});
+  await page.evaluate(a => { window.testPad.axes[a] = 0; }, axis);
+  await page.waitForFunction(a => window.testAxisObserved?.[a] === 0, axis, {polling: 10});
 }
 async function gamepad(page) {
   await page.addInitScript(() => {
     window.testPad = {id: 'Controller fixture', mapping: 'standard', axes: [0, 0, 0, 0], buttons: Array.from({length: 16}, () => ({pressed: false, value: 0}))};
     navigator.getGamepads = () => {
       window.testPadObserved = window.testPad.buttons.map(button => button.pressed);
-      window.testAxisObserved = window.testPad.axes[2];
+      window.testAxisObserved = [...window.testPad.axes];
       return [window.testPad];
     };
   });
@@ -58,10 +58,11 @@ try {
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     await page.goto(base); await page.waitForSelector('#switch-1');
     check(await page.locator('#all-moves, #info, #move-details').count() === 0, 'Duplicate menus and separate Move info button are removed');
+    check(await page.evaluate(() => window.Dex?.fxPrefix === 'https://play.pokemonshowdown.com/fx/'), 'The animation module sees Dex, so effect sprites load from the Showdown fx folder');
     check(await page.locator('#roster button').count() === 6 && await page.locator('#opponent-roster button').count() === 6 && await page.locator('#roster').isVisible() && !await page.locator('#opponent-roster').isVisible(), 'Six slots per team; your row shows first, one row at a time');
     check(await page.locator('#view-own, #view-opponent, #skip, #music, #display, #reconnect, .controller-bar kbd').count() === 0, 'Redundant controls and hints are removed');
     check(await page.locator('.app-header, #utility, #timer-toggle, #toggle-tools, .controller-bar, #turn-label').count() === 0, 'The header row and the Timer button are gone');
-    check(await page.locator('#arena-wrap > #battle-timer').count() === 1 && await page.locator('#battle-timer').evaluate(el => { const r = el.getBoundingClientRect(), w = el.parentElement.getBoundingClientRect(); return parseFloat(getComputedStyle(el).borderTopWidth) >= 2 && Math.abs(r.bottom - w.bottom) < 20 && r.right > w.left + w.width / 2; }), 'The bordered timer clock sits bottom-right over the battlefield');
+    check(await page.locator('#arena-wrap > #battle-timer').count() === 1 && await page.locator('#battle-timer').evaluate(el => { const r = el.getBoundingClientRect(), w = el.parentElement.getBoundingClientRect(); const panel = document.querySelector('#matchup-foe').getBoundingClientRect(); return parseFloat(getComputedStyle(el).borderTopWidth) >= 2 && Math.abs(r.bottom - w.bottom) < 20 && r.left >= panel.left - 1 && r.right <= panel.right + 1; }), 'The bordered timer clock sits in the bottom-right corner of the right panel');
     check(await page.locator('#timer-value').innerText() !== 'Timer off', 'The timer is on without a Timer button');
     const rosterText = await page.locator('#roster button, #opponent-roster button').allInnerTexts();
     check(rosterText.length === 12 && rosterText.every(text => !/%|\d+\/\d+|Active/.test(text)), `Roster entries show no HP numbers and no Active text: ${rosterText.join(' | ')}`);
@@ -90,6 +91,7 @@ try {
     await page.locator('#switch-2').focus();
     check((await panelNames('#matchup-own'))[0] === 'Palossand' && await page.locator('.move-preview').count() === 4 && !await page.locator('#move-1').isVisible() && (await page.locator('.move-preview strong').allInnerTexts()).includes('Earth Power'), 'Cursor on a bench Pokémon previews its moves and matchup');
     check(await page.locator('#tera').innerText() === 'Tera: Water', 'The Tera button follows the previewed Pokémon');
+    check(await page.locator('.form-tag').count() === 0 && await page.evaluate(() => { const name = document.querySelector('#switch-1 .mon-name'); return name.scrollWidth <= name.clientWidth + 1; }), 'Roster names fit; no region tags on the demo team');
     await pad(page, 12);
     await page.locator('#switch-2').focus(); await pad(page, 13);
     check(/^preview-move-\d$/.test(await page.evaluate(() => document.activeElement.id)) && await page.locator('.move-preview').count() === 4, 'The cursor can move onto a previewed move without ending the preview');
@@ -111,6 +113,11 @@ try {
     await page.locator('#switch-1').focus(); await pad(page, 8);
     check(await page.locator('dialog[open]').count() === 1 && await page.locator('#modal-title').innerText() === 'Menu' && await page.locator('#modal #primary, #modal #chat, #modal #rating, #modal #forfeit, #modal #setup, #modal #diagnostics, #modal #source').count() === 7, 'Select opens a menu modal with the secondary controls and Find Random Battle');
     check(await page.locator('#source').evaluate(el => el.tagName) === 'BUTTON' && await page.locator('a#source').count() === 0, 'Source is a button, not a hyperlink');
+    await page.locator('#setup').focus(); await pad(page, 12);
+    check(await page.evaluate(() => document.activeElement.id) === 'primary', 'Up from the second menu row lands on the button above, not the close button');
+    await pad(page, 13);
+    check(await page.evaluate(() => document.activeElement.id) === 'setup', 'Down returns to the second row');
+    check(await page.locator('#modal #replay').count() === 0, 'Replay is not in the menu');
     check(!(await fit(page)).length, `Menu has no scrolling: ${await fit(page)}`);
     await page.screenshot({path: `test-results/${engineName}-menu-${viewport.width}-${viewport.height}.png`});
     await pad(page, 0);
@@ -347,15 +354,28 @@ try {
   check((await cancel.locator('#test-commands').innerText()).includes('/choose switch 2|3'), 'Switching to the displayed lead sends its current server index');
   await cancel.keyboard.press('Escape');
   await cancel.keyboard.press('h');
-  check(await cancel.locator('#modal-title').innerText() === 'Menu' && await cancel.locator('#modal #replay').count() === 0, 'Keyboard H opens the menu; Replay is absent while the battle runs');
+  check(await cancel.locator('#modal-title').innerText() === 'Menu' && await cancel.locator('#replay').count() === 0, 'Keyboard H opens the menu; no replay controls while the battle runs');
+  await cancel.keyboard.press('Escape');
+  await cancel.locator('#chat-drawer').evaluate(el => { el.hidden = false; el.innerHTML = '<div style="height:3000px"></div>'; el.scrollTop = 0; });
+  await stick(cancel, 1, 3);
+  check(await cancel.locator('#chat-drawer').evaluate(el => el.scrollTop) > 0, 'Right stick down scrolls the chat drawer');
+  await stick(cancel, -1, 3);
+  await cancel.keyboard.press('c');
+  await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|switch|p2a: Ninetales|Ninetales-Alola, L78|100/100\n|turn|19'}));
+  await cancel.waitForFunction(() => [...document.querySelectorAll('#opponent-roster .mon-name')].some(el => el.textContent === 'Ninetales'));
+  check(await cancel.locator('#opponent-roster .form-tag').innerText() === 'ALOLA' && (await cancel.locator('#matchup-foe .matchup-names .form-tag').count()) === 1, 'Regional forms show the species with a region tag on the roster and the side panel');
+  check((await cancel.locator('#opponent-roster button:has(.form-tag) .roster-ability').innerText()) === 'Snow Warning' && await cancel.locator('#opponent-roster button:has(.form-tag) .roster-item.inferred').count() === 1, 'Opponent roster shows the ability and item every remaining set agrees on, marked inferred');
+  await cancel.keyboard.press('h');
   await cancel.keyboard.press('Escape');
   check(await cancel.locator('#tera').isVisible(), 'Tera shows during the battle');
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|win|Opponent'}));
   await cancel.waitForFunction(() => document.querySelector('#tera').hidden);
   check(await cancel.locator('#tera').count() === 1 && !await cancel.locator('#tera').isVisible(), 'Tera is hidden once the battle ends');
-  await cancel.keyboard.press('h');
-  check(await cancel.locator('#modal #replay').count() === 1, 'Replay appears in the menu after the battle');
-  await cancel.keyboard.press('Escape');
+  check(await cancel.locator('.moves #replay, .moves #first-turn, .moves #prev-turn, .moves #upload-replay').count() === 4 && await cancel.locator('#download-replay, #rematch, #main-menu').count() === 0, 'After the battle the move row holds Replay, First turn, Prev turn and Upload replay');
+  await cancel.locator('#upload-replay').click();
+  check((await cancel.locator('#test-commands').innerText()).includes('|/savereplay'), 'Upload replay sends /savereplay to the room');
+  await cancel.locator('#first-turn').click(); await cancel.locator('#prev-turn').click();
+  check(await cancel.locator('.moves #first-turn').count() === 1, 'First turn and Prev turn seek without error');
   await cancel.close();
 
   // Audio implementation is unchanged; keep its existing Chromium regression.
