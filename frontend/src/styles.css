@@ -308,3 +308,18 @@ dialog[data-view] #modal-body:has(.inspection-footer){display:flex;flex-directio
 .team button:has(.unknown-pokemon){grid-template-columns:minmax(0,1fr);justify-items:center}
 .team button:has(.unknown-pokemon) strong{grid-row:1;grid-column:1;max-width:100%;text-align:center}
 .team button:has(.unknown-pokemon) .unknown-pokemon{grid-row:2;grid-column:1;width:auto;height:auto;line-height:1}
+
+/* Tied stats in a side-panel column are yellow. */
+.stat-box[data-stat=tie],#matchup-own .stat-pair>.stat-box[data-stat=tie],#matchup-foe .stat-pair>.stat-box[data-stat=tie]{background:#d9a400;border-color:#d9a400;color:#fff}.stat-box[data-stat=tie] small{color:#fff6d6}
+/* Empty move placeholders center their dash. */
+.moves .move-preview.unknown-move{align-items:center;justify-content:center;text-align:center}
+
+/* Move row: four moves and Tera, five equal cells; Cancel is gone (B cancels). */
+.moves{grid-template-columns:repeat(5,minmax(0,1fr))}
+.moves #tera{min-height:0;padding:9px 12px 7px;font-size:clamp(14px,1.6vw,19px);font-weight:500;flex-direction:row;justify-content:center;align-items:center;gap:8px;white-space:nowrap}
+.moves #tera .tera-gem{width:20px;height:20px;image-rendering:auto}
+.moves #tera .tera-active{width:10px;height:10px;border-radius:50%;background:#27303b;box-shadow:0 0 0 3px #27303b44}
+@media(min-width:900px) and (max-height:620px){.moves #tera{padding:4px 8px;font-size:15px;gap:6px}.moves #tera .tera-gem{width:16px;height:16px}}
+
+/* The strip above the field never renders. */
+.arena-top{display:none!important}

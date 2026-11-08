@@ -293,6 +293,12 @@ function endPreview(focusTarget) {
 }
 // Bench preview: the focused Pokémon's four known moves, with effectiveness cues. The cursor can
 // land on them, but pressing one does nothing; only the active Pokémon's moves can be chosen.
+// Tera button: the type name plus Showdown's Tera gem for that type. Selection and active state are drawn, not written.
+function teraMarkup(type, active = false) {
+  const gem = type && type !== 'Unknown' ? `<img class="tera-gem" src="https://play.pokemonshowdown.com/sprites/types/Tera${encodeURIComponent(type)}.png" alt="" width="20" height="20">` : '';
+  return `<span class="tera-type">${escape(type)}</span>${gem}${active ? '<span class="tera-active" aria-label="Terastallized"></span>' : ''}`;
+}
+
 function renderMovePreview() {
   const row = document.querySelector('#choices .moves');
   if (!row) return;
@@ -302,8 +308,8 @@ function renderMovePreview() {
   const previewed = previewIndex ? ownTeam()[previewIndex - 1] : null;
   // Once anyone on the team has Terastallized, the previewed Pokémon's Tera button is grayed out too.
   const teraUsed = ownTeam().some(p => p.terastallized);
-  if (previewed) { const type = previewed.terastallized || previewed.teraType || 'Unknown'; $('tera').textContent = `Tera: ${type}`; $('tera').dataset.type = type; $('tera').disabled = teraLabel ? teraLabel.disabled || teraUsed : teraUsed; }
-  else if (teraLabel) { $('tera').textContent = teraLabel.text; $('tera').dataset.type = teraLabel.type; $('tera').disabled = teraLabel.disabled; }
+  if (previewed) { const type = previewed.terastallized || previewed.teraType || 'Unknown'; $('tera').innerHTML = teraMarkup(type); $('tera').dataset.type = type; $('tera').disabled = teraLabel ? teraLabel.disabled || teraUsed : teraUsed; }
+  else if (teraLabel) { $('tera').innerHTML = teraLabel.html; $('tera').dataset.type = teraLabel.type; $('tera').disabled = teraLabel.disabled; }
   if (!previewIndex) return;
   const moves = knownMoves('own', previewIndex);
   row.insertAdjacentHTML('afterbegin', Array.from({length: 4}, (_, i) => {
@@ -326,8 +332,8 @@ function renderMatchup() {
   const own = data?.own || arena.ownStats?.(pokemon?.serverIndex) || {};
   const foe = data?.foe || {};
   const box = (label, value, estimate = false, cue = '') => `<div class="stat-box" data-stat="${cue}"><small>${escape(label)}</small><strong>${value == null ? '—' : `${estimate ? '~' : ''}${escape(value)}`}</strong></div>`;
-  // Every column shows one green and one red: the higher of the pair is green, the lower red. Ties and unknowns get no cue.
-  const higher = (a, b) => a != null && b != null && a !== b ? (a > b ? ['high', 'low'] : ['low', 'high']) : ['', ''];
+  // Every column shows the higher of its pair green and the lower red; a tie turns both yellow. Unknowns get no cue.
+  const higher = (a, b) => a == null || b == null ? ['', ''] : a === b ? ['tie', 'tie'] : a > b ? ['high', 'low'] : ['low', 'high'];
   const lower = higher;
   const [ownAtk, ownSpa] = higher(own.atk, own.spa), [foeDef, foeSpd] = lower(foe.def, foe.spd);
   const [foeAtk, foeSpa] = higher(foe.atk, foe.spa), [ownDef, ownSpd] = lower(own.def, own.spd);
@@ -427,7 +433,6 @@ function choose(kind, index) {
   }
   safe(() => {
     localNotice = ''; session.choose(kind, index, kind === 'move' && tera);
-    if (!$('undo').hidden && !$('undo').disabled) $('undo').focus({preventScroll: true});
   });
 }
 
@@ -447,13 +452,15 @@ function render() {
   const teraType = request?.active?.[0]?.canTerastallize || activePokemon?.teraType || 'Unknown';
   $('tera').hidden = !activePokemon || !!state.ended;
   $('tera').disabled = disabled || waiting || !choices.tera;
-  $('tera').textContent = `Tera: ${teraType}${activePokemon?.terastallized ? ' · active' : ''}`;
+  $('tera').innerHTML = teraMarkup(teraType, !!activePokemon?.terastallized);
+  $('tera').dataset.active = String(!!activePokemon?.terastallized);
   $('tera').dataset.type = teraType;
-  teraLabel = {text: $('tera').textContent, type: teraType, disabled: $('tera').disabled};
+  teraLabel = {html: $('tera').innerHTML, type: teraType, disabled: $('tera').disabled};
   $('tera').setAttribute('aria-pressed', String(tera));
   $('tera').title = choices.tera ? 'Toggle Terastallize for your next move (X)' : 'This Pokémon’s Tera type; Terastallize is unavailable right now.';
   const canCancel = !fixture && state.pending && request && !request.noCancel && state.authenticated && !state.recovering && !state.ended;
-  $('undo').hidden = !canCancel;
+  // No Cancel button in the row: B is cancel. The node stays in #action-slots so B can trigger it.
+  $('undo').hidden = true;
   $('undo').disabled = !canCancel;
   $('arena-wrap').dataset.room = state.room || '';
   // The heading row is gone; the few states worth words share the notice strip.
@@ -462,7 +469,7 @@ function render() {
   $('search-overlay').hidden = fixture || !state.searching;
   const redundantNotice = state.ended && /won the battle\.$|ended in a tie\.$/.test(state.notice || '') || state.notice === 'Choice sent. Waiting for the server.';
   $('notice').textContent = localNotice || (!redundantNotice && state.notice) || (!fixture && !state.authenticated ? state.status : prompt);
-  $('notice').parentElement.hidden = !$('notice').textContent;
+  $('notice').parentElement.hidden = true; // the top strip never shows; it would resize the field
   $('action-slots').append($('tera'), $('undo'));
   // After the battle the move row holds the replay controls instead of moves.
   const endControls = !fixture && state.ended ? [btn('replay', 'Replay battle', 'moves'), btn('first-turn', 'First turn', 'moves'), btn('prev-turn', 'Prev turn', 'moves'), btn('next-turn', 'Next turn', 'moves'), btn('end-turn', 'Last turn', 'moves')].map(html => html.replace('<button ', '<button class="end-control" ')).join('') : '';
@@ -473,7 +480,7 @@ function render() {
     <div class="team-row" data-side="own" ${shownTeam === 'own' ? '' : 'hidden'}><span class="team-label">You</span><div id="roster" class="team" role="group" aria-label="Your six Pokémon"></div></div>
     <div class="team-row" data-side="opponent" ${shownTeam === 'opponent' ? '' : 'hidden'}><span class="team-label">Foe</span><div id="opponent-roster" class="team" role="group" aria-label="Opponent’s six Pokémon"></div></div>`;
   // Tera and Cancel keep their nodes and handlers; they sit at the end of the move row.
-  $('choices').querySelector('.moves').append($('tera'), $('undo'));
+  $('choices').querySelector('.moves').append($('tera'));
   renderRoster();
   refreshMoveHints();
   renderMovePreview();
@@ -566,4 +573,4 @@ async function init() {
     music.update(musicActive(state, {fixture, hidden: document.hidden, stopped: session.stopped}));
   });
 }
-init().catch(error => { $('notice').textContent = error.message; $('notice').parentElement.hidden = false; });
+init().catch(error => { $('notice').textContent = error.message; console.error(error); });
