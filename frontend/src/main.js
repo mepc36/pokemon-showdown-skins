@@ -474,7 +474,12 @@ function render() {
     $('prev-turn').onclick = () => arena.seekTurn(arena.turn - 1);
     $('next-turn').onclick = () => arena.seekTurn(arena.turn + 1);
     $('end-turn').onclick = () => arena.seekTurn(Infinity);
-    $('upload-replay').onclick = () => safe(() => { session.roomCommand('/savereplay'); localNotice = 'Uploading replay…'; render(); });
+    // Open the tab inside the click so Safari allows it; the replay URL arrives after the upload.
+    $('upload-replay').onclick = () => safe(() => {
+      const tab = window.open('about:blank', '_blank');
+      session.onReplay = (url, error) => { if (url && tab) tab.location = url; else { tab?.close(); localNotice = `Replay upload failed: ${error?.message || 'unknown error'}`; render(); } };
+      session.roomCommand('/savereplay');
+    });
   }
   $('tera').onclick = () => { tera = !tera; render(); };
   $('undo').onclick = () => safe(() => {

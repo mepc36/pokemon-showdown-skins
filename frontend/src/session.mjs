@@ -224,11 +224,10 @@ export class ShowdownSession {
       const response = await fetch('https://play.pokemonshowdown.com/api/uploadreplay', {method: 'POST', body});
       const text = await response.text();
       if (!response.ok || /^error|^\]?\{"actionerror/i.test(text)) throw new Error(text.slice(0, 120) || `HTTP ${response.status}`);
-      this.state.notice = `Replay saved: https://replay.pokemonshowdown.com/${data.id}${data.password ? `-${data.password}pw` : ''}`;
+      this.onReplay?.(`https://replay.pokemonshowdown.com/${data.id}${data.password ? `-${data.password}pw` : ''}`);
     } catch (error) {
-      this.state.notice = `Replay upload failed: ${error.message}`;
+      this.onReplay?.(null, error);
     }
-    this.emit();
   }
   roomCommand(command) {
     // Saving the replay is the one command that belongs after the battle ends.
