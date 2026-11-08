@@ -283,3 +283,10 @@ dialog[data-view] #modal-body:has(.inspection-footer){display:flex;flex-directio
 /* Own-side cue colors must outrank the white own-column background above. */
 #matchup-own .stat-pair>.stat-box[data-stat=high],#matchup-foe .stat-pair>.stat-box[data-stat=high]{background:#238c4f;border-color:#238c4f}
 #matchup-own .stat-pair>.stat-box[data-stat=low],#matchup-foe .stat-pair>.stat-box[data-stat=low]{background:#c51e26;border-color:#c51e26}
+
+/* Searching overlay sits on the field like the chat drawer; nothing around it resizes. */
+#search-overlay{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#1f2731cc;color:#fff;font-size:clamp(20px,3vw,34px);font-weight:600;letter-spacing:.02em}
+#search-overlay[hidden]{display:none}
+#search-overlay .dots{display:flex;gap:10px}#search-overlay .dots span{width:12px;height:12px;border-radius:50%;background:#fff;animation:search-pulse 1.2s infinite ease-in-out}
+#search-overlay .dots span:nth-child(2){animation-delay:.2s}#search-overlay .dots span:nth-child(3){animation-delay:.4s}
+@keyframes search-pulse{0%,80%,100%{opacity:.25;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}

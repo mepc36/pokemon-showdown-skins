@@ -148,6 +148,8 @@ export class ShowdownSession {
           this.state.ended = true; this.state.pending = false; this.state.request = null;
           this.state.recovering = false; this.state.notice = type === 'win' ? `${value} won the battle.` : 'The battle ended in a tie.';
           this.storage.removeItem('ps-mve-room');
+          // Save the replay right away; the menu's Open replay button enables once the upload finishes.
+          this.state.replayUrl = ''; this.roomCommand('/savereplay');
         } else if (type === 'noinit' || type === 'deinit') {
           this.state.notice = 'This battle is no longer available on the server.';
           this.state.room = ''; this.state.request = null; this.state.recovering = false;
@@ -182,6 +184,7 @@ export class ShowdownSession {
   search() {
     if (!this.state.authenticated || this.state.searching || (this.state.room && !this.state.ended)) throw new Error('Finish the current battle or sign in before searching.');
     if (this.state.ended) { this.send('/leave', this.state.room); this.state.room = ''; }
+    this.state.replayUrl = '';
     this.state.ended = false; this.state.request = null; this.state.pending = false;
     Object.assign(this.state, {timer: '', timerOn: false, timerPending: false, timerSeconds: null, timerRunning: false, timerWarning: '', timerWarningUntil: 0});
     this.send('/noreply /blockbots'); this.send('/utm null'); this.send('/search gen9randombattle');
@@ -224,10 +227,9 @@ export class ShowdownSession {
       const response = await fetch('https://play.pokemonshowdown.com/api/uploadreplay', {method: 'POST', body});
       const text = await response.text();
       if (!response.ok || /^error|^\]?\{"actionerror/i.test(text)) throw new Error(text.slice(0, 120) || `HTTP ${response.status}`);
-      this.onReplay?.(`https://replay.pokemonshowdown.com/${data.id}${data.password ? `-${data.password}pw` : ''}`);
-    } catch (error) {
-      this.onReplay?.(null, error);
-    }
+      this.state.replayUrl = `https://replay.pokemonshowdown.com/${data.id}${data.password ? `-${data.password}pw` : ''}`;
+      this.emit();
+    } catch {}
   }
   roomCommand(command) {
     // Saving the replay is the one command that belongs after the battle ends.

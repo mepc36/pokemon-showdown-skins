@@ -373,11 +373,18 @@ try {
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|win|Opponent'}));
   await cancel.waitForFunction(() => document.querySelector('#tera').hidden);
   check(await cancel.locator('#tera').count() === 1 && !await cancel.locator('#tera').isVisible(), 'Tera is hidden once the battle ends');
-  check(await cancel.locator('.moves #replay, .moves #first-turn, .moves #prev-turn, .moves #next-turn, .moves #end-turn, .moves #upload-replay').count() === 6 && await cancel.locator('#download-replay, #rematch, #main-menu').count() === 0, 'After the battle the move row holds Replay, First turn, Prev turn, Next turn, End and Upload replay');
-  await cancel.locator('#upload-replay').click();
-  check((await cancel.locator('#test-commands').innerText()).includes('|/savereplay'), 'Upload replay sends /savereplay to the room');
+  check(await cancel.locator('.moves #replay, .moves #first-turn, .moves #prev-turn, .moves #next-turn, .moves #end-turn').count() === 5 && await cancel.locator('#upload-replay, #download-replay, #rematch, #main-menu').count() === 0 && await cancel.locator('#replay').innerText() === 'Replay battle', 'After the battle the move row holds Replay battle, First turn, Prev turn, Next turn and End');
+  check((await cancel.locator('#test-commands').innerText()).includes('|/savereplay'), 'The replay is saved automatically when the battle ends');
   await cancel.locator('#first-turn').click(); await cancel.locator('#prev-turn').click(); await cancel.locator('#next-turn').click(); await cancel.locator('#end-turn').click();
   check(await cancel.locator('.moves #first-turn').count() === 1, 'First turn and Prev turn seek without error');
+  await cancel.keyboard.press('h');
+  check(await cancel.locator('#open-replay').isDisabled(), 'Open replay in the menu is disabled until the upload finishes');
+  const fieldBefore = await cancel.locator('#arena-wrap').boundingBox();
+  await cancel.locator('#primary').click();
+  await cancel.waitForFunction(() => !document.querySelector('#search-overlay').hidden);
+  await cancel.waitForTimeout(400); // let the renderer's resize settle before measuring
+  const fieldAfter = await cancel.locator('#arena-wrap').boundingBox();
+  check(await cancel.locator('#search-overlay').isVisible() && fieldBefore.height === fieldAfter.height && fieldBefore.width === fieldAfter.width, 'Searching shows an overlay on the field without resizing it');
   await cancel.close();
 
   // Audio implementation is unchanged; keep its existing Chromium regression.

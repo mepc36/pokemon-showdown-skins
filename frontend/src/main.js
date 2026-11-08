@@ -16,7 +16,7 @@ const escape = escapeHtml;
 // Species name with a small region tag for regional forms.
 const nameTag = (name, tagClass = 'form-tag') => { const form = regionalForm(name); return `<span class="mon-name">${escapeHtml(form.base)}</span>${form.region ? `<small class="${tagClass}">${escapeHtml(form.region.toUpperCase())}</small>` : ''}`; };
 const btn = (id, label, row, disabled = false, extra = '') => `<button id="${id}" data-nav data-row="${row}" ${disabled ? 'disabled' : ''} ${extra}>${label}</button>`;
-let arena, session, auth, config, state = {}, fixture = true, tera = false, lastRequest, selectedRequest, localNotice = '', ignoreButtons = new Set();
+let arena, session, auth, config, state = {}, fixture = true, tera = false, lastRequest, lastMovesRequest, selectedRequest, localNotice = '', ignoreButtons = new Set();
 let diagnosticLines = [];
 let ownOrder = [];
 let shownTeam = 'own';
@@ -74,7 +74,7 @@ function showMenu() {
   // Two rows of four so the d-pad moves between rows instead of jumping to the close button.
   showModal('Menu', `<div class="menu-grid">${btn('primary', primaryLabel, 'menu-1', primaryDisabled, 'class="primary"')}
     ${btn('chat', 'Chat', 'menu-1', false, `aria-pressed="${!$('chat-drawer').hidden}"`)}${btn('rating', 'Rating', 'menu-1')}${btn('forfeit', 'Forfeit…', 'menu-1', !inBattle || !fixture && !state.authenticated)}
-    ${btn('setup', 'Setup', 'menu-2')}${btn('diagnostics', 'Controller check', 'menu-2')}${btn('source', 'Source', 'menu-2')}</div>`, 'menu');
+    ${btn('setup', 'Setup', 'menu-2')}${btn('diagnostics', 'Controller check', 'menu-2')}${btn('source', 'Source', 'menu-2')}${btn('open-replay', 'Open replay', 'menu-2', !state.replayUrl)}</div>`, 'menu');
   $('primary').onclick = () => safe(() => {
     localNotice = ''; closeModal();
     if (fixture || session.stopped) { startLive(); return; }
@@ -86,6 +86,7 @@ function showMenu() {
   $('rating').onclick = () => showRating();
   $('forfeit').onclick = forfeit;
   $('setup').onclick = setup; $('diagnostics').onclick = diagnostics;
+  $('open-replay').onclick = () => { if (state.replayUrl) window.open(state.replayUrl, '_blank', 'noopener'); };
   $('source').onclick = () => { const link = document.createElement('a'); link.href = './source.zip'; link.download = ''; link.click(); };
   if (!reopen) modal.querySelector('.menu-grid button:not(:disabled)')?.focus({preventScroll: true});
 }
@@ -361,6 +362,8 @@ function renderRoster() {
         percent: shown.percent, health: shown.fainted ? 'Fainted' : shown.condition, status: shown.condition.match(/ (\w{3})$/)?.[1] || '',
         canSwitch: !disabled && choices.switches.some(choice => choice.index === p.serverIndex && choice.enabled)};
     }) : arena.opponents();
+    // Between battles your row keeps six empty slots so the field above never resizes.
+    if (rosterSide === 'own' && !fixture && !team.length) for (let slot = 1; slot <= 6; slot++) team.push({index: slot, serverIndex: null, name: '', revealed: false, fainted: false, active: false, item: '', ability: '', teraType: '', percent: null, health: '', status: '', canSwitch: false});
     roster.innerHTML = team.map(p => {
       const inference = rosterSide === 'opponent' && p.revealed ? narrowSets(sets.snapshot, p.name, p.level, p) : null;
       // Speed and stat comparisons live in the side panels now, not on borders.
@@ -387,7 +390,7 @@ function renderRoster() {
     for (const p of team) $(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`).onclick = () => {
       if (rosterSide === 'opponent') showInfo({kind: 'pokemon', side: 'opponent', index: p.index});
       else if (p.canSwitch) choose('switch', p.serverIndex);
-      else info(p.index);
+      else if (p.revealed) info(p.index);
     };
   }
   if (!modal.open && focusId) $(focusId)?.focus({preventScroll: true});
@@ -429,8 +432,11 @@ function render() {
   const focusId = document.activeElement?.id;
   const request = fixture ? demoRequest : state.request;
   if (request?.side) lastRequest = request;
+  if (request?.active?.[0]?.moves?.length) lastMovesRequest = request;
   if (request !== selectedRequest) { selectedRequest = request; tera = false; }
   const choices = availableChoices(request);
+  // While the opponent picks a replacement, keep showing the active Pokémon's four moves, locked.
+  if (!fixture && request?.wait && !state.ended && lastMovesRequest) choices.moves = availableChoices({...lastMovesRequest, wait: false}).moves;
   const disabled = !fixture && (!state.authenticated || state.recovering || state.ended || !request);
   // While a choice is pending or the opponent is moving, moves stay focusable for review but cannot be chosen.
   const waiting = !fixture && !disabled && (state.pending || !!request.wait);
@@ -448,14 +454,15 @@ function render() {
   $('undo').disabled = !canCancel;
   $('arena-wrap').dataset.room = state.room || '';
   // The heading row is gone; the few states worth words share the notice strip.
-  const prompt = fixture || state.ended ? '' : state.recovering ? 'Restoring your battle…' : state.pending || request?.wait ? '' : request?.forceSwitch ? 'Choose a Pokémon' : activePokemon ? '' : state.searching ? 'Finding an opponent…' : '';
+  const prompt = fixture || state.ended ? '' : state.recovering ? 'Restoring your battle…' : state.pending || request?.wait ? '' : request?.forceSwitch ? 'Choose a Pokémon' : '';
+  // Searching shows as an overlay on the field, so nothing below it moves.
+  $('search-overlay').hidden = fixture || !state.searching;
   const redundantNotice = state.ended && /won the battle\.$|ended in a tie\.$/.test(state.notice || '') || state.notice === 'Choice sent. Waiting for the server.';
   $('notice').textContent = localNotice || (!redundantNotice && state.notice) || (!fixture && !state.authenticated ? state.status : prompt);
   $('notice').parentElement.hidden = !$('notice').textContent;
   $('action-slots').append($('tera'), $('undo'));
   // After the battle the move row holds the replay controls instead of moves.
-  const endControls = !fixture && state.ended ? [btn('replay', 'Replay', 'moves'), btn('first-turn', 'First turn', 'moves'), btn('prev-turn', 'Prev turn', 'moves'), btn('next-turn', 'Next turn', 'moves'), btn('end-turn', 'End', 'moves'),
-    btn('upload-replay', 'Upload replay', 'moves', !state.authenticated || !state.room)].map(html => html.replace('<button ', '<button class="end-control" ')).join('') : '';
+  const endControls = !fixture && state.ended ? [btn('replay', 'Replay battle', 'moves'), btn('first-turn', 'First turn', 'moves'), btn('prev-turn', 'Prev turn', 'moves'), btn('next-turn', 'Next turn', 'moves'), btn('end-turn', 'End', 'moves')].map(html => html.replace('<button ', '<button class="end-control" ')).join('') : '';
   $('choices').innerHTML = `<div class="moves" role="group" aria-label="Moves">${endControls}${choices.moves.map(move => {
     const type = window.BattleMovedex[move.id]?.type || '';
     return btn(`move-${move.index}`, `<strong>${escape(move.move)}</strong><small><span class="move-type">${escape(type)}</span><span>${escape(move.pp ?? '—')} / ${escape(move.maxpp ?? '—')} PP</span></small>`, 'moves', disabled || !waiting && !move.enabled, `data-type="${escape(type)}" data-locked="${waiting || !move.enabled}" aria-description="R3 or I for move information"`);
@@ -474,16 +481,10 @@ function render() {
     $('prev-turn').onclick = () => arena.seekTurn(arena.turn - 1);
     $('next-turn').onclick = () => arena.seekTurn(arena.turn + 1);
     $('end-turn').onclick = () => arena.seekTurn(Infinity);
-    // Open the tab inside the click so Safari allows it; the replay URL arrives after the upload.
-    $('upload-replay').onclick = () => safe(() => {
-      const tab = window.open('about:blank', '_blank');
-      session.onReplay = (url, error) => { if (url && tab) tab.location = url; else { tab?.close(); localNotice = `Replay upload failed: ${error?.message || 'unknown error'}`; render(); } };
-      session.roomCommand('/savereplay');
-    });
   }
   $('tera').onclick = () => { tera = !tera; render(); };
   $('undo').onclick = () => safe(() => {
-    localNotice = ''; session.undo();
+    localNotice = ''; tera = false; session.undo();
     const previous = choices.moves.find(move => move.id === selectedMoveId && move.enabled) || choices.moves.find(move => move.enabled);
     if (previous) $(`move-${previous.index}`)?.focus({preventScroll: true});
   });
@@ -499,7 +500,7 @@ function render() {
 }
 
 function startLive() {
-  fixture = false; localNotice = ''; lastRequest = null; ownOrder = []; selectedMoveId = '';
+  fixture = false; localNotice = ''; lastRequest = null; lastMovesRequest = null; ownOrder = []; selectedMoveId = '';
   arena.reset('battle-gen9randombattle-0');
   session.connect();
 }
@@ -520,9 +521,9 @@ async function init() {
   arena.setFit('wide');
   arena.receive({room: 'battle-gen9randombattle-0', lines: demoLines, snapshot: true, request: demoRequest});
   session = new ShowdownSession({url: config.server, username: config.username, auth, storage: localStorage,
-    onState(next) { if (state.room && !next.room) { lastRequest = null; ownOrder = []; } state = next; music.update(musicActive(state, {fixture, hidden: document.hidden, stopped: session.stopped})); render(); },
+    onState(next) { if (state.room && !next.room) { lastRequest = null; lastMovesRequest = null; ownOrder = []; } state = next; music.update(musicActive(state, {fixture, hidden: document.hidden, stopped: session.stopped})); render(); },
     onBattle(packet) { try {
-      if (arena.room !== packet.room) { lastRequest = null; ownOrder = []; if (modal.open && infoPage) closeModal(); }
+      if (arena.room !== packet.room) { lastRequest = null; lastMovesRequest = null; ownOrder = []; if (modal.open && infoPage) closeModal(); }
       arena.receive(packet);
     } catch { localNotice = 'The battle display encountered an error. Controls still use the server request; reload to rebuild the display.'; } },
   });
