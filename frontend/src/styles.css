@@ -328,3 +328,10 @@ dialog[data-view] #modal-body:has(.inspection-footer){display:flex;flex-directio
 .move-preview,.move-preview[data-cue]:not([data-cue=""]){border-style:solid}
 .move-preview{border-color:#b9c2cb;background:#eceff2;color:#7b838d}.move-preview strong{color:#7b838d}.move-preview small{color:#8e969f}
 .move-preview .move-type{color:#8e969f}
+
+/* Choice sent: the move row, Tera and the active Pokémon go a clearly darker gray until the turn resolves. */
+.moves button[data-locked="true"]:not(:disabled){opacity:1;background:#d3d8dd;border-color:#b3bbc3;color:#6b737c}
+.moves button[data-locked="true"]:not(:disabled) strong,.moves button[data-locked="true"]:not(:disabled) small,.moves button[data-locked="true"]:not(:disabled) .move-type{color:#6b737c}
+#choices[data-pending="true"] .moves > button,#choices[data-pending="true"] .team button[data-active=true]{background:#d3d8dd;border-color:#b3bbc3;color:#6b737c;box-shadow:none}
+#choices[data-pending="true"] .moves > button strong,#choices[data-pending="true"] .moves > button small,#choices[data-pending="true"] .team button[data-active=true] strong{color:#6b737c}
+#choices[data-pending="true"] .team button[data-active=true] .picon{filter:grayscale(1);opacity:.6}

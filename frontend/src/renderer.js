@@ -151,13 +151,16 @@ export class Arena {
   // active Pokémon. Own values are exact request stats; opposing values are the
   // Random Battle spread (level, 31 IVs, 84 EVs, neutral nature) from species
   // base stats, before boosts. Speed uses the fastest estimate for the opponent.
-  matchup(index, snapshot) {
-    const server = this.battle?.myPokemon?.[index - 1], target = this.battle?.farSide.active[0];
-    if (!server?.stats || !target || target.fainted) return null;
+  // foeIndex: a revealed opponent roster slot to compare against instead of their active Pokémon.
+  matchup(index, snapshot, foeIndex = null) {
+    const server = this.battle?.myPokemon?.[index - 1];
+    const target = foeIndex ? this.battle?.farSide.pokemon?.[foeIndex - 1] : this.battle?.farSide.active[0];
+    if (!server?.stats || !target?.speciesForme || !foeIndex && target.fainted) return null;
     const species = target.getSpecies();
     const estimate = base => Math.floor(Math.floor(2 * base + 31 + 21) * target.level / 100) + 5;
     const foe = Object.fromEntries(['atk', 'def', 'spa', 'spd', 'spe'].map(stat => [stat, estimate(species.baseStats[stat])]));
-    const speedHint = this.speedHint(index, snapshot);
+    // Speed hints read the active opponent; a previewed slot uses the plain estimate.
+    const speedHint = foeIndex && !target.isActive?.() ? {} : this.speedHint(index, snapshot);
     const ownSpeed = speedHint.value || server.stats.spe;
     const foeSpeed = speedHint.fastest || foe.spe;
     foe.spe = foeSpeed;

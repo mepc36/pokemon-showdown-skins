@@ -70,8 +70,12 @@ try {
     await page.locator('#switch-3').focus(); await stick(page, 1);
     check(await page.locator('#opponent-roster').isVisible() && !await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'opponent-3', 'Right stick flips to the opponent row and keeps the same slot focused');
     check((await page.locator('#opponent-3 strong').innerText()).replace(/\s+/g, ' ') === 'Rotom-Wash PAR', 'Status sits on the name line of the roster button');
+    await page.waitForFunction(() => document.querySelector('#matchup-own .matchup-names > span:last-child')?.textContent === 'Rotom-Wash', null, {timeout: 20000});
+    check((await page.locator('#matchup-foe .matchup-names span').first().innerText()) === 'Rotom-Wash', 'The cursor on an opponent roster button swaps that Pokémon into both side panels');
     await page.keyboard.press('f');
     check(await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-3', 'F flips back to your row');
+    await page.waitForFunction(() => document.querySelector('#matchup-own .matchup-names > span:last-child')?.textContent === 'Landorus', null, {timeout: 20000});
+    check(true, 'Leaving the opponent row returns the panels to their active Pokémon');
     check(await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('#switch-1 strong')).fontSize)) >= 14.5, 'Roster names are larger');
     check(await page.locator('#battle-timer').evaluate(el => getComputedStyle(el).color) !== 'rgb(17, 17, 17)', 'Timer is no longer black');
     check(await page.locator('.moves > #tera').count() === 1 && await page.locator('.command-heading, #prompt').count() === 0 && await page.locator('#tera').evaluate(el => el.getBoundingClientRect().right > document.querySelector('#move-4').getBoundingClientRect().right), 'Tera sits at the right end of the move row and the heading row is gone');
@@ -285,6 +289,7 @@ try {
   check((await cancel.locator('#test-commands').innerText()).includes('/choose move 1|1'), 'Battle choices still submit immediately');
   await cancel.keyboard.press('ArrowLeft'); await cancel.locator('#move-2').click();
   check(await cancel.locator('#move-2').evaluate(el => !el.disabled && el.dataset.locked === 'true' && document.activeElement === el) && !(await cancel.locator('#test-commands').innerText()).includes('/choose move 2'), 'Moves stay focusable for review while a choice is pending but cannot be chosen');
+  check(await cancel.evaluate(() => document.querySelector('#choices').dataset.pending === 'true' && getComputedStyle(document.querySelector('#switch-1')).backgroundColor === 'rgb(211, 216, 221)' && getComputedStyle(document.querySelector('#move-1')).backgroundColor === 'rgb(211, 216, 221)'), 'A sent choice grays the move row and the active Pokémon');
   await cancel.keyboard.press('Escape');
   check((await cancel.locator('#test-commands').innerText()).includes('/undo |1'), 'Existing B / Escape still invokes Showdown undo');
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|inactive|mepc36363636 has 30 seconds left.'}));
