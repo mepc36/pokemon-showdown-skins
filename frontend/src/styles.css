@@ -272,9 +272,14 @@ dialog[data-view] #modal-body:has(.inspection-footer){display:flex;flex-directio
 .stat-box[data-stat=high]{background:#238c4f;color:#fff}.stat-box[data-stat=high] small{color:#e6f4ea}.stat-box[data-stat=low]{background:#c51e26;color:#fff}.stat-box[data-stat=low] small{color:#fbe3e4}
 
 /* End-of-battle controls in the move row, menu rows, region tags, inferred roster details. */
-.moves .end-control{min-height:44px;font-size:15px;white-space:nowrap}
+.moves .end-control{min-height:44px;font-size:15px;white-space:nowrap;justify-content:center;align-items:center}
+.moves button[aria-disabled="true"]:not(:disabled){opacity:.6}
 .form-tag{font-size:10px;font-weight:700;letter-spacing:.04em;padding:1px 4px;border-radius:4px;background:#dfe6ee;color:#2e4a66;white-space:nowrap;flex-shrink:0}
 .panel-form-tag{margin-left:3px;vertical-align:middle}
 .roster-ability.inferred,.roster-item.inferred,.roster-tera.inferred{opacity:.7;font-style:italic}
 /* Timer clock sits in the bottom-right corner of the right panel. */
 #battle-timer{right:8px;bottom:8px;max-width:calc(16% - 16px);font-size:17px;padding:2px 8px;gap:5px}#battle-timer .timer-icon{width:14px;height:17px}#timer-warning{font-size:12px}
+
+/* Own-side cue colors must outrank the white own-column background above. */
+#matchup-own .stat-pair>.stat-box[data-stat=high],#matchup-foe .stat-pair>.stat-box[data-stat=high]{background:#238c4f;border-color:#238c4f}
+#matchup-own .stat-pair>.stat-box[data-stat=low],#matchup-foe .stat-pair>.stat-box[data-stat=low]{background:#c51e26;border-color:#c51e26}

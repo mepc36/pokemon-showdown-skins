@@ -117,6 +117,8 @@ export class ShowdownSession {
         } else if (type === 'nametaken' || type === 'error' || type === 'popup') {
           this.state.notice = value.replace(/\|/g, ' ');
           if (type === 'nametaken') this.state.status = 'Sign in required';
+        } else if (type === 'queryresponse' && value.startsWith('savereplay|')) {
+          void this.uploadReplay(value.slice('savereplay|'.length));
         } else if (type === 'updatesearch') {
           try {
             const data = JSON.parse(value);
@@ -212,6 +214,20 @@ export class ShowdownSession {
     // unlock locally; rqid keeps a subsequent choice from affecting a later turn.
     this.state.pending = false;
     this.state.notice = 'Undo requested. Choose again; the server decides whether it was in time.';
+    this.emit();
+  }
+  // The server answers /savereplay with the log; the client uploads it, as the official client does.
+  async uploadReplay(json) {
+    try {
+      const data = JSON.parse(json);
+      const body = new URLSearchParams({log: data.log, id: data.id, password: data.password || ''});
+      const response = await fetch('https://play.pokemonshowdown.com/api/uploadreplay', {method: 'POST', body});
+      const text = await response.text();
+      if (!response.ok || /^error|^\]?\{"actionerror/i.test(text)) throw new Error(text.slice(0, 120) || `HTTP ${response.status}`);
+      this.state.notice = `Replay saved: https://replay.pokemonshowdown.com/${data.id}${data.password ? `-${data.password}pw` : ''}`;
+    } catch (error) {
+      this.state.notice = `Replay upload failed: ${error.message}`;
+    }
     this.emit();
   }
   roomCommand(command) {
