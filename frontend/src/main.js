@@ -21,6 +21,7 @@ let diagnosticLines = [];
 let ownOrder = [];
 let shownTeam = 'own';
 let previewIndex = null;
+let foePreviewIndex = null; // opponent roster slot under the cursor; the panels compare against it instead of their active Pokémon
 let teraLabel = null; // Tera button text for the active Pokémon, restored after a bench preview
 let modalReturnFocus = '';
 let selectedMoveId = '', infoPage = null, rating = null, ratingPage = false, autoTimerRoom = '';
@@ -276,7 +277,17 @@ document.addEventListener('focusin', event => {
   const own = id.match(/^switch-(\d+)$/);
   if (own) setPreview(Number(own[1]));
   else if (move || event.target.closest('.moves') && !event.target.classList.contains('move-preview')) setPreview(null);
+  // The cursor on an opponent roster button swaps that Pokémon into the side panels.
+  const foe = id.match(/^opponent-(\d+)$/);
+  setFoePreview(foe ? Number(foe[1]) : null);
 });
+function setFoePreview(index) {
+  const slot = index ? arena?.opponents()[index - 1] : null;
+  const next = slot?.revealed && !slot.active ? index : null;
+  if (next === foePreviewIndex) return;
+  foePreviewIndex = next;
+  renderMatchup();
+}
 
 // Preview: which own Pokémon the move row and side panels describe. null = the active one.
 function setPreview(index) {
@@ -328,7 +339,7 @@ function renderMatchup() {
   const team = ownTeam();
   const index = previewIndex || team.findIndex(p => p.active) + 1;
   const pokemon = team[index - 1];
-  const data = pokemon ? arena.matchup(pokemon.serverIndex, sets.snapshot) : null;
+  const data = pokemon ? arena.matchup(pokemon.serverIndex, sets.snapshot, foePreviewIndex) : null;
   const own = data?.own || arena.ownStats?.(pokemon?.serverIndex) || {};
   const foe = data?.foe || {};
   const box = (label, value, estimate = false, cue = '') => `<div class="stat-box" data-stat="${cue}"><small>${escape(label)}</small><strong>${value == null ? '—' : `${estimate ? '~' : ''}${escape(value)}`}</strong></div>`;
@@ -463,6 +474,8 @@ function render() {
   $('undo').hidden = true;
   $('undo').disabled = !canCancel;
   $('arena-wrap').dataset.room = state.room || '';
+  // A sent choice (move or switch) grays the move row and the active Pokémon until the server answers.
+  $('choices').dataset.pending = String(!fixture && !!state.pending);
   // The heading row is gone; the few states worth words share the notice strip.
   const prompt = fixture || state.ended ? '' : state.recovering ? 'Restoring your battle…' : state.pending || request?.wait ? '' : request?.forceSwitch ? 'Choose a Pokémon' : '';
   // Searching shows as an overlay on the field, so nothing below it moves.
