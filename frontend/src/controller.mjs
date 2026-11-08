@@ -1,10 +1,10 @@
-// L3 (10) is unmapped: the timer is a header button reached with the d-pad.
+// L3 (10) is unmapped. Select (8) opens the menu modal.
 export const BUTTONS = {0: 'cancel', 1: 'confirm', 3: 'tera', 8: 'tools', 9: 'menu', 11: 'info', 12: 'up', 13: 'down', 14: 'left', 15: 'right'};
 export const risingEdges = (current, previous) => current.flatMap((pressed, index) => pressed && !previous[index] ? [index] : []);
 
 export function startController({action, diagnostic, ignored = () => new Set()}) {
   let previous = [], device = '', repeatAt = 0, heldDirection = '', heldFlip = '';
-  const keys = {ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Enter: 'confirm', Escape: 'cancel', x: 'tera', t: 'timer', i: 'info', h: 'tools', f: 'team', c: 'chat'};
+  const keys = {ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Enter: 'confirm', Escape: 'cancel', x: 'tera', i: 'info', h: 'tools', f: 'team', c: 'chat'};
   document.addEventListener('keydown', event => {
     if (/INPUT|TEXTAREA|SELECT/.test(event.target.tagName)) return;
     diagnostic(`Key ${event.code} · cancelable ${event.cancelable}`);

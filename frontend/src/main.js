@@ -21,7 +21,7 @@ let shownTeam = 'own';
 let previewIndex = null;
 let teraLabel = null; // Tera button text for the active Pokémon, restored after a bench preview
 let modalReturnFocus = '';
-let selectedMoveId = '', infoPage = null, rating = null, ratingPage = false, fixtureTimer = false;
+let selectedMoveId = '', infoPage = null, rating = null, ratingPage = false, autoTimerRoom = '';
 const modal = $('modal');
 // Music is always enabled, including on devices with the old saved mute setting.
 const music = new Music(undefined, {storage: null});
@@ -29,7 +29,7 @@ const sets = new PossibleSets();
 const safe = fn => { try { fn(); } catch (error) { localNotice = error.message; render(); } };
 
 function updateTimer() {
-  const on = fixture ? fixtureTimer : state.timerOn;
+  const on = fixture || state.timerOn;
   const seconds = session?.timerRemaining();
   $('timer-value').textContent = !on ? 'Timer off' : seconds == null ? 'Timer on' : `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
   const warning = !fixture && Date.now() < state.timerWarningUntil ? state.timerWarning : '';
@@ -54,7 +54,6 @@ function closeModal() {
 $('modal-close').onclick = closeModal;
 modal.addEventListener('cancel', event => { event.preventDefault(); closeModal(); });
 
-// The secondary controls live in the header. Select (or H) hides and shows them.
 // Chat drawer: slides over the right edge of the field. Header button or C toggles it.
 function showChat(open = $('chat-drawer').hidden) {
   const drawer = $('chat-drawer');
@@ -63,11 +62,29 @@ function showChat(open = $('chat-drawer').hidden) {
   if (open) drawer.scrollTop = drawer.scrollHeight;
   else if (drawer.contains(document.activeElement)) $('chat')?.focus({preventScroll: true});
 }
-function showTools(open, focusId) {
-  const tools = $('utility');
-  tools.hidden = !open;
-  if (!open && tools.contains(document.activeElement)) document.querySelector('#choices button:not(:disabled)')?.focus({preventScroll: true});
-  if (open && focusId) $(focusId)?.focus({preventScroll: true});
+// Menu: Select (or H) opens the secondary controls in a modal. There is no header row.
+function showMenu() {
+  const reopen = modal.open && modal.dataset.view === 'menu';
+  const inBattle = fixture || !!state.room && !state.ended;
+  const primaryLabel = fixture || session?.stopped ? 'Connect to Showdown' : !state.authenticated ? 'Sign in with Showdown' : state.searching ? 'Cancel search' : 'Find Random Battle';
+  const primaryDisabled = !fixture && !session?.stopped && (!state.authenticated ? !state.challenge : !!state.room && !state.ended);
+  showModal('Menu', `<div class="menu-grid">${btn('primary', primaryLabel, 'menu', primaryDisabled, 'class="primary"')}
+    ${btn('chat', 'Chat', 'menu', false, `aria-pressed="${!$('chat-drawer').hidden}"`)}${btn('rating', 'Rating', 'menu')}${btn('forfeit', 'Forfeit…', 'menu', !inBattle || !fixture && !state.authenticated)}
+    ${state.ended ? btn('replay', 'Replay', 'menu') : ''}${btn('setup', 'Setup', 'menu')}${btn('diagnostics', 'Controller check', 'menu')}${btn('source', 'Source', 'menu')}</div>`, 'menu');
+  $('primary').onclick = () => safe(() => {
+    localNotice = ''; closeModal();
+    if (fixture || session.stopped) { startLive(); return; }
+    if (!state.authenticated) { if (!auth.clientId) setup(); else void session.login(true); }
+    else if (state.searching) session.cancelSearch();
+    else session.search();
+  });
+  $('chat').onclick = () => { closeModal(); showChat(); };
+  $('rating').onclick = () => showRating();
+  $('forfeit').onclick = forfeit;
+  $('setup').onclick = setup; $('diagnostics').onclick = diagnostics;
+  $('source').onclick = () => { const link = document.createElement('a'); link.href = './source.zip'; link.download = ''; link.click(); };
+  if ($('replay')) $('replay').onclick = () => { closeModal(); arena.replay(); };
+  if (!reopen) modal.querySelector('.menu-grid button:not(:disabled)')?.focus({preventScroll: true});
 }
 
 function setup() {
@@ -253,7 +270,7 @@ document.addEventListener('focusin', event => {
   // The cursor on a bench Pokémon previews it; anywhere in the move row or header returns to the active one.
   const own = id.match(/^switch-(\d+)$/);
   if (own) setPreview(Number(own[1]));
-  else if (move || event.target.closest('.moves, .app-header')) setPreview(null);
+  else if (move || event.target.closest('.moves')) setPreview(null);
 });
 
 // Preview: which own Pokémon the move row and side panels describe. null = the active one.
@@ -300,18 +317,25 @@ function renderMatchup() {
   const data = pokemon ? arena.matchup(pokemon.serverIndex, sets.snapshot) : null;
   const own = data?.own || arena.ownStats?.(pokemon?.serverIndex) || {};
   const foe = data?.foe || {};
-  const box = (label, value, estimate = false) => `<div class="stat-box"><small>${escape(label)}</small><strong>${value == null ? '—' : `${estimate ? '~' : ''}${escape(value)}`}</strong></div>`;
+  const box = (label, value, estimate = false, cue = '') => `<div class="stat-box" data-stat="${cue}"><small>${escape(label)}</small><strong>${value == null ? '—' : `${estimate ? '~' : ''}${escape(value)}`}</strong></div>`;
+  // Green: the attacker's higher attacking stat. Red: the defender's lower defensive stat. Ties and unknowns get no cue.
+  const higher = (a, b) => a != null && b != null && a !== b ? (a > b ? ['high', ''] : ['', 'high']) : ['', ''];
+  const lower = (a, b) => a != null && b != null && a !== b ? (a < b ? ['low', ''] : ['', 'low']) : ['', ''];
+  const [ownAtk, ownSpa] = higher(own.atk, own.spa), [foeDef, foeSpd] = lower(foe.def, foe.spd);
+  const [foeAtk, foeSpa] = higher(foe.atk, foe.spa), [ownDef, ownSpd] = lower(own.def, own.spd);
   const badge = side => !data || data.first === 'tie' ? '<div class="speed-badge" data-first="true"><span aria-hidden="true">🐇</span>1</div>'
     : (data.first === 'own') === (side === 'own') ? '<div class="speed-badge" data-first="true"><span aria-hidden="true">🐇</span>1</div>' : '<div class="speed-badge" data-first="false"><span aria-hidden="true">🐢</span>2</div>';
   const cols = (first, second) => `<div class="matchup-cols" aria-hidden="true"><span>${first}</span><span>${second}</span></div>`;
-  const name = pokemon ? pokemon.details.split(',')[0] : '—';
-  left.innerHTML = `<h4>${escape(name)}</h4>${cols('⚔️', '🛡️')}
-    <div class="stat-pair">${box('Atk', own.atk)}${box('Def', foe.def, true)}</div>
-    <div class="stat-pair">${box('SpA', own.spa)}${box('SpD', foe.spd, true)}</div>
+  const name = pokemon ? pokemon.details.split(',')[0] : '—', foeName = data?.foeName || '—';
+  // Both names sit above the columns: the attacker over ⚔️, the defender over 🛡️.
+  const names = (first, second) => `<h4 class="matchup-names"><span>${escape(first)}</span><span>${escape(second)}</span></h4>`;
+  left.innerHTML = `${names(name, foeName)}${cols('⚔️', '🛡️')}
+    <div class="stat-pair">${box('Atk', own.atk, false, ownAtk)}${box('Def', foe.def, true, foeDef)}</div>
+    <div class="stat-pair">${box('SpA', own.spa, false, ownSpa)}${box('SpD', foe.spd, true, foeSpd)}</div>
     <div class="stat-pair">${box('Spe', own.spe)}${data ? badge('own') : box('Spe', null)}</div>`;
-  right.innerHTML = `<h4>${escape(data?.foeName || '—')}</h4>${cols('🛡️', '⚔️')}
-    <div class="stat-pair">${box('Atk', foe.atk, true)}${box('Def', own.def)}</div>
-    <div class="stat-pair">${box('SpA', foe.spa, true)}${box('SpD', own.spd)}</div>
+  right.innerHTML = `${names(name, foeName)}${cols('🛡️', '⚔️')}
+    <div class="stat-pair">${box('Atk', foe.atk, true, foeAtk)}${box('Def', own.def, false, ownDef)}</div>
+    <div class="stat-pair">${box('SpA', foe.spa, true, foeSpa)}${box('SpD', own.spd, false, ownSpd)}</div>
     <div class="stat-pair">${box('Spe', foe.spe, true)}${data ? badge('foe') : box('Spe', null)}</div>`;
 }
 
@@ -399,7 +423,7 @@ function render() {
   const disabled = !fixture && (!state.authenticated || state.pending || state.recovering || state.ended || !request || request.wait);
   const activePokemon = request?.side?.pokemon?.find(p => p.active) || lastRequest?.side?.pokemon?.find(p => p.active);
   const teraType = request?.active?.[0]?.canTerastallize || activePokemon?.teraType || 'Unknown';
-  $('tera').hidden = !activePokemon;
+  $('tera').hidden = !activePokemon || !!state.ended;
   $('tera').disabled = disabled || !choices.tera;
   $('tera').textContent = `Tera: ${teraType}${activePokemon?.terastallized ? ' · active' : tera ? ' · selected' : ''}`;
   $('tera').dataset.type = teraType;
@@ -415,10 +439,6 @@ function render() {
   const redundantNotice = state.ended && /won the battle\.$|ended in a tie\.$/.test(state.notice || '') || state.notice === 'Choice sent. Waiting for the server.';
   $('notice').textContent = localNotice || (!redundantNotice && state.notice) || (!fixture && !state.authenticated ? state.status : prompt);
   $('notice').parentElement.hidden = !$('notice').textContent;
-  const primary = $('primary');
-  primary.disabled = false;
-  primary.textContent = fixture || session?.stopped ? 'Connect to Showdown' : !state.authenticated ? 'Sign in with Showdown' : state.searching ? 'Cancel search' : 'Find Random Battle';
-  if (!fixture && !session?.stopped) primary.disabled = !state.authenticated ? !state.challenge : !!state.room && !state.ended;
   $('action-slots').append($('tera'), $('undo'));
   $('choices').innerHTML = `<div class="moves" role="group" aria-label="Moves">${choices.moves.map(move => {
     const type = window.BattleMovedex[move.id]?.type || '';
@@ -431,12 +451,6 @@ function render() {
   renderRoster();
   refreshMoveHints();
   renderMovePreview();
-  const inBattle = fixture || !!state.room && !state.ended;
-  $('utility').innerHTML = `
-    ${btn('timer-toggle', `Timer: ${(fixture ? fixtureTimer : state.timerOn) ? 'on' : 'off'}`, 'header', !inBattle || !fixture && (!state.authenticated || state.recovering || state.timerPending), `aria-pressed="${!!(fixture ? fixtureTimer : state.timerOn)}"`)}
-    ${btn('chat', 'Chat', 'header', false, `aria-pressed="${!$('chat-drawer').hidden}"`)}${btn('rating', 'Rating', 'header')}${btn('forfeit', 'Forfeit…', 'header', !inBattle || !fixture && !state.authenticated)}
-    ${state.ended ? btn('replay', 'Replay', 'header') : ''}${btn('setup', 'Setup', 'header')}${btn('diagnostics', 'Controller check', 'header')}
-    <a id="source" data-nav data-row="header" href="./source.zip" download>Source</a>`;
   for (const move of choices.moves) $(`move-${move.index}`).onclick = () => choose('move', move.index);
   $('tera').onclick = () => { tera = !tera; render(); };
   $('undo').onclick = () => safe(() => {
@@ -444,15 +458,14 @@ function render() {
     const previous = choices.moves.find(move => move.id === selectedMoveId && move.enabled) || choices.moves.find(move => move.enabled);
     if (previous) $(`move-${previous.index}`)?.focus({preventScroll: true});
   });
-  $('rating').onclick = () => showRating();
-  $('chat').onclick = () => showChat();
-  $('forfeit').onclick = forfeit;
-  $('setup').onclick = setup; $('diagnostics').onclick = diagnostics;
-  $('timer-toggle').onclick = () => fixture ? (fixtureTimer = !fixtureTimer, render()) : safe(() => session.toggleTimer());
-  if ($('replay')) $('replay').onclick = () => arena.replay();
+  // The timer starts itself once per battle; there is no Timer button.
+  if (!fixture && state.room && !state.ended && state.authenticated && !state.recovering && !state.timerOn && !state.timerPending && autoTimerRoom !== state.room) {
+    autoTimerRoom = state.room; safe(() => session.toggleTimer());
+  }
   updateTimer();
   arena?.resize();
   if (modal.open && infoPage) showInfo(infoPage);
+  if (modal.open && modal.dataset.view === 'menu') showMenu();
   if (focusId && !modal.open) { const target = $(focusId); if (target && !target.disabled) target.focus({preventScroll: true}); }
 }
 
@@ -461,13 +474,6 @@ function startLive() {
   arena.reset('battle-gen9randombattle-0');
   session.connect();
 }
-$('primary').onclick = () => safe(() => {
-  localNotice = '';
-  if (fixture || session.stopped) { startLive(); return; }
-  if (!state.authenticated) { if (!auth.clientId) setup(); else void session.login(true); }
-  else if (state.searching) session.cancelSearch();
-  else session.search();
-});
 document.addEventListener('pointerdown', () => music.unlock(), {passive: true});
 document.addEventListener('keydown', event => { if (!event.repeat && event.isTrusted) music.unlock(); });
 
@@ -518,8 +524,7 @@ async function init() {
       return;
     }
     if (modal.open) return;
-    ({tera: () => $('tera')?.click(), timer: () => showTools(true, 'timer-toggle'), menu: forfeit, info, team: () => showTeam(),
-      tools: () => showTools($('utility').hidden), chat: () => showChat()})[action]?.();
+    ({tera: () => $('tera')?.click(), menu: forfeit, info, team: () => showTeam(), tools: showMenu, chat: () => showChat()})[action]?.();
   }});
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { music.update(false); return; }
