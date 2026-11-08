@@ -162,3 +162,38 @@ test('undo uses a command separator, unlocks locally, and respects noCancel', ()
   const count = f.socket.sent.length; f.session.undo();
   assert.equal(f.socket.sent.length, count);
 });
+
+test('a remembered room that the server no longer lists gives way to the live battle', () => {
+  // The client remembers an old battle. On login the server lists only a new one and sends its snapshot first.
+  const f = fixture(); f.session.state.room = 'battle-gen9randombattle-111'; f.values.set('ps-mve-room', 'battle-gen9randombattle-111');
+  f.session.connect(); const socket = f.sockets.at(-1); socket.open(); socket.receive('|challstr|4|challenge');
+  socket.receive('|updateuser|mepc36363636|1|1');
+  assert.equal(f.session.state.room, 'battle-gen9randombattle-111');
+  socket.receive(`|updatesearch|${JSON.stringify({searching: [], games: {[room]: '[Gen 9] Random Battle'}})}`);
+  assert.equal(f.session.state.room, room, 'switches to the battle the server says is live');
+  assert.ok(socket.sent.some(value => value.endsWith(`/join ${room}`)));
+  socket.receive(`>${room}\n|init|battle\n|request|${JSON.stringify(request())}`);
+  assert.equal(f.session.state.recovering, false);
+  assert.ok(f.session.state.request, 'the live battle request is accepted, not dropped as a foreign room');
+});
+
+test('a finished remembered battle still listed by the server does not block a newer live one', () => {
+  const f = fixture(); f.authenticate(); f.battle();
+  f.socket.receive(`>${room}\n|win|Opponent`);
+  const next = 'battle-gen9randombattle-222';
+  f.socket.receive(`|updatesearch|${JSON.stringify({searching: [], games: {[room]: '[Gen 9] Random Battle', [next]: '[Gen 9] Random Battle'}})}`);
+  assert.equal(f.session.state.room, next);
+  assert.equal(f.session.state.ended, false);
+});
+
+test('a remembered battle the server lists no game for is forgotten, so Find Random Battle works', () => {
+  const f = fixture(); f.session.state.room = 'battle-gen9randombattle-111';
+  f.session.connect(); const socket = f.sockets.at(-1); socket.open(); socket.receive('|challstr|4|challenge');
+  socket.receive('|updateuser|mepc36363636|1|1');
+  assert.equal(f.session.state.recovering, true);
+  socket.receive(`|updatesearch|${JSON.stringify({searching: [], games: null})}`);
+  assert.equal(f.session.state.room, '');
+  assert.equal(f.session.state.recovering, false);
+  f.session.search();
+  assert.ok(socket.sent.some(value => value.endsWith('/search gen9randombattle')));
+});

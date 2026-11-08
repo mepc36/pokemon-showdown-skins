@@ -6,6 +6,7 @@ export class ShowdownSession {
     this.epoch = 0;
     this.attempt = 0;
     this.stopped = true;
+    this.games = []; // battle rooms the server says we are in, from updatesearch
     this.state = {status: 'Offline', authenticated: false, challenge: '', room: '', request: null,
       pending: false, recovering: false, searching: false, ended: false, notice: '', timer: '',
       timerOn: false, timerPending: false, timerSeconds: null, timerAt: 0, timerRunning: false,
@@ -93,7 +94,8 @@ export class ShowdownSession {
     const battleLines = [];
     const snapshot = lines.includes('|init|battle');
     if (snapshot && isBattleRoom(room)) {
-      if (this.state.room && this.state.room !== room && !this.state.ended) return;
+      // A snapshot for another room is ignored only while the remembered room is still a live game on the server.
+      if (this.state.room && this.state.room !== room && !this.state.ended && this.games.includes(this.state.room)) return;
       Object.assign(this.state, {room, ended: false, request: null, pending: false, recovering: true, searching: false, timer: '',
         timerOn: false, timerPending: false, timerSeconds: null, timerRunning: false, timerWarning: '', timerWarningUntil: 0});
       this.storage.setItem('ps-mve-room', room);
@@ -114,6 +116,9 @@ export class ShowdownSession {
             if (this.state.room && !this.state.ended) this.send(`/join ${this.state.room}`);
           }
           if (!authenticated) this.state.authenticated = false;
+        } else if (type === 'popup' && /replay\.pokemonshowdown\.com\//.test(value)) {
+          // The server uploads the replay itself and answers /savereplay with a popup holding the link.
+          this.state.replayUrl = value.match(/https:\/\/replay\.pokemonshowdown\.com\/[\w-]+/)[0];
         } else if (type === 'nametaken' || type === 'error' || type === 'popup') {
           this.state.notice = value.replace(/\|/g, ' ');
           if (type === 'nametaken') this.state.status = 'Sign in required';
@@ -123,10 +128,17 @@ export class ShowdownSession {
           try {
             const data = JSON.parse(value);
             this.state.searching = !!data.searching?.length;
-            const active = Object.keys(data.games || {}).find(isBattleRoom);
-            if (active && !this.state.room && this.state.authenticated) {
-              this.state.room = active; this.state.recovering = true;
-              this.storage.setItem('ps-mve-room', active); this.send(`/join ${active}`);
+            this.games = Object.keys(data.games || {}).filter(isBattleRoom);
+            // The server's game list is the truth. If the remembered room is not a live game but another battle is,
+            // switch to that battle instead of waiting on the stale room forever.
+            const live = !this.state.ended && this.games.includes(this.state.room) ? this.state.room : this.games.find(room => room !== this.state.room);
+            if (live && live !== this.state.room && this.state.authenticated) {
+              Object.assign(this.state, {room: live, ended: false, request: null, pending: false, recovering: true});
+              this.storage.setItem('ps-mve-room', live); this.send(`/join ${live}`);
+            } else if (!live && this.state.room && this.state.recovering && this.state.authenticated) {
+              // The remembered battle is not a game on the server any more: nothing to restore.
+              Object.assign(this.state, {room: '', request: null, recovering: false});
+              this.storage.removeItem('ps-mve-room');
             }
           } catch { this.state.notice = 'Could not read matchmaking status.'; }
         }
