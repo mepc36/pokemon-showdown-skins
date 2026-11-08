@@ -348,7 +348,9 @@ function renderRoster() {
   if (!$('roster')) return;
   const focusId = document.activeElement?.id;
   const request = currentRequest();
-  const disabled = !fixture && (!state.authenticated || state.pending || state.recovering || state.ended || !request || request.wait);
+  const disabled = !fixture && (!state.authenticated || state.recovering || state.ended || !request);
+  // While a choice is pending or the opponent is moving, moves stay focusable for review but cannot be chosen.
+  const waiting = !fixture && !disabled && (state.pending || !!request.wait);
   const choices = availableChoices(request);
   for (const rosterSide of ['own', 'opponent']) {
     const roster = $(rosterSide === 'own' ? 'roster' : 'opponent-roster');
@@ -429,11 +431,13 @@ function render() {
   if (request?.side) lastRequest = request;
   if (request !== selectedRequest) { selectedRequest = request; tera = false; }
   const choices = availableChoices(request);
-  const disabled = !fixture && (!state.authenticated || state.pending || state.recovering || state.ended || !request || request.wait);
+  const disabled = !fixture && (!state.authenticated || state.recovering || state.ended || !request);
+  // While a choice is pending or the opponent is moving, moves stay focusable for review but cannot be chosen.
+  const waiting = !fixture && !disabled && (state.pending || !!request.wait);
   const activePokemon = request?.side?.pokemon?.find(p => p.active) || lastRequest?.side?.pokemon?.find(p => p.active);
   const teraType = request?.active?.[0]?.canTerastallize || activePokemon?.teraType || 'Unknown';
   $('tera').hidden = !activePokemon || !!state.ended;
-  $('tera').disabled = disabled || !choices.tera;
+  $('tera').disabled = disabled || waiting || !choices.tera;
   $('tera').textContent = `Tera: ${teraType}${activePokemon?.terastallized ? ' · active' : tera ? ' · selected' : ''}`;
   $('tera').dataset.type = teraType;
   teraLabel = {text: $('tera').textContent, type: teraType};
@@ -450,11 +454,11 @@ function render() {
   $('notice').parentElement.hidden = !$('notice').textContent;
   $('action-slots').append($('tera'), $('undo'));
   // After the battle the move row holds the replay controls instead of moves.
-  const endControls = !fixture && state.ended ? [btn('replay', 'Replay', 'moves'), btn('first-turn', 'First turn', 'moves'), btn('prev-turn', 'Prev turn', 'moves'),
+  const endControls = !fixture && state.ended ? [btn('replay', 'Replay', 'moves'), btn('first-turn', 'First turn', 'moves'), btn('prev-turn', 'Prev turn', 'moves'), btn('next-turn', 'Next turn', 'moves'), btn('end-turn', 'End', 'moves'),
     btn('upload-replay', 'Upload replay', 'moves', !state.authenticated || !state.room)].map(html => html.replace('<button ', '<button class="end-control" ')).join('') : '';
   $('choices').innerHTML = `<div class="moves" role="group" aria-label="Moves">${endControls}${choices.moves.map(move => {
     const type = window.BattleMovedex[move.id]?.type || '';
-    return btn(`move-${move.index}`, `<strong>${escape(move.move)}</strong><small><span class="move-type">${escape(type)}</span><span>${escape(move.pp ?? '—')} / ${escape(move.maxpp ?? '—')} PP</span></small>`, 'moves', disabled || !move.enabled, `data-type="${escape(type)}" aria-description="R3 or I for move information"`);
+    return btn(`move-${move.index}`, `<strong>${escape(move.move)}</strong><small><span class="move-type">${escape(type)}</span><span>${escape(move.pp ?? '—')} / ${escape(move.maxpp ?? '—')} PP</span></small>`, 'moves', disabled || !waiting && !move.enabled, `data-type="${escape(type)}" aria-disabled="${waiting || !move.enabled}" aria-description="R3 or I for move information"`);
   }).join('')}</div>
     <div class="team-row" data-side="own" ${shownTeam === 'own' ? '' : 'hidden'}><span class="team-label">You</span><div id="roster" class="team" role="group" aria-label="Your six Pokémon"></div></div>
     <div class="team-row" data-side="opponent" ${shownTeam === 'opponent' ? '' : 'hidden'}><span class="team-label">Foe</span><div id="opponent-roster" class="team" role="group" aria-label="Opponent’s six Pokémon"></div></div>`;
@@ -463,11 +467,13 @@ function render() {
   renderRoster();
   refreshMoveHints();
   renderMovePreview();
-  for (const move of choices.moves) $(`move-${move.index}`).onclick = () => choose('move', move.index);
+  for (const move of choices.moves) $(`move-${move.index}`).onclick = () => { if (!waiting && move.enabled) choose('move', move.index); };
   if (endControls) {
     $('replay').onclick = () => arena.replay();
     $('first-turn').onclick = () => arena.seekTurn(0);
     $('prev-turn').onclick = () => arena.seekTurn(arena.turn - 1);
+    $('next-turn').onclick = () => arena.seekTurn(arena.turn + 1);
+    $('end-turn').onclick = () => arena.seekTurn(Infinity);
     $('upload-replay').onclick = () => safe(() => { session.roomCommand('/savereplay'); localNotice = 'Uploading replay…'; render(); });
   }
   $('tera').onclick = () => { tera = !tera; render(); };

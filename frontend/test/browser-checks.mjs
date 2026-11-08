@@ -279,6 +279,8 @@ try {
   check(!(await cancel.locator('#test-commands').innerText()).includes('/choose'), 'Flat information navigation never sends a battle choice');
   await cancel.keyboard.press('ArrowUp'); await cancel.locator('#move-1').click();
   check((await cancel.locator('#test-commands').innerText()).includes('/choose move 1|1'), 'Battle choices still submit immediately');
+  await cancel.keyboard.press('ArrowLeft'); await cancel.locator('#move-2').click();
+  check(await cancel.locator('#move-2').evaluate(el => !el.disabled && el.getAttribute('aria-disabled') === 'true' && document.activeElement === el) && !(await cancel.locator('#test-commands').innerText()).includes('/choose move 2'), 'Moves stay focusable for review while a choice is pending but cannot be chosen');
   await cancel.keyboard.press('Escape');
   check((await cancel.locator('#test-commands').innerText()).includes('/undo |1'), 'Existing B / Escape still invokes Showdown undo');
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|inactive|mepc36363636 has 30 seconds left.'}));
@@ -371,10 +373,10 @@ try {
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|win|Opponent'}));
   await cancel.waitForFunction(() => document.querySelector('#tera').hidden);
   check(await cancel.locator('#tera').count() === 1 && !await cancel.locator('#tera').isVisible(), 'Tera is hidden once the battle ends');
-  check(await cancel.locator('.moves #replay, .moves #first-turn, .moves #prev-turn, .moves #upload-replay').count() === 4 && await cancel.locator('#download-replay, #rematch, #main-menu').count() === 0, 'After the battle the move row holds Replay, First turn, Prev turn and Upload replay');
+  check(await cancel.locator('.moves #replay, .moves #first-turn, .moves #prev-turn, .moves #next-turn, .moves #end-turn, .moves #upload-replay').count() === 6 && await cancel.locator('#download-replay, #rematch, #main-menu').count() === 0, 'After the battle the move row holds Replay, First turn, Prev turn, Next turn, End and Upload replay');
   await cancel.locator('#upload-replay').click();
   check((await cancel.locator('#test-commands').innerText()).includes('|/savereplay'), 'Upload replay sends /savereplay to the room');
-  await cancel.locator('#first-turn').click(); await cancel.locator('#prev-turn').click();
+  await cancel.locator('#first-turn').click(); await cancel.locator('#prev-turn').click(); await cancel.locator('#next-turn').click(); await cancel.locator('#end-turn').click();
   check(await cancel.locator('.moves #first-turn').count() === 1, 'First turn and Prev turn seek without error');
   await cancel.close();
 
