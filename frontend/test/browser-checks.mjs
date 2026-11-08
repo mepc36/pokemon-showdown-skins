@@ -85,8 +85,9 @@ try {
     await pad(page, 0); // B ends the bench preview; up now stays on the benched Pokémon's moves
     const panelNames = async id => page.locator(`${id} .matchup-names > span`).allInnerTexts();
     check(JSON.stringify(await panelNames('#matchup-own')) === '["Grumpig","Landorus"]' && JSON.stringify(await panelNames('#matchup-foe')) === '["Landorus","Grumpig"]', 'Both panels name the attacker on the left and the defender on the right');
-    check(await page.locator('.matchup-names span').evaluateAll(els => els.every(el => getComputedStyle(el).textOverflow === 'ellipsis' && getComputedStyle(el).overflow === 'hidden')), 'Panel names clip with an ellipsis');
-    const cues = async id => page.locator(`${id} .stat-box`).evaluateAll(els => els.map(el => `${el.querySelector('small').textContent}:${el.dataset.stat}`));
+    // Query and measure in one evaluate: the panels re-render during animations, and a two-step locator read can land on detached nodes.
+    check(await page.evaluate(() => { const els = [...document.querySelectorAll('.matchup-names span')]; return els.length > 0 && els.every(el => getComputedStyle(el).textOverflow === 'ellipsis' && getComputedStyle(el).overflow === 'hidden'); }), 'Panel names clip with an ellipsis');
+    const cues = async id => page.evaluate(sel => [...document.querySelectorAll(`${sel} .stat-box`)].map(el => `${el.querySelector('small').textContent}:${el.dataset.stat}`), id);
     check(JSON.stringify(await cues('#matchup-own')) === '["Atk:tie","Def:high","SpA:tie","SpD:low","Spe:"]', `Left panel marks their higher defense green and lower red, your tied attack stats yellow: ${await cues('#matchup-own')}`);
     check(JSON.stringify(await cues('#matchup-foe')) === '["Atk:high","Def:tie","SpA:low","SpD:tie","Spe:"]', `Right panel puts their attack stats left, higher green and lower red, your tied defenses yellow: ${await cues('#matchup-foe')}`);
     check(await page.evaluate(() => { const style = el => getComputedStyle(el); const high = document.querySelector('.stat-box[data-stat=high]'), low = document.querySelector('.stat-box[data-stat=low]'), plain = document.querySelector('.stat-box[data-stat=""]'); const key = el => style(el).borderTopColor + style(el).backgroundColor; return key(high) !== key(plain) && key(low) !== key(plain) && key(high) !== key(low); }), 'Cued stat boxes look different from plain ones and from each other');
@@ -100,12 +101,12 @@ try {
     await pad(page, 0);
     await page.locator('#switch-2').focus(); await pad(page, 13);
     check(/^preview-move-\d$/.test(await page.evaluate(() => document.activeElement.id)) && await page.locator('.move-preview').count() === 4, 'The cursor can move onto a previewed move without ending the preview');
-    check(await page.locator('#preview-move-1').evaluate(el => getComputedStyle(el).opacity) === '1', 'Previewed moves are not grayed out');
+    check(await page.evaluate(() => getComputedStyle(document.querySelector('#preview-move-1')).opacity) === '1', 'Previewed moves are not grayed out');
     await pad(page, 1);
     check(await page.locator('.move-preview').count() === 4 && !(await page.locator('#notice').innerText()).includes('selected'), 'Pressing a previewed move selects nothing');
     await page.locator('#switch-2').focus();
     await pad(page, 12);
-    check(await page.locator('.move-preview').count() === 4 && /^preview-move-\d$/.test(await page.evaluate(() => document.activeElement.id)) && await page.locator('.move-preview').first().evaluate(el => getComputedStyle(el).borderTopStyle) === 'solid', 'Up from the bench lands on the benched Pokémon\'s moves, drawn solid and gray');
+    check(await page.locator('.move-preview').count() === 4 && /^preview-move-\d$/.test(await page.evaluate(() => document.activeElement.id)) && await page.evaluate(() => getComputedStyle(document.querySelector('.move-preview')).borderTopStyle) === 'solid', 'Up from the bench lands on the benched Pokémon\'s moves, drawn solid and gray');
     await pad(page, 0);
     check(await page.locator('.move-preview').count() === 0 && await page.locator('#move-1').isVisible(), 'B ends the preview and brings back the active Pokémon\'s real moves');
     check(await page.locator('#tera .tera-type').innerText() === 'Psychic', 'Leaving the preview restores the active Pokémon\'s Tera type');
@@ -288,7 +289,7 @@ try {
   await cancel.keyboard.press('Escape'); await cancel.locator('#move-1').click();
   check((await cancel.locator('#test-commands').innerText()).includes('/choose move 1|1'), 'Battle choices still submit immediately');
   await cancel.keyboard.press('ArrowLeft'); await cancel.locator('#move-2').click();
-  check(await cancel.locator('#move-2').evaluate(el => !el.disabled && el.dataset.locked === 'true' && document.activeElement === el) && !(await cancel.locator('#test-commands').innerText()).includes('/choose move 2'), 'Moves stay focusable for review while a choice is pending but cannot be chosen');
+  check(await cancel.evaluate(() => { const el = document.querySelector('#move-2'); return !el.disabled && el.dataset.locked === 'true' && document.activeElement === el; }) && !(await cancel.locator('#test-commands').innerText()).includes('/choose move 2'), 'Moves stay focusable for review while a choice is pending but cannot be chosen');
   check(await cancel.evaluate(() => document.querySelector('#choices').dataset.pending === 'true' && getComputedStyle(document.querySelector('#switch-1')).backgroundColor === 'rgb(211, 216, 221)' && getComputedStyle(document.querySelector('#move-1')).backgroundColor === 'rgb(211, 216, 221)'), 'A sent choice grays the move row and the active Pokémon');
   await cancel.keyboard.press('Escape');
   check((await cancel.locator('#test-commands').innerText()).includes('/undo |1'), 'Existing B / Escape still invokes Showdown undo');
@@ -314,7 +315,7 @@ try {
   await cancel.keyboard.press('Escape'); await cancel.keyboard.press('f');
 
   // The server request already knows the turn's result; the roster must wait for the hit to land.
-  const barWidth = async id => cancel.locator(`${id} .team-hp > span`).evaluate(el => parseFloat(el.style.width));
+  const barWidth = async id => cancel.evaluate(sel => parseFloat(document.querySelector(`${sel} .team-hp > span`).style.width), id);
   await cancel.evaluate(async () => {
     const {demoRequest} = await import('/src/demo.mjs');
     const hurt = {...demoRequest, rqid: 2, side: {...demoRequest.side, pokemon: demoRequest.side.pokemon.map(p => p.ident === 'p1: Grumpig' ? {...p, condition: '150/297'} : p)}};
@@ -335,7 +336,7 @@ try {
     window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|switch|p1a: Palossand|Palossand, L80|118/324\n|switch|p2a: Rotom|Rotom-Wash, L80|34/100 par\n|turn|21'});
   });
   await cancel.waitForFunction(() => document.querySelector('#switch-2')?.dataset.active === 'true', null, {timeout: 15000});
-  const names = id => cancel.locator(`${id} strong`).evaluateAll(els => els.map(el => el.firstChild.textContent));
+  const names = id => cancel.evaluate(sel => [...document.querySelectorAll(`${sel} strong`)].map(el => el.firstChild.textContent), id);
   check(JSON.stringify(await names('#roster')) === JSON.stringify(['Grumpig', 'Palossand', 'Excadrill', 'Breloom', 'Amoonguss', 'Iron Hands']), 'Own roster keeps the lead first after a switch');
   check(await cancel.locator('#switch-2').getAttribute('data-active') === 'true' && await cancel.locator('#switch-1').getAttribute('data-active') === 'false', 'The active marker follows the Pokémon, not the slot');
   check(JSON.stringify(await names('#opponent-roster')) === JSON.stringify(['Landorus', 'Corviknight', 'Rotom-Wash', 'Raichu', 'Unknown', 'Unknown']), 'Opponent roster stays in order of first reveal after a switch');
