@@ -484,6 +484,11 @@ async function init() {
   rating = new PlayerRating(config.username);
   auth = new ShowdownAuth(localStorage.getItem('ps-mve-client-id') || config.clientId);
   try { ignoreButtons = new Set(JSON.parse(localStorage.getItem('ps-mve-ignored') || '[]')); } catch {}
+  // The upstream animation module prefixes its effect sprite URLs with Dex.fxPrefix only when
+  // window.Dex already exists while it evaluates. Load Dex first so move animations resolve
+  // to play.pokemonshowdown.com/fx/ instead of this site (broken images).
+  const {Dex} = await import('../vendor/pokemon-showdown/battle-dex');
+  window.Dex = Dex;
   const {Arena} = await import('./renderer.js');
   arena = new Arena($('arena'), $('hidden-log'), () => {
     renderRoster();
