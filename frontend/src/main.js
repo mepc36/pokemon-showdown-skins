@@ -291,7 +291,8 @@ function setFoePreview(index) {
 
 // Preview: which own Pokémon the move row and side panels describe. null = the active one.
 function setPreview(index) {
-  const next = index && !ownTeam()[index - 1]?.active ? index : null;
+  // After the battle the move row holds only the replay controls; nothing is previewed.
+  const next = index && !state.ended && !ownTeam()[index - 1]?.active ? index : null;
   if (next === previewIndex) return;
   previewIndex = next;
   renderMovePreview();
@@ -486,6 +487,7 @@ function render() {
   $('action-slots').append($('tera'), $('undo'));
   // After the battle the move row holds the replay controls instead of moves.
   const endControls = !fixture && state.ended ? [btn('replay', 'Replay battle', 'moves'), btn('first-turn', 'First turn', 'moves'), btn('prev-turn', 'Prev turn', 'moves'), btn('next-turn', 'Next turn', 'moves'), btn('end-turn', 'Last turn', 'moves')].map(html => html.replace('<button ', '<button class="end-control" ')).join('') : '';
+  if (!fixture && state.ended) previewIndex = null;
   $('choices').innerHTML = `<div class="moves${endControls ? ' end-row' : ''}" role="group" aria-label="Moves">${endControls}${choices.moves.map(move => {
     const type = window.BattleMovedex[move.id]?.type || '';
     return btn(`move-${move.index}`, `<strong>${escape(move.move)}</strong><small><span class="move-type">${escape(type)}</span><span>${escape(move.pp ?? '—')} / ${escape(move.maxpp ?? '—')} PP</span></small>`, 'moves', disabled || !waiting && !move.enabled, `data-type="${escape(type)}" data-locked="${waiting || !move.enabled}" aria-description="R3 or I for move information"`);
