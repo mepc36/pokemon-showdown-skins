@@ -167,6 +167,9 @@ export class Arena {
   // Exact own stats for the side panel when no opponent is on the field.
   ownStats(index) { const server = this.battle?.myPokemon?.[index - 1]; return server?.stats ? {...server.stats} : null; }
   replay() { if (this.battle) { this.battle.seekTurn(0); this.battle.play(); this.followAnimations(); } }
+  // End-of-battle controls: jump to a turn and hold there.
+  get turn() { return this.battle?.turn ?? 0; }
+  seekTurn(turn) { if (this.battle) { this.battle.seekTurn(Math.max(0, turn)); this.battle.pause(); this.followAnimations(); this.onUpdate(); } }
   skip() { this.battle?.seekTurn(Infinity); }
   icon(name) { return Dex.getPokemonIcon(name); }
 }

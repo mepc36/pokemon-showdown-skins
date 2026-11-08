@@ -3,7 +3,7 @@ export const BUTTONS = {0: 'cancel', 1: 'confirm', 3: 'tera', 8: 'tools', 9: 'me
 export const risingEdges = (current, previous) => current.flatMap((pressed, index) => pressed && !previous[index] ? [index] : []);
 
 export function startController({action, diagnostic, ignored = () => new Set()}) {
-  let previous = [], device = '', repeatAt = 0, heldDirection = '', heldFlip = '';
+  let previous = [], device = '', repeatAt = 0, heldDirection = '', heldFlip = '', heldScroll = '', scrollAt = 0;
   const keys = {ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Enter: 'confirm', Escape: 'cancel', x: 'tera', i: 'info', h: 'tools', f: 'team', c: 'chat'};
   document.addEventListener('keydown', event => {
     if (/INPUT|TEXTAREA|SELECT/.test(event.target.tagName)) return;
@@ -34,6 +34,10 @@ export function startController({action, diagnostic, ignored = () => new Set()})
     // Right stick left/right flips the shown team row; one action per push, no repeat.
     const flip = Math.abs(gamepad.axes[2] || 0) > .65 ? (gamepad.axes[2] > 0 ? 'right' : 'left') : '';
     if (flip !== heldFlip) { heldFlip = flip; if (flip) { diagnostic(`Right stick → ${flip}`); action('team'); } }
+    // Right stick up/down scrolls the chat drawer while it is open; repeats while held.
+    const scroll = Math.abs(gamepad.axes[3] || 0) > .65 ? (gamepad.axes[3] > 0 ? 'chatDown' : 'chatUp') : '';
+    if (scroll !== heldScroll) { heldScroll = scroll; scrollAt = now + 120; if (scroll) action(scroll); }
+    else if (scroll && now >= scrollAt) { action(scroll); scrollAt = now + 120; }
     previous = current;
     requestAnimationFrame(poll);
   }
