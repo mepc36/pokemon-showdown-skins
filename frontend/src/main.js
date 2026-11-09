@@ -110,8 +110,8 @@ function showBattleMenu() {
   showModal('Battle', `<div class="menu-grid battle-grid">${btn('primary', primaryLabel, 'menu-1', primaryDisabled, 'class="primary"')}${btn('forfeit', 'Forfeit…', 'menu-1', !inBattle || !fixture && !state.authenticated)}</div>`, 'battle');
   $('primary').onclick = () => safe(() => {
     localNotice = ''; closeModal();
-    if (fixture || session.stopped) { startLive(); return; }
-    // Signing in from the menu searches for a battle as soon as Showdown confirms the login.
+    // Connecting or signing in from the menu searches for a battle as soon as Showdown confirms the login.
+    if (fixture || session.stopped) { searchAfterLogin = true; startLive(); return; }
     if (!state.authenticated) { if (!auth.clientId) setup(); else { searchAfterLogin = true; void session.login(true); } }
     else if (state.searching) session.cancelSearch();
     else session.search();

@@ -305,6 +305,13 @@ try {
   const rendererResult = await renderer.locator('#results').innerText();
   check(!rendererResult.includes('FAIL'), rendererResult); await renderer.close();
 
+  const lobby = await browser.newPage(); await gamepad(lobby);
+  await lobby.goto(`${base}/test/cancel.html?lobby`); await lobby.waitForSelector('#switch-1');
+  await lobby.keyboard.press('s'); await lobby.locator('#primary').click();
+  await lobby.waitForFunction(() => document.querySelector('#arena-wrap').dataset.room.includes('12345'));
+  check((await lobby.locator('#test-commands').innerText()).match(/\/search gen9randombattle/g).length === 1 && await lobby.locator('dialog[open]').count() === 0, 'Connect to Showdown searches for a battle by itself once the login is confirmed');
+  await lobby.close();
+
   const cancel = await browser.newPage(); await gamepad(cancel);
   await cancel.goto(`${base}/test/cancel.html`); await cancel.waitForSelector('#switch-1');
   await cancel.keyboard.press('s'); await cancel.locator('#primary').click();

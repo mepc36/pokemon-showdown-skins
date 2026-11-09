@@ -25,6 +25,7 @@ const room = 'battle-gen9randombattle-12345';
 const messages = document.createElement('pre');
 messages.id = 'test-commands'; messages.setAttribute('aria-label', 'Simulated server commands');
 document.body.append(messages);
+const lobby = location.search.includes('lobby');
 window.WebSocket = class {
   readyState = 0;
   constructor() {
@@ -32,11 +33,13 @@ window.WebSocket = class {
     queueMicrotask(() => {
       this.readyState = 1; this.onopen?.();
       this.onmessage?.({data: '|updateuser|mepc36363636|1|1'});
-      this.onmessage?.({data: `>${room}\n|init|battle\n${demoLines.join('\n')}\n|request|${JSON.stringify(demoRequest)}`});
+      // ?lobby: sign in without a battle; the battle arrives only after the app sends /search.
+      if (!lobby) this.onmessage?.({data: `>${room}\n|init|battle\n${demoLines.join('\n')}\n|request|${JSON.stringify(demoRequest)}`});
     });
   }
   send(message) {
     messages.textContent += message + '\n';
+    if (lobby && message === '|/search gen9randombattle') queueMicrotask(() => this.onmessage?.({data: `>${room}\n|init|battle\n${demoLines.join('\n')}\n|request|${JSON.stringify(demoRequest)}`}));
     if (message.endsWith('|/timer on')) queueMicrotask(() => this.onmessage?.({data: `>${room}\n|inactive|Time left: 150 sec this turn | 150 sec total`}));
     if (message.endsWith('|/timer off')) queueMicrotask(() => this.onmessage?.({data: `>${room}\n|inactiveoff|Battle timer is OFF.`}));
   }
