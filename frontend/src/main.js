@@ -90,27 +90,34 @@ new MutationObserver(refreshChat).observe($('hidden-log'), {childList: true, sub
 // Menu: Select (or H) opens the secondary controls in a modal. There is no header row.
 function showMenu() {
   const reopen = modal.open && modal.dataset.view === 'menu';
-  const inBattle = fixture || !!state.room && !state.ended;
-  const primaryLabel = fixture || session?.stopped ? 'Connect to Showdown' : !state.authenticated ? 'Sign in with Showdown' : state.searching ? 'Cancel search' : 'Find Random Battle';
-  const primaryDisabled = !fixture && !session?.stopped && (!state.authenticated ? !state.challenge : !!state.room && !state.ended);
-  // Two rows of four so the d-pad moves between rows instead of jumping to the close button.
-  showModal('Menu', `<div class="menu-grid">${btn('chat', 'Chat', 'menu-1')}${btn('primary', primaryLabel, 'menu-1', primaryDisabled, 'class="primary"')}
-    ${btn('rating', 'Rating', 'menu-1')}${btn('forfeit', 'Forfeit…', 'menu-1', !inBattle || !fixture && !state.authenticated)}
-    ${btn('setup', 'Setup', 'menu-2')}${btn('diagnostics', 'Controller check', 'menu-2')}${btn('source', 'Source', 'menu-2')}${btn('open-replay', 'Open replay', 'menu-2', !state.replayUrl)}</div>`, 'menu');
-  $('primary').onclick = () => safe(() => {
-    localNotice = ''; closeModal();
-    if (fixture || session.stopped) { startLive(); return; }
-    if (!state.authenticated) { if (!auth.clientId) setup(); else void session.login(true); }
-    else if (state.searching) session.cancelSearch();
-    else session.search();
-  });
+  // Two rows of three so the d-pad moves between rows instead of jumping to the close button.
+  showModal('Menu', `<div class="menu-grid">${btn('chat', 'Chat', 'menu-1')}${btn('rating', 'Rating', 'menu-1')}${btn('open-replay', 'Open replay', 'menu-1', !state.replayUrl)}
+    ${btn('setup', 'Setup', 'menu-2')}${btn('diagnostics', 'Controller check', 'menu-2')}${btn('source', 'Source', 'menu-2')}</div>`, 'menu');
   $('chat').onclick = () => { chatTurn = null; showChat(); };
   $('rating').onclick = () => showRating();
-  $('forfeit').onclick = forfeit;
   $('setup').onclick = setup; $('diagnostics').onclick = diagnostics;
   $('open-replay').onclick = () => { if (state.replayUrl) window.open(state.replayUrl, '_blank', 'noopener'); };
   $('source').onclick = () => { const link = document.createElement('a'); link.href = './source.zip'; link.download = ''; link.click(); };
   if (!reopen) $('chat').focus({preventScroll: true});
+}
+// Start (9) opens the battle menu: sign in / find a battle / cancel the search, and Forfeit.
+let searchAfterLogin = false;
+function showBattleMenu() {
+  const reopen = modal.open && modal.dataset.view === 'battle';
+  const inBattle = fixture || !!state.room && !state.ended;
+  const primaryLabel = fixture || session?.stopped ? 'Connect to Showdown' : !state.authenticated ? 'Sign in with Showdown' : state.searching ? 'Cancel search' : 'Find Random Battle';
+  const primaryDisabled = !fixture && !session?.stopped && (!state.authenticated ? !state.challenge : !!state.room && !state.ended);
+  showModal('Battle', `<div class="menu-grid battle-grid">${btn('primary', primaryLabel, 'menu-1', primaryDisabled, 'class="primary"')}${btn('forfeit', 'Forfeit…', 'menu-1', !inBattle || !fixture && !state.authenticated)}</div>`, 'battle');
+  $('primary').onclick = () => safe(() => {
+    localNotice = ''; closeModal();
+    if (fixture || session.stopped) { startLive(); return; }
+    // Signing in from the menu searches for a battle as soon as Showdown confirms the login.
+    if (!state.authenticated) { if (!auth.clientId) setup(); else { searchAfterLogin = true; void session.login(true); } }
+    else if (state.searching) session.cancelSearch();
+    else session.search();
+  });
+  $('forfeit').onclick = forfeit;
+  if (!reopen) $('primary').focus({preventScroll: true});
 }
 
 function setup() {
@@ -488,7 +495,7 @@ function showTeam(side = shownTeam === 'own' ? 'opponent' : 'own') {
 }
 
 function forfeit() {
-  if (fixture) { localNotice = 'Start opens a forfeit confirmation during a live battle.'; render(); return; }
+  if (fixture) { localNotice = 'Forfeit opens a confirmation during a live battle.'; render(); return; }
   if (!state.room || state.ended) return;
   showModal('Forfeit this battle?', `<p>This counts as a loss on Showdown.</p><div class="modal-actions">${btn('keep-playing', 'Keep playing', 'modal-actions')}${btn('confirm-forfeit', 'Forfeit battle', 'modal-actions', false, 'class="danger"')}</div>`);
   $('keep-playing').onclick = () => closeModal();
@@ -509,6 +516,10 @@ function choose(kind, index) {
 
 function render() {
   const focusId = document.activeElement?.id;
+  if (searchAfterLogin && !fixture && (state.authenticated || state.status === 'Sign in required')) {
+    searchAfterLogin = false;
+    if (state.authenticated && !state.searching && !(state.room && !state.ended)) safe(() => session.search());
+  }
   const request = fixture ? demoRequest : state.request;
   if (request?.side) lastRequest = request;
   if (request?.active?.[0]?.moves?.length) lastMovesRequest = request;
@@ -580,6 +591,7 @@ function render() {
   arena?.resize();
   if (modal.open && infoPage) showInfo(infoPage);
   if (modal.open && modal.dataset.view === 'menu') showMenu();
+  if (modal.open && modal.dataset.view === 'battle') showBattleMenu();
   if (focusId && !modal.open) { const target = $(focusId); if (target && !target.disabled) target.focus({preventScroll: true}); }
 }
 
@@ -638,7 +650,7 @@ async function init() {
       return;
     }
     if (modal.open) return;
-    ({tera: () => $('tera')?.click(), info, team: () => showTeam(), tools: showMenu, chat: () => { chatTurn = null; showChat(); }})[action]?.();
+    ({tera: () => $('tera')?.click(), info, team: () => showTeam(), tools: showMenu, battle: showBattleMenu, chat: () => { chatTurn = null; showChat(); }})[action]?.();
   }});
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { music.update(false); return; }
