@@ -629,8 +629,9 @@ function startLive() {
   arena.reset('battle-gen9randombattle-0');
   session.connect();
 }
-// On touch screens pointerdown is not a user gesture that may start audio; pointerup is. Mouse clicks count on pointerdown.
-for (const type of ['pointerdown', 'pointerup']) document.addEventListener(type, () => music.unlock(), {passive: true});
+// Audio may only start inside an event the browser counts as a user gesture. A finger's pointerdown is not one
+// (HTML spec); WebKit lifts its audio restriction on touchend. A mouse click counts on pointerdown.
+for (const type of ['pointerdown', 'touchend']) document.addEventListener(type, () => music.unlock(), {passive: true});
 // Music follows the live battle, and after it ends, a replay started with 🔁 until the replay stops or reaches the end.
 let replayMusic = false;
 function updateMusic() {
