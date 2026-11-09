@@ -299,10 +299,28 @@ document.addEventListener('focusin', event => {
   const own = id.match(/^switch-(\d+)$/);
   if (own) setPreview(Number(own[1]));
   else if (move || event.target.closest('.moves') && !event.target.classList.contains('move-preview')) setPreview(null);
-  // The cursor on an opponent roster button swaps that Pokémon into the side panels.
+  // The cursor on an opponent roster button swaps that Pokémon into the side panels and the move row.
   const foe = id.match(/^opponent-(\d+)$/);
   setFoePreview(foe ? Number(foe[1]) : null);
+  if (foe || move || event.target.closest('.moves') && !event.target.classList.contains('move-preview') || own) setFoeMovePreview(foe ? Number(foe[1]) : null);
 });
+// Which opponent the move row describes. null = the own side (active or previewed own Pokémon).
+let foeMoveIndex = null;
+function setFoeMovePreview(index) {
+  if (index === foeMoveIndex) return;
+  foeMoveIndex = index;
+  renderMovePreview();
+}
+// The opponent's four move slots: revealed moves first; the rest come from the identified role only
+// when that role has exactly as many unrevealed moves as there are empty slots. Otherwise they stay blank.
+function foeMoveSlots(slot) {
+  const revealed = slot?.moves || [];
+  const inference = slot?.revealed && sets.snapshot ? narrowSets(sets.snapshot, slot.name, slot.level, slot) : null;
+  const revealedIds = new Set(revealed.map(m => moveInformation(m.id).id));
+  const pool = inference?.identified ? inference.sets.flatMap(set => set.roles.flatMap(role => Object.keys(role.moves))).map(name => moveInformation(name)).filter(move => !revealedIds.has(move.id)) : [];
+  const filled = pool.length === 4 - revealed.length ? pool.map(move => ({id: move.id, name: move.name, type: move.type})) : [];
+  return {moves: [...revealed, ...filled], teraType: slot?.teraType || inference?.teraType || ''};
+}
 function setFoePreview(index) {
   const slot = index ? arena?.opponents()[index - 1] : null;
   const next = slot?.revealed && !slot.active ? index : null;
@@ -337,6 +355,19 @@ function renderMovePreview() {
   const previewed = previewIndex ? ownTeam()[previewIndex - 1] : null;
   // Once anyone on the team has Terastallized, the previewed Pokémon's Tera button is grayed out too.
   const teraUsed = ownTeam().some(p => p.terastallized);
+  if (foeMoveIndex) {
+    const slot = arena?.opponents()[foeMoveIndex - 1];
+    const foe = foeMoveSlots(slot);
+    row.dataset.preview = 'true';
+    $('tera').innerHTML = teraMarkup(foe.teraType || 'Unknown'); $('tera').dataset.type = foe.teraType || 'Unknown'; $('tera').disabled = true;
+    row.insertAdjacentHTML('afterbegin', Array.from({length: 4}, (_, i) => {
+      const move = foe.moves[i];
+      if (!move) return `<button id="preview-move-${i + 1}" class="move-preview unknown-move" data-nav data-row="moves" aria-disabled="true" aria-label="Unknown move">—</button>`;
+      const type = move.type || window.BattleMovedex[move.id]?.type || '';
+      return `<button id="preview-move-${i + 1}" class="move-preview" data-nav data-row="moves" aria-disabled="true" data-type="${escape(type)}" aria-description="Not selectable: opponent's move"><strong>${escape(move.name)}</strong><small><span class="move-type">${escape(type)}</span><span></span></small></button>`;
+    }).join(''));
+    return;
+  }
   if (previewed) { const type = previewed.terastallized || previewed.teraType || 'Unknown'; $('tera').innerHTML = teraMarkup(type); $('tera').dataset.type = type; $('tera').disabled = teraLabel ? teraLabel.disabled || teraUsed : teraUsed; }
   else if (teraLabel) { $('tera').innerHTML = teraLabel.html; $('tera').dataset.type = teraLabel.type; $('tera').disabled = teraLabel.disabled; }
   if (!previewIndex) return;

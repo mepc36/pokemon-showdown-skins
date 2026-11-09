@@ -71,6 +71,10 @@ try {
     check(await page.locator('#opponent-roster').isVisible() && !await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'opponent-1', 'Right stick flips to the opponent row and focuses their active Pokémon');
     await page.locator('#opponent-3').focus();
     check((await page.locator('#opponent-3 strong').innerText()).replace(/\s+/g, ' ') === 'Rotom-Wash PAR', 'Status sits on the name line of the roster button');
+    check(await page.locator('.move-preview').count() === 4 && await page.locator('.move-preview:not(.unknown-move)').count() >= 1 && (await page.locator('.move-preview').first().innerText()).includes('Hydro Pump') && !await page.locator('#move-1').isVisible() && await page.locator('#tera').isDisabled(), 'The cursor on an opponent shows that Pokémon\'s known moves in the move row, blanks for the rest');
+    await page.locator('#opponent-5').focus();
+    check(await page.locator('.move-preview.unknown-move').count() === 4, 'An unrevealed opponent shows four blank move slots');
+    await page.locator('#opponent-3').focus();
     await page.waitForFunction(() => document.querySelector('#matchup-own .matchup-names > span:last-child')?.textContent === 'Rotom-Wash', null, {timeout: 20000});
     check((await page.locator('#matchup-foe .matchup-names span').first().innerText()) === 'Rotom-Wash', 'The cursor on an opponent roster button swaps that Pokémon into both side panels');
     await page.keyboard.press('f');
