@@ -11,7 +11,7 @@
 <h1>Opponent information integration check</h1>
 <p>Offline fixtures only. No socket, sign-in or matchmaking.</p>
 <button id="run">Run renderer checks</button><pre id="results">Ready</pre>
-<div class="test-stage" id="app"><div class="app-header"></div><div class="arena-top"></div><div id="frame-wrap"><div id="arena" class="battle"></div></div><div class="command-panel"></div><div class="controller-bar"></div><footer></footer><div id="log" hidden></div></div>
+<div class="test-stage" id="app"><div class="arena-top"></div><div id="frame-wrap"><div id="arena" class="battle"></div></div><div class="command-panel"></div><div class="controller-bar"></div><footer></footer><div id="log" hidden></div></div>
 <h2>Responsive layout fixtures</h2>
 <iframe id="tablet" title="1024 by 650 layout" src="/" width="1024" height="650"></iframe>
 <iframe id="phone" title="390 by 720 layout" src="/" width="390" height="720"></iframe>
@@ -54,7 +54,7 @@ document.querySelector('#run').onclick = async () => {
     arena.battle.mySide.pokemon = storedParty;
     const before = updates;
     arena.receive({room, lines: ['|switch|p2a: Dragonite|Dragonite, L80, M|70/100', '|move|p2a: Dragonite|Extreme Speed|p1a: Grumpig', '|-terastallize|p2a: Dragonite|Normal', '|turn|17']});
-    arena.skip();
+    arena.seekTurn(Infinity);
     await flush();
     const revealed = arena.opponents()[3];
     check(updates > before && revealed.name === 'Dragonite', 'Incremental reveal notifies the UI');

@@ -12,10 +12,3 @@ export function speedCue(own, opponents) {
   const min = Math.min(...opponents), max = Math.max(...opponents);
   return own > max ? 'green' : own < min ? 'red' : own === min && own === max ? 'yellow' : '';
 }
-
-export function statRanks(entries) {
-  const values = [...new Set(entries.map(([, value]) => value).filter(value => Number.isFinite(value) && value > 0))].sort((a, b) => b - a);
-  if (values.length < 2) return {};
-  return Object.fromEntries(entries.map(([name, value]) => [name,
-    value === values[0] ? 'green' : value === values.at(-1) ? 'red' : value === values[1] ? 'yellow' : '']));
-}

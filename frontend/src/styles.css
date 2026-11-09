@@ -7,7 +7,6 @@ button:focus,a:focus-visible{outline:4px solid var(--accent);outline-offset:-2px
 button[aria-pressed=true]{background:#fbe1eb;color:#961b43;border-color:var(--accent)}a{color:#385f9a;text-underline-offset:3px}
 .primary{background:linear-gradient(#6497bd,#477da8);border-color:#3d709a;color:white}
 #app{width:100%;margin:auto;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-.app-header{min-height:62px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px 18px;border-bottom:1px solid #9daebc;background:linear-gradient(#dbe9f5,#b7cddd)}
 .brand{flex-shrink:0}h1{font-size:22px;letter-spacing:-.6px;margin:0 0 4px}.brand small{color:#42596d;font-size:10px;letter-spacing:.06em}
 .session-bar{display:flex;align-items:center;justify-content:flex-end;gap:16px;min-width:0}.connection-copy{text-align:right;font-size:12px;min-width:0}.connection-copy small{display:block;color:#435b70;margin-top:5px}
 .dot{display:inline-block;width:7px;height:7px;background:#75808c;border-radius:50%;margin-right:7px}.dot.online{background:#238c4f}.actions{display:flex;gap:7px}
@@ -17,7 +16,7 @@ button[aria-pressed=true]{background:#fbe1eb;color:#961b43;border-color:var(--ac
 #arena.battle{position:absolute;top:0;left:0;width:640px;height:360px;transform-origin:top left;border:0;border-radius:0;font-family:Arial,sans-serif;box-sizing:content-box;color:#222}
 #arena *{box-sizing:content-box}
 .command-panel{padding:7px 16px 8px;border-top:1px solid #adb8c0;background:#eef2f5}
-.command-heading{display:flex;align-items:center;justify-content:center;gap:12px;min-height:23px;margin-bottom:6px}h2{margin:0;font-size:16px}#turn-label{font-size:11px;color:var(--muted)}
+.command-heading{display:flex;align-items:center;justify-content:center;gap:12px;min-height:23px;margin-bottom:6px}h2{margin:0;font-size:16px}
 .moves{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .moves button{min-width:0;min-height:63px;text-align:center;padding:9px 12px 7px;display:flex;flex-direction:column;justify-content:space-between;gap:7px;background:linear-gradient(#fff,var(--type-tint,#e2e1dc));border-color:var(--type-border,#b7b3a7)}
 .moves strong{font-size:clamp(14px,1.6vw,19px);font-weight:500;overflow-wrap:anywhere}.moves small{display:flex;width:100%;justify-content:space-between;gap:7px;color:#555d66;font-size:11px}
@@ -26,33 +25,30 @@ button[aria-pressed=true]{background:#fbe1eb;color:#961b43;border-color:var(--ac
 .picon{display:inline-block;width:40px;height:30px;flex-shrink:0}.team .picon{grid-row:span 2;transform:scale(1.22);transform-origin:center}.team strong{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.team small{font-size:10px;color:var(--muted)}
 .team button[data-unavailable=true]{background:#e7ebef}.team button[data-fainted=true] .picon{filter:grayscale(1);opacity:.4}.team button[data-fainted=true] strong{color:#7b838d}
 .team-hp{position:absolute;bottom:5px;left:7px;right:7px;height:4px;border:1px solid #a8b3b8;border-radius:4px;background:#dfe4e7;overflow:hidden}.team-hp>span{display:block;height:100%;background:#43b96c}.team-hp[data-health=low]>span{background:#e8ba37}.team-hp[data-health=critical]>span{background:#e05b64}
-#utility{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;justify-content:center}#utility button{min-height:34px;padding:6px 12px;font-size:11px}#utility button kbd{font-size:10px;margin-right:5px;padding:1px 4px}#timer-status{font-size:12px;color:#9c373f;margin:6px 0 0;text-align:center}#timer-status:empty{display:none}
-.controller-bar{min-height:40px;display:flex;flex-wrap:wrap;align-items:center;gap:15px;padding:5px 16px;color:var(--muted);font-size:11px;border-top:1px solid #d2d9df}kbd{background:#f9fafb;padding:3px 5px;border:1px solid #b9c4cf;border-radius:4px;margin-right:4px;font:600 10px Arial,sans-serif;color:#445467}.controller-bar button{margin-left:auto;font-size:11px;min-height:30px;padding:5px 10px}.controller-bar a{font-size:11px}footer{padding:5px 16px;font-size:10px;color:#637180;text-align:center}
+kbd{background:#f9fafb;padding:3px 5px;border:1px solid #b9c4cf;border-radius:4px;margin-right:4px;font:600 10px Arial,sans-serif;color:#445467}footer{padding:5px 16px;font-size:10px;color:#637180;text-align:center}
  dialog{color:#27303b;background:#f6f8fa;border:1px solid #99a9b8;border-radius:10px;padding:24px;max-width:650px;width:calc(100% - 32px);max-height:85vh;box-shadow:0 20px 100px #14243255}dialog::backdrop{background:#16233277}.modal-header{display:flex;justify-content:space-between;align-items:center;gap:20px}#modal-close{font-size:24px;min-width:44px;min-height:44px;padding:0 12px}#modal-body{font-size:14px;line-height:1.6}#modal-body li{margin:9px 0}#modal-body label{display:block;font-weight:600;margin:18px 0 8px}input{width:100%;border:1px solid #9cabb8;border-radius:5px;padding:12px;background:white;color:#27303b}input:focus{outline:2px solid var(--accent)}.small{font-size:12px;color:var(--muted)}.modal-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}.danger{color:#a1283b;border-color:#c9a0a7}.setup-origin{font-size:12px;overflow-wrap:anywhere}.team-info{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}.team-info article{border:1px solid #c4cdd5;background:white;border-radius:6px;padding:12px;font-size:12px}.team-info p{margin:6px 0;color:var(--muted)}pre{white-space:pre-wrap;overflow-wrap:anywhere;padding:15px;background:#e3e9ef;border-radius:6px;min-height:100px;font-size:12px}
 .battle .messagebar{color:#fff}.battle .battle-log{color:#222}[hidden]{display:none!important}
-@media(pointer:coarse){button,#utility button,.controller-bar button{min-height:44px}}
-@media(max-width:1000px){.connection-copy small{display:none}.app-header{gap:8px;padding:8px 12px}.session-bar{gap:9px}}
-@media(max-width:760px){.app-header{flex-wrap:wrap}h1{font-size:20px}.brand small{font-size:9px}.session-bar{flex:1}.connection-copy{display:none}.actions{flex-wrap:wrap;justify-content:flex-end;gap:5px}.actions button{padding:7px 10px;font-size:12px}.arena-top{padding:6px 10px;gap:8px}#notice{font-size:10px}.command-panel{padding:8px}.command-heading{gap:7px}.command-heading h2{font-size:14px}#turn-label{display:none}.moves{gap:6px}.moves button{padding:8px}.moves small{font-size:10px}.team{gap:5px}.team button{display:flex;flex-direction:column;text-align:center;padding:5px 2px 12px;gap:2px}.team .picon{transform:scale(1)}.team strong{max-width:100%;font-size:10px}.team small{font-size:9px}#utility{gap:5px}#utility button{padding:6px 8px}.controller-bar{padding:6px 10px;gap:8px}.controller-bar .extra-hint{display:none}.controller-bar button{margin-left:0}footer{font-size:9px}}
+@media(pointer:coarse){button{min-height:44px}}
+@media(max-width:1000px){.connection-copy small{display:none}.session-bar{gap:9px}}
+@media(max-width:760px){h1{font-size:20px}.brand small{font-size:9px}.session-bar{flex:1}.connection-copy{display:none}.actions{flex-wrap:wrap;justify-content:flex-end;gap:5px}.actions button{padding:7px 10px;font-size:12px}.arena-top{padding:6px 10px;gap:8px}#notice{font-size:10px}.command-panel{padding:8px}.command-heading{gap:7px}.command-heading h2{font-size:14px}.moves{gap:6px}.moves button{padding:8px}.moves small{font-size:10px}.team{gap:5px}.team button{display:flex;flex-direction:column;text-align:center;padding:5px 2px 12px;gap:2px}.team .picon{transform:scale(1)}.team strong{max-width:100%;font-size:10px}.team small{font-size:9px}footer{font-size:9px}}
 @media(max-width:480px){.brand{width:100%;display:flex;align-items:center;justify-content:space-between}h1{margin:0}.session-bar,.actions{width:100%}.actions .primary{flex:1}.moves{grid-template-columns:repeat(2,minmax(0,1fr))}.team{grid-template-columns:repeat(3,minmax(0,1fr))}.team button{display:grid;grid-template-columns:40px minmax(0,1fr);text-align:left}.team strong{font-size:11px}.team-info{grid-template-columns:1fr}#mode{font-size:9px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 /* Keep occasional actions reachable without taking a permanent third row. */
-.controller-bar button{margin-left:0}.controller-bar #toggle-tools{margin-left:auto}
-.command-heading #move-details{min-height:28px;padding:4px 10px;font-size:11px;margin-left:auto}
 .team-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;color:var(--muted);font-size:11px}
 .team-toolbar>div{display:flex;gap:5px}.team-toolbar button{min-height:28px;padding:4px 12px;font-size:11px}.team-toolbar+.team{margin-top:5px}
 .unknown-pokemon{grid-row:span 2;display:grid;place-items:center;width:40px;height:30px;color:#788593;font-size:22px;font-weight:bold}
 .info-kicker{font-weight:600;color:#536779;margin:16px 0 12px}.info-kicker[data-type]{display:inline-block;padding:3px 10px;border:1px solid var(--type-border);border-radius:5px;background:var(--type-tint)}
 .info-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}.info-facts>div{background:#fff;border:1px solid #d0d8df;border-radius:6px;padding:9px 12px;min-width:0}.info-facts dt{font-size:11px;color:var(--muted)}.info-facts dd{margin:2px 0 0;font-size:14px;font-weight:600;overflow-wrap:anywhere}
 .move-description{line-height:1.65}.info-warning{padding:8px 12px;background:#fff1da;border-radius:6px;color:#835b17}.info-moves{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px}.info-moves button{font-size:13px}.team-info button small{display:block;margin-top:4px;color:var(--muted)}#modal-body h3{font-size:14px;margin-bottom:4px}
-@media(pointer:coarse){.command-heading #move-details,.team-toolbar button{min-height:44px}}
-@media(max-width:480px){.info-facts{grid-template-columns:repeat(2,minmax(0,1fr))}.command-heading{justify-content:space-between}.command-heading #move-details{flex-shrink:0}.team-toolbar button{padding:5px 10px}}
+@media(pointer:coarse){.team-toolbar button{min-height:44px}}
+@media(max-width:480px){.info-facts{grid-template-columns:repeat(2,minmax(0,1fr))}.command-heading{justify-content:space-between}.team-toolbar button{padding:5px 10px}}
 @media(min-width:600px) and (max-height:750px){
-  .app-header{min-height:48px;padding:4px 12px}.brand h1{font-size:19px;margin:0}.brand small,.connection-copy small{display:none}
+.brand h1{font-size:19px;margin:0}.brand small,.connection-copy small{display:none}
   .arena-top{min-height:25px;padding:4px 12px}#notice{font-size:11px}
   .command-panel{padding:5px 10px 6px}.command-heading{min-height:21px;margin-bottom:4px}.command-heading h2{font-size:14px}
   .moves button{min-height:54px;padding:7px 10px;gap:4px}.moves strong{font-size:16px}
   .team{margin-top:6px}.team button{min-height:49px;padding-top:4px;padding-bottom:10px}.team .picon{transform:scale(1.12)}
-  .controller-bar{min-height:34px;padding:2px 10px}footer{display:none}
+footer{display:none}
 }
 
 .command-heading{flex-wrap:wrap;justify-content:flex-start}
@@ -78,8 +74,6 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 #app{height:100dvh;overflow:hidden}
 button:focus-visible,a:focus-visible{outline:4px solid var(--accent);outline-offset:-2px}
 #mode{max-width:30%;overflow:hidden;white-space:nowrap}#notice{min-width:0}
-#utility{flex-wrap:nowrap;justify-content:center}#utility button{white-space:nowrap}
-.controller-bar{flex-wrap:nowrap}.controller-bar>span{white-space:nowrap}
 dialog{width:min(1060px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 24px);padding:18px;overflow:hidden}
 .modal-header{min-height:40px;gap:12px}.modal-header h2{font-size:23px;line-height:1.2}
 #modal-body{font-size:16px;line-height:1.4}#modal-body p{margin:12px 0}
@@ -133,8 +127,6 @@ dialog[data-view] #modal-body:has(.inspection-footer){display:flex;flex-directio
 }
 
 /* Keep the battle large: compact choices, both teams, one expandable tool row. */
-.app-header{min-height:40px;padding:3px 10px;gap:12px;flex-wrap:nowrap}
-.app-header #primary{min-height:32px;padding:5px 12px;font-size:13px;white-space:nowrap}
 #battle-timer{margin-left:auto;display:flex;align-items:center;justify-content:flex-end;gap:8px;color:#111;font-size:23px;font-weight:700;line-height:1.2;white-space:nowrap}
 .timer-icon{font-size:24px}#timer-warning{color:#c51e26;font-size:17px}#timer-warning:empty{display:none}
 .arena-top{min-height:0;padding:3px 10px;justify-content:center}#notice{text-align:center;font-size:12px}
@@ -146,10 +138,7 @@ dialog[data-view] #modal-body:has(.inspection-footer){display:flex;flex-directio
 .team .picon{transform:scale(.85);transform-origin:left center}.team strong{font-size:12px}.team small{font-size:10px}
 /* Roster HP is shown by the bar only: taller, with room reserved under the text. */
 .team button{padding-bottom:12px;min-height:40px}.team-hp{bottom:3px;left:4px;right:4px;height:8px;border-radius:5px}
-.controller-bar{min-height:32px;padding:2px 10px;gap:6px;justify-content:flex-end;flex-wrap:nowrap}
-#utility{display:flex;flex-wrap:nowrap;gap:6px;margin:0;min-width:0;justify-content:flex-end}
-.controller-bar #toggle-tools{margin-left:0;flex-shrink:0}.controller-bar button,#utility button,#utility a{min-height:28px;padding:5px 9px;font-size:12px;white-space:nowrap}
-#utility a{display:flex;align-items:center}footer{display:none}
+footer{display:none}
 [data-type=Stellar]{--type-tint:#e5def4;--type-border:#a59cc4}
 [data-cue=green]{--cue-color:#208044}[data-cue=yellow]{--cue-color:#c99813}[data-cue=red]{--cue-color:#c63038}
 .moves button[data-cue]:not([data-cue=""]),.team button[data-cue]:not([data-cue=""]),.compact-move[data-cue]:not([data-cue=""]),.info-facts>div[data-cue]:not([data-cue=""]),.identity-speed[data-cue]:not([data-cue=""]){border-color:var(--cue-color);box-shadow:inset 0 0 0 2px var(--cue-color)}
@@ -158,8 +147,6 @@ dialog[data-view] #modal-body:has(.inspection-footer){display:flex;flex-directio
 .identity-types small[data-identified=true],.role-heading[data-identified=true]>span{color:#208044;font-weight:700}
 
 /* Layout pass: controls in the header, bigger roster buttons, flat R3 overview. */
-.app-header{gap:10px}.app-header #utility{display:flex;flex-wrap:nowrap;gap:6px;min-width:0;margin-left:4px}
-.app-header #utility button,.app-header #utility a{min-height:30px;padding:4px 9px;font-size:12px;white-space:nowrap}
 #battle-timer{color:#1d4e89;font-size:24px}.timer-icon{color:#1d4e89}
 .command-heading{min-height:30px;margin-bottom:5px}
 .team-row{margin-top:6px}.team-row+.team-row{border-top:2px solid #9daebc;margin-top:8px;padding-top:7px}
