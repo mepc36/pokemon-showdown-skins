@@ -120,7 +120,8 @@ function showBattleMenu() {
     else session.search();
   });
   $('forfeit').onclick = forfeit;
-  if (!reopen) $('primary').focus({preventScroll: true});
+  // Focus the first button that can be pressed: Find Random Battle is disabled mid-battle, so Forfeit takes the cursor then.
+  if (!reopen) (document.querySelector('.battle-grid button:not([disabled])') || $('modal-close')).focus({preventScroll: true});
 }
 
 function setup() {
@@ -247,8 +248,11 @@ function showInfo(page) {
       const summary = own ? [abilityEntry, ['Item', effectName('items', p.item) || 'No item', {item: true}], ['Tera', p.teraType || 'Unknown', p.teraType]] :
         [abilityEntry, ['Item', p.item || (p.previousItem ? `Lost ${p.previousItem}` : 'Not revealed'), {item: !!p.item}],
           inference?.teraType ? ['Tera · inferred', inference.teraType, {type: inference.teraType, cue: 'green', hint: 'All remaining set definitions have this Tera type'}] : ['Tera', p.teraType || 'Not revealed', p.teraType]];
+      // Opponent pages show the same five stat boxes as the own page, estimated (~) from base stats and level.
+      const foeStats = own ? null : arena.foeStats(page.index);
       const statCells = stats ? [...stats.entries.map(([name, value]) => [name, value]),
-        ['Speed', speed.kind === 'known' && speed.modified != null && speed.modified !== speed.value ? `${speed.value} → ${speed.modified}` : speed.value]] : null;
+        ['Speed', speed.kind === 'known' && speed.modified != null && speed.modified !== speed.value ? `${speed.value} → ${speed.modified}` : speed.value]] :
+        foeStats ? [['Attack', `~${foeStats.atk}`], ['Defense', `~${foeStats.def}`], ['Sp. Atk', `~${foeStats.spa}`], ['Sp. Def', `~${foeStats.spd}`], ['Speed', speed.kind === 'estimate' ? `~${speed.value}` : speed.value]] : null;
       const moves = knownMoves(page.side, page.index);
       const count = Math.max(1, Math.ceil(moves.length / 4));
       pages = Array.from({length: count}, (_, i) => ({key: `overview:${i}`, label: count > 1 ? `Overview ${i + 1}/${count}` : 'Overview',
@@ -257,7 +261,7 @@ function showInfo(page) {
           <h3>${own ? 'Moves' : 'Revealed moves'}</h3>${moveList(moves.slice(i * 4, i * 4 + 4), 4)}</div>`,
         note: moves.some(m => m.copied) ? '* Copied move' : own ? '' : inference?.identified ? `Role inferred: ${inference.role}. Unrevealed moves/items remain candidates.` : inference?.status === 'unmatched' ? 'Reveals do not match this snapshot; showing all candidates.' : 'Unrevealed information stays unknown.'}));
       // Opponents get one page per role: revealed facts on top, that role's possible sets below, revealed moves highlighted.
-      if (!own) pages = rolePages(sets, slot.name, slot.level, speedInfo, inference, {known: {ability, item: p.item, previousItem: p.previousItem, teraType: p.teraType, inferredTera: inference?.teraType}, revealed: new Set(moves.map(m => moveInformation(m.id).id))});
+      if (!own) pages = rolePages(sets, slot.name, slot.level, statCells ? `<div class="stats-layout">${facts(statCells)}</div>` : `<div class="stats-layout">${speedInfo}</div>`, inference, {known: {ability, item: p.item, previousItem: p.previousItem, teraType: p.teraType, inferredTera: inference?.teraType}, revealed: new Set(moves.map(m => moveInformation(m.id).id))});
     }
   }
   const tab = Math.max(0, Math.min(page.tab || 0, pages.length - 1));
@@ -308,9 +312,11 @@ function info(index) {
   const moveIndex = Number(focusedId.match(/^move-(\d+)$/)?.[1]);
   const move = currentRequest()?.active?.[0]?.moves?.[moveIndex - 1];
   if (move) { showInfo({kind: 'move', id: move.id}); return; }
-  // A grayed preview move belongs to the previewed bench Pokémon.
+  // A grayed preview move belongs to the previewed opponent, or to the previewed bench Pokémon.
   const previewMoveIndex = Number(focusedId.match(/^preview-move-(\d+)$/)?.[1]);
-  const previewMove = previewIndex ? knownMoves('own', previewIndex)[previewMoveIndex - 1] : null;
+  const foeMove = foeMoveIndex ? foeMoveSlots(arena?.opponents()[foeMoveIndex - 1]).moves[previewMoveIndex - 1] : null;
+  if (foeMove?.id) { showInfo({kind: 'move', id: foeMove.id}); return; }
+  const previewMove = previewIndex && !foeMoveIndex ? knownMoves('own', previewIndex)[previewMoveIndex - 1] : null;
   if (previewMove) showInfo({kind: 'move', id: previewMove.id});
 }
 document.addEventListener('focusin', event => {
@@ -499,7 +505,7 @@ function renderRoster() {
   renderMatchup();
 }
 
-// One team row shows at a time; the right stick, a bumper (10) or F flips between them.
+// One team row shows at a time; a bumper (10) or F flips between them. The right stick does nothing.
 // Focus always lands on the shown side's active Pokémon, wherever the cursor was.
 function showTeam(side = shownTeam === 'own' ? 'opponent' : 'own') {
   shownTeam = side;
@@ -509,7 +515,9 @@ function showTeam(side = shownTeam === 'own' ? 'opponent' : 'own') {
   // Flipping to the opponent lands on their active Pokémon's first move, mirroring B on the own side.
   const foeIndex = Number(active?.id.match(/^opponent-(\d+)$/)?.[1]);
   if (foeIndex) { setFoePreview(foeIndex); setFoeMovePreview(foeIndex); }
-  ((foeIndex && document.querySelector('#choices .moves > #preview-move-1')) || active)?.focus({preventScroll: true});
+  // Flipping back to the own side lands on the active Pokémon's first move, like B does.
+  if (side === 'own' && !modal.open && document.querySelector('#choices .moves > button[id^="move-"]')) focusFirstMove();
+  else ((foeIndex && document.querySelector('#choices .moves > #preview-move-1')) || active)?.focus({preventScroll: true});
   arena?.resize();
 }
 
@@ -668,6 +676,9 @@ async function init() {
       else navigate('right');
       return;
     }
+    // Select closes the Select menu and Start closes the Start menu; either still opens its own menu from the battle screen.
+    if (action === 'tools' && modal.open && modal.dataset.view === 'menu') { closeModal(); return; }
+    if (action === 'battle' && modal.open && modal.dataset.view === 'battle') { closeModal(); return; }
     if (modal.open) return;
     ({tera: () => $('tera')?.click(), info, team: () => showTeam(), tools: showMenu, battle: showBattleMenu, chat: () => { chatTurn = null; showChat(); }})[action]?.();
   }});

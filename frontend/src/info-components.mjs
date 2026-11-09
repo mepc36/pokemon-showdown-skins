@@ -37,7 +37,8 @@ export function moveList(moves, placeholders = 0) {
     return `<li class="compact-move" data-move="${escape(move.id)}" data-type="${escape(type)}" data-cue="${escape(m.cue || '')}" data-revealed="${!!m.revealed}" title="${escape(m.label || (m.revealed ? 'Revealed in battle' : ''))}"><strong>${escape(move.name)}${m.copied ? ' *' : ''}</strong>${typeBadges([type])}</li>`;
   });
   while (entries.length < placeholders) entries.push('<li class="compact-move unknown-move">Not revealed</li>');
-  return `<ul class="compact-moves">${entries.join('')}</ul>`;
+  // One row, like the battle screen's move row: columns match the entries, never fewer than four.
+  return `<ul class="compact-moves" style="--move-columns:${Math.max(4, entries.length)}">${entries.join('')}</ul>`;
 }
 
 // Pages have bounded row counts. New/expanded datasets get sibling continuation
@@ -45,24 +46,25 @@ export function moveList(moves, placeholders = 0) {
 // Opponent pages use the same layout as the own-Pokémon page: three fact cards, a stats block, a
 // move list. known: what the battle has revealed ({ability, item, previousItem, teraType, inferredTera}); a card
 // shows the revealed fact, otherwise that role's possibilities. revealed: move ids seen in battle.
-export function rolePages(store, name, level, speedInfo = '', inference, {known = {}, revealed = new Set()} = {}) {
+export function rolePages(store, name, level, statsInfo = '', inference, {known = {}, revealed = new Set()} = {}) {
   if (!store.snapshot) return [{key: 'sets-status', label: 'Possible sets', content: store.status === 'error' ?
     '<p>Possible sets could not load.</p><button id="retry-sets" data-nav data-row="retry-sets">Retry set data</button>' : '<p>Loading possible sets…</p>', note: 'Known and revealed information still works.'}];
   const sets = inference?.sets || possibleSets(store.snapshot, name, level);
   if (!sets.length) return [{key: 'sets-missing', label: 'Possible sets', content: '<p>No matching set data.</p>', note: 'This species or form is absent from the snapshot.'}];
   const identified = !!inference?.identified;
   return sets.flatMap(set => set.roles.flatMap(role => {
-    const moves = chunks(Object.keys(role.moves).map(name => { const id = moveInformation(name).id; return {id, revealed: revealed.has(id)}; }), 8);
+    // Seen moves lead, as on the battle screen's foe move row.
+    const moves = chunks(Object.keys(role.moves).map(name => { const id = moveInformation(name).id; return {id, revealed: revealed.has(id)}; }).sort((a, b) => Number(b.revealed) - Number(a.revealed)), 8);
     const abilities = Object.keys(role.abilities), items = Object.keys(role.items || {'No item': 1}), tera = Object.keys(role.teraTypes);
     const cards = [
-      known.ability ? ['Ability', known.ability] : ['Possible abilities', abilities.join(' / ') || 'Unknown', {list: true}],
-      known.item ? ['Item', known.item, {item: true}] : known.previousItem ? ['Item', `Lost ${known.previousItem}`] : ['Possible items', items.join(' / '), {list: true}],
-      known.teraType ? ['Tera', known.teraType, known.teraType] : known.inferredTera ? ['Tera · inferred', known.inferredTera, {type: known.inferredTera, cue: 'green', hint: 'All remaining set definitions have this Tera type'}] : ['Possible Tera', tera.join(' / ') || 'Unknown', {list: true}]];
+      known.ability ? ['Ability', known.ability] : ['Ability', abilities.join(' / ') || 'Unknown', {list: true}],
+      known.item ? ['Item', known.item, {item: true}] : known.previousItem ? ['Item', `Lost ${known.previousItem}`] : ['Item', items.join(' / '), {list: true}],
+      known.teraType ? ['Tera', known.teraType, known.teraType] : known.inferredTera ? ['Tera', known.inferredTera, {type: known.inferredTera, cue: 'green', hint: 'All remaining set definitions have this Tera type'}] : ['Tera', tera.join(' / ') || 'Unknown', {list: true}]];
     const count = Math.max(1, moves.length);
     return Array.from({length: count}, (_, i) => ({key: `${set.name}:${role.name}:${i}`, label: `${role.name}${count > 1 ? ` ${i + 1}/${count}` : ''}`,
       title: `${name} · Lv ${level} · ${identified ? '🎯' : '❓'} ${role.name}`,
-      content: `<div class="overview-layout">${facts(cards)}<h3>Speed estimate · before modifiers</h3><div class="stats-layout">${speedInfo}</div>
-        <h3>${identified ? 'Moves' : 'Possible moves'}</h3>${moveList(moves[i] || [], 4)}</div>`,
+      content: `<div class="overview-layout">${facts(cards)}<h3>Stats (before modifiers)</h3>${statsInfo}
+        <h3>Moves</h3>${moveList(moves[i] || [], 4)}</div>`,
       note: `${inference?.status === 'unmatched' ? 'Reveals do not match this snapshot; showing all candidates' : identified ? 'Role identified; unrevealed moves and items remain candidates' : 'Candidates, not confirmed'}${set.levelMismatch ? ` · snapshot level ${set.level}` : ''} · snapshot ${store.snapshot.source.updatedAt.slice(0, 10)}${count > 1 ? ' · continued role' : ''}`}));
   }));
 }

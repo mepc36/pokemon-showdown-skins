@@ -168,6 +168,14 @@ export class Arena {
       first: ownSpeed > foeSpeed ? 'own' : ownSpeed < foeSpeed ? 'foe' : 'tie'};
   }
   // Exact own stats for the side panel when no opponent is on the field.
+  // Random-battle opponents: 31 IVs, 85 EVs, neutral nature, the same estimate the side panels use.
+  foeStats(index) {
+    const target = this.battle?.farSide.pokemon?.[index - 1];
+    const species = target?.speciesForme ? this.battle.dex.species.get(target.speciesForme) : null;
+    if (!species?.baseStats) return null;
+    const estimate = base => Math.floor(Math.floor(2 * base + 31 + 21) * target.level / 100) + 5;
+    return Object.fromEntries(['atk', 'def', 'spa', 'spd'].map(stat => [stat, estimate(species.baseStats[stat])]));
+  }
   ownStats(index) { const server = this.battle?.myPokemon?.[index - 1]; return server?.stats ? {...server.stats} : null; }
   replay() { if (this.battle) { this.battle.seekTurn(0); this.battle.play(); this.followAnimations(); } }
   // End-of-battle controls: jump to a turn and hold there.
