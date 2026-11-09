@@ -59,8 +59,14 @@ export function rolePages(store, name, level, statsInfo = '', inference, {known 
     known.item ? ['Item', known.item, {item: true}] : known.previousItem ? ['Item', `Lost ${known.previousItem}`] : ['Item', items.join(' / '), {list: true}],
     known.teraType ? ['Tera', known.teraType, known.teraType] : known.inferredTera ? ['Tera', known.inferredTera, {type: known.inferredTera, cue: 'green', hint: 'All remaining set definitions have this Tera type'}] : ['Tera', tera.join(' / ') || 'Unknown', {list: true}]];
   // One page: every candidate role as a heading over its moves in one row, seen moves first.
+  // Rows share one column order: seen moves first, then moves common to the most roles, then the
+  // rest, so a move that several roles share sits in the same column of every row, from the left.
+  const roleCount = new Map();
+  for (const {role} of roles) for (const name of Object.keys(role.moves)) { const id = moveInformation(name).id; roleCount.set(id, (roleCount.get(id) || 0) + 1); }
+  const rank = move => [Number(!move.revealed), -(roleCount.get(move.id) || 0)];
+  const order = (a, b) => { const [ra, rb] = [rank(a), rank(b)]; return ra[0] - rb[0] || ra[1] - rb[1] || a.id.localeCompare(b.id); };
   const groups = roles.map(({set, role}) => {
-    const moves = Object.keys(role.moves).map(name => { const id = moveInformation(name).id; return {id, revealed: revealed.has(id)}; }).sort((a, b) => Number(b.revealed) - Number(a.revealed));
+    const moves = Object.keys(role.moves).map(name => { const id = moveInformation(name).id; return {id, revealed: revealed.has(id)}; }).sort(order);
     return `<div class="role-group"><h3 class="role-heading">${escape(role.name)}${set.levelMismatch ? `<small>snapshot level ${escape(set.level)}</small>` : ''}</h3>${moveList(moves, 4)}</div>`;
   });
   const title = identified ? `${name} · Lv ${level} · 🎯 ${roles[0]?.role.name || ''}` : `${name} · Lv ${level} · ❓ ${roles.length === 1 ? roles[0].role.name : `${roles.length} possible roles`}`;
