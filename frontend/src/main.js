@@ -220,7 +220,7 @@ function showInfo(page) {
     const current = currentRequest()?.active?.[0]?.moves?.find(m => m.id === page.id);
     const move = moveInformation(page.id, current);
     title = move.name;
-    const categoryEmoji = {Physical: '⚔️', Special: '✨', Status: '🛡️'}[move.category] || '';
+    const categoryEmoji = {Physical: '⚔️', Special: '✨', Status: '🌀'}[move.category] || '';
     banner = `<div class="inspection-banner move-banner">${typeBadges([move.type])}<strong>${categoryEmoji} ${escape(move.category)}</strong></div>`;
     pages = movePages(move);
   } else {
