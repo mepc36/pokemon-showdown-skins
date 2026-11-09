@@ -34,7 +34,10 @@ const safe = fn => { try { fn(); } catch (error) { localNotice = error.message; 
 function updateTimer() {
   const on = fixture || state.timerOn;
   const seconds = session?.timerRemaining();
-  $('timer-value').textContent = !on ? 'Timer off' : seconds == null ? 'Timer on' : `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  const clock = value => `${Math.floor(value / 60)}:${String(value % 60).padStart(2, '0')}`;
+  $('timer-value').textContent = !on ? 'Timer off' : seconds == null ? 'Timer on' : clock(seconds);
+  // The opponent's clock is only known from server warnings; it shows the last warned value, not a countdown.
+  $('foe-timer-value').textContent = on && state.foeTimerSeconds != null ? clock(state.foeTimerSeconds) : '—';
   const warning = !fixture && Date.now() < state.timerWarningUntil ? state.timerWarning : '';
   if ($('timer-warning').textContent !== warning) $('timer-warning').textContent = warning;
 }
@@ -304,6 +307,10 @@ document.addEventListener('focusin', event => {
   setFoePreview(foe ? Number(foe[1]) : null);
   if (foe || move || event.target.closest('.moves') && !event.target.classList.contains('move-preview') || own) setFoeMovePreview(foe ? Number(foe[1]) : null);
 });
+function focusFirstMove() {
+  setPreview(null); setFoeMovePreview(null);
+  (document.querySelector('#choices .moves > button[id^="move-"]:not([hidden])') || document.querySelector('#choices .moves > button:not([hidden])'))?.focus({preventScroll: true});
+}
 // Which opponent the move row describes. null = the own side (active or previewed own Pokémon).
 let foeMoveIndex = null;
 function setFoeMovePreview(index) {
@@ -614,10 +621,10 @@ async function init() {
       navigate(action); return;
     }
     if (action === 'cancel') {
-      // B never moves the cursor: it closes a modal or undoes a pending choice, nothing else.
+      // B on the battle screen undoes a pending choice and puts the cursor on the active Pokémon's first move.
       if (modal.open && modal.dataset.view === 'chat') showMenu();
       else if (modal.open) closeModal();
-      else $('undo')?.click();
+      else { $('undo')?.click(); focusFirstMove(); }
       return;
     }
     if (action === 'team' && modal.open) { flipInfoTeam(); return; }

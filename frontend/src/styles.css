@@ -343,3 +343,7 @@ dialog[data-view] #modal-body:has(.inspection-footer){display:flex;flex-directio
 /* Opponent R3 page: same layout as the own page; the speed estimate sits on one line so the move rows fit. */
 .stats-layout .identity-speed{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;padding:8px 10px}.stats-layout .identity-speed>strong{margin:0;font-size:18px}.stats-layout .identity-speed small{font-size:13px}
 .info-facts div[data-list] dd{font-size:14px;line-height:1.25;font-weight:600}
+
+/* Two timers in the corner: yours on top, the opponent's (last server warning) beneath. */
+#battle-timer{flex-direction:column;align-items:flex-end;gap:2px}.timer-row{display:flex;align-items:center;gap:6px}
+.timer-who{font-size:13px;font-weight:600;color:#566576;min-width:3.6em;text-align:right}#foe-timer-value{min-width:3.2em;text-align:right}

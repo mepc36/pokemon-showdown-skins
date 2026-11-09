@@ -117,9 +117,11 @@ try {
     await pad(page, 0);
     check(await page.locator('.move-preview').count() === 4 && /^preview-move-\d$/.test(await page.evaluate(() => document.activeElement.id)), 'Closing the info returns to the preview move; the preview stays');
     await page.locator('#switch-2').focus(); await pad(page, 0);
-    check(await page.locator('.move-preview').count() === 4 && await page.evaluate(() => document.activeElement.id === 'switch-2'), 'B on a bench Pokémon never moves the cursor or ends the preview');
+    check(await page.locator('.move-preview').count() === 0 && await page.locator('#move-1').isVisible() && await page.evaluate(() => document.activeElement.id === 'move-1'), 'B on a bench Pokémon puts the cursor on the active Pokémon\'s first move and ends the preview');
+    await page.keyboard.press('f'); await page.locator('#opponent-3').focus(); await pad(page, 0);
+    check(await page.locator('.move-preview').count() === 0 && await page.evaluate(() => document.activeElement.id === 'move-1'), 'B on an opponent also returns to the first move');
+    await page.keyboard.press('f');
     await page.locator('#switch-1').focus();
-    check(await page.locator('.move-preview').count() === 0 && await page.locator('#move-1').isVisible(), 'Focusing the active Pokémon ends the preview and brings back its real moves');
     check(await page.locator('#tera .tera-type').innerText() === 'Psychic', 'Leaving the preview restores the active Pokémon\'s Tera type');
     check(await page.locator('.info-facts > div[data-cue]:not([data-cue=""])').count() === 0, 'No stale cue borders remain outside the panels');
     check(await height(page, '#switch-1') >= 60, 'Roster buttons are at least 60px tall');
@@ -310,9 +312,12 @@ try {
   check(await cancel.evaluate(() => { const el = document.querySelector('#move-2'); return !el.disabled && el.dataset.locked === 'true' && document.activeElement === el; }) && !(await cancel.locator('#test-commands').innerText()).includes('/choose move 2'), 'Moves stay focusable for review while a choice is pending but cannot be chosen');
   check(await cancel.evaluate(() => document.querySelector('#choices').dataset.pending === 'true' && getComputedStyle(document.querySelector('#switch-1')).backgroundColor === 'rgb(211, 216, 221)' && getComputedStyle(document.querySelector('#move-1')).backgroundColor === 'rgb(211, 216, 221)'), 'A sent choice grays the move row and the active Pokémon');
   await cancel.keyboard.press('Escape');
-  check((await cancel.locator('#test-commands').innerText()).includes('/undo |1'), 'Existing B / Escape still invokes Showdown undo');
+  check((await cancel.locator('#test-commands').innerText()).includes('/undo |1') && await cancel.evaluate(() => document.activeElement.id) === 'move-1', 'B / Escape invokes Showdown undo and lands on the first move');
+  check(await cancel.locator('#foe-timer-value').innerText() === '—' && (await cancel.locator('#battle-timer .timer-who').allInnerTexts()).join(' ') === 'You: Them:', 'The opponent timer shows a dash until the server warns about them');
+  await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|inactive|Offline preview has 20 seconds left.'}));
+  check(await cancel.locator('#foe-timer-value').innerText() === '0:20', 'An opponent warning fills the Them timer');
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|inactive|mepc36363636 has 30 seconds left.'}));
-  check((await cancel.locator('#timer-warning').innerText()).includes('30s'), 'Server countdown warning appears in the prominent timer');
+  check((await cancel.locator('#timer-warning').innerText()).includes('30s') && await cancel.locator('#foe-timer-value').innerText() === '0:20', 'Server countdown warning appears in the prominent timer; your warning leaves the Them timer alone');
   await cancel.screenshot({path: `test-results/${engineName}-timer-warning.png`});
   await cancel.setViewportSize({width: 1024, height: 540});
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|switch|p2a: Raichu|Raichu, L88, M|100/100\n|turn|17'}));
