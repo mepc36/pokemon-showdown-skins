@@ -172,7 +172,8 @@ export class Arena {
   replay() { if (this.battle) { this.battle.seekTurn(0); this.battle.play(); this.followAnimations(); } }
   // End-of-battle controls: jump to a turn and hold there.
   get turn() { return this.battle?.turn ?? 0; }
-  seekTurn(turn) { if (this.battle) { this.battle.seekTurn(Math.max(0, turn)); this.battle.pause(); this.followAnimations(); this.onUpdate(); } }
+  // Turn 0 is the pre-battle state; paused there, Showdown shows its own Play overlay. Paused seeks stop at turn 1.
+  seekTurn(turn) { if (this.battle) { this.battle.seekTurn(Math.max(1, turn)); this.battle.pause(); this.followAnimations(); this.onUpdate(); } }
   skip() { this.battle?.seekTurn(Infinity); }
   icon(name) { return Dex.getPokemonIcon(name); }
 }

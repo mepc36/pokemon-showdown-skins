@@ -10,7 +10,7 @@ export class ShowdownSession {
     this.state = {status: 'Offline', authenticated: false, challenge: '', room: '', request: null,
       pending: false, recovering: false, searching: false, ended: false, notice: '', timer: '',
       timerOn: false, timerPending: false, timerSeconds: null, timerAt: 0, timerRunning: false,
-      timerWarning: '', timerWarningUntil: 0};
+      timerWarning: '', timerWarningUntil: 0, foeTimerSeconds: null};
     const room = storage.getItem('ps-mve-room');
     if (isBattleRoom(room)) this.state.room = room;
   }
@@ -97,7 +97,7 @@ export class ShowdownSession {
       // A snapshot for another room is ignored only while the remembered room is still a live game on the server.
       if (this.state.room && this.state.room !== room && !this.state.ended && this.games.includes(this.state.room)) return;
       Object.assign(this.state, {room, ended: false, request: null, pending: false, recovering: true, searching: false, timer: '',
-        timerOn: false, timerPending: false, timerSeconds: null, timerRunning: false, timerWarning: '', timerWarningUntil: 0});
+        timerOn: false, timerPending: false, timerSeconds: null, timerRunning: false, timerWarning: '', timerWarningUntil: 0, foeTimerSeconds: null});
       this.storage.setItem('ps-mve-room', room);
     }
     for (const line of lines) {
@@ -171,7 +171,7 @@ export class ShowdownSession {
           this.state.timer = type === 'inactiveoff' ? 'Timer off' : value;
           this.state.timerOn = type === 'inactive'; this.state.timerPending = false;
           if (type === 'inactiveoff') {
-            this.state.timerSeconds = null; this.state.timerWarning = ''; this.state.timerWarningUntil = 0;
+            this.state.timerSeconds = null; this.state.timerWarning = ''; this.state.timerWarningUntil = 0; this.state.foeTimerSeconds = null;
           } else {
             const ownTime = value.match(/^(?:Time left: |You have )(\d+)/);
             const playerTime = value.match(/^(.+?) has (\d+) seconds left(?: this turn)?\./);
@@ -179,6 +179,8 @@ export class ShowdownSession {
             if (ownTime || ownPlayer) {
               this.state.timerSeconds = Number(ownTime?.[1] ?? playerTime[2]); this.state.timerAt = Date.now();
             }
+            // The server only reports the opponent's clock in its warnings; that value is shown until the next one.
+            if (playerTime && !ownPlayer) this.state.foeTimerSeconds = Number(playerTime[2]);
             const warningSeconds = playerTime ? Number(playerTime[2]) : /^You have /.test(value) ? Number(ownTime?.[1]) : null;
             if (warningSeconds != null && warningSeconds <= 60) {
               this.state.timerWarning = `${playerTime && !ownPlayer ? 'Opponent' : 'You'}: ${warningSeconds}s left`;
@@ -198,7 +200,7 @@ export class ShowdownSession {
     if (this.state.ended) { this.send('/leave', this.state.room); this.state.room = ''; }
     this.state.replayUrl = '';
     this.state.ended = false; this.state.request = null; this.state.pending = false;
-    Object.assign(this.state, {timer: '', timerOn: false, timerPending: false, timerSeconds: null, timerRunning: false, timerWarning: '', timerWarningUntil: 0});
+    Object.assign(this.state, {timer: '', timerOn: false, timerPending: false, timerSeconds: null, timerRunning: false, timerWarning: '', timerWarningUntil: 0, foeTimerSeconds: null});
     this.send('/noreply /blockbots'); this.send('/utm null'); this.send('/search gen9randombattle');
     this.state.searching = true; this.state.notice = ''; this.emit();
   }

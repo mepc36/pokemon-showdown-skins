@@ -34,7 +34,10 @@ const safe = fn => { try { fn(); } catch (error) { localNotice = error.message; 
 function updateTimer() {
   const on = fixture || state.timerOn;
   const seconds = session?.timerRemaining();
-  $('timer-value').textContent = !on ? 'Timer off' : seconds == null ? 'Timer on' : `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  const clock = value => `${Math.floor(value / 60)}:${String(value % 60).padStart(2, '0')}`;
+  $('timer-value').textContent = !on ? 'Timer off' : seconds == null ? 'Timer on' : clock(seconds);
+  // The opponent's clock is only known from server warnings; it shows the last warned value, not a countdown.
+  $('foe-timer-value').textContent = on && state.foeTimerSeconds != null ? clock(state.foeTimerSeconds) : '—';
   const warning = !fixture && Date.now() < state.timerWarningUntil ? state.timerWarning : '';
   if ($('timer-warning').textContent !== warning) $('timer-warning').textContent = warning;
 }
@@ -57,15 +60,33 @@ function closeModal() {
 $('modal-close').onclick = closeModal;
 modal.addEventListener('cancel', event => { event.preventDefault(); closeModal(); });
 
-// Chat drawer: slides over the right edge of the field. Header button or C toggles it.
-function scrollChat(step) { const drawer = $('chat-drawer'); if (!drawer.hidden) drawer.scrollTop += step; }
-function showChat(open = $('chat-drawer').hidden) {
-  const drawer = $('chat-drawer');
-  drawer.hidden = !open;
-  $('chat')?.setAttribute('aria-pressed', String(open));
-  if (open) drawer.scrollTop = drawer.scrollHeight;
-  else if (drawer.contains(document.activeElement)) $('chat')?.focus({preventScroll: true});
+// Chat: a modal that shows one turn of Showdown's battle log at a time. Showdown writes the whole
+// log into #hidden-log; each turn starts with an <h2 class="battle-history">Turn N</h2> heading.
+let chatTurn = null; // index of the shown turn; null = the latest turn
+function chatTurns() {
+  const turns = [[]];
+  for (const node of $('hidden-log').querySelectorAll('.inner > *')) { if (node.tagName === 'H2') turns.push([]); turns.at(-1).push(node); }
+  return turns.filter(turn => turn.length);
 }
+function showChat(step = 0) {
+  const turns = chatTurns();
+  const latest = Math.max(0, turns.length - 1);
+  const index = Math.min(Math.max((chatTurn ?? latest) + step, 0), latest);
+  chatTurn = index;
+  const turn = turns[index] || [];
+  const title = turn[0]?.tagName === 'H2' ? turn[0].textContent : 'Battle start';
+  const lines = turn.filter(node => node.tagName !== 'H2').map(node => node.outerHTML).join('');
+  showModal(title, `<div class="chat-turn">${lines || '<p class="small">Nothing happened yet.</p>'}</div><p class="chat-hint">Up: previous turn. Down: next turn. B: back to the menu.</p>`, 'chat');
+}
+// New log lines while the chat is open re-render the shown turn but never move it. Showdown
+// appends lines as the animation plays, after the arena callback, so the log element is watched.
+let chatRefreshQueued = false;
+function refreshChat() {
+  if (!modal.open || modal.dataset.view !== 'chat' || chatRefreshQueued) return;
+  chatRefreshQueued = true;
+  requestAnimationFrame(() => { chatRefreshQueued = false; if (modal.open && modal.dataset.view === 'chat') showChat(); });
+}
+new MutationObserver(refreshChat).observe($('hidden-log'), {childList: true, subtree: true});
 // Menu: Select (or H) opens the secondary controls in a modal. There is no header row.
 function showMenu() {
   const reopen = modal.open && modal.dataset.view === 'menu';
@@ -73,8 +94,8 @@ function showMenu() {
   const primaryLabel = fixture || session?.stopped ? 'Connect to Showdown' : !state.authenticated ? 'Sign in with Showdown' : state.searching ? 'Cancel search' : 'Find Random Battle';
   const primaryDisabled = !fixture && !session?.stopped && (!state.authenticated ? !state.challenge : !!state.room && !state.ended);
   // Two rows of four so the d-pad moves between rows instead of jumping to the close button.
-  showModal('Menu', `<div class="menu-grid">${btn('primary', primaryLabel, 'menu-1', primaryDisabled, 'class="primary"')}
-    ${btn('chat', 'Chat', 'menu-1', false, `aria-pressed="${!$('chat-drawer').hidden}"`)}${btn('rating', 'Rating', 'menu-1')}${btn('forfeit', 'Forfeit…', 'menu-1', !inBattle || !fixture && !state.authenticated)}
+  showModal('Menu', `<div class="menu-grid">${btn('chat', 'Chat', 'menu-1')}${btn('primary', primaryLabel, 'menu-1', primaryDisabled, 'class="primary"')}
+    ${btn('rating', 'Rating', 'menu-1')}${btn('forfeit', 'Forfeit…', 'menu-1', !inBattle || !fixture && !state.authenticated)}
     ${btn('setup', 'Setup', 'menu-2')}${btn('diagnostics', 'Controller check', 'menu-2')}${btn('source', 'Source', 'menu-2')}${btn('open-replay', 'Open replay', 'menu-2', !state.replayUrl)}</div>`, 'menu');
   $('primary').onclick = () => safe(() => {
     localNotice = ''; closeModal();
@@ -83,13 +104,13 @@ function showMenu() {
     else if (state.searching) session.cancelSearch();
     else session.search();
   });
-  $('chat').onclick = () => { closeModal(); showChat(); };
+  $('chat').onclick = () => { chatTurn = null; showChat(); };
   $('rating').onclick = () => showRating();
   $('forfeit').onclick = forfeit;
   $('setup').onclick = setup; $('diagnostics').onclick = diagnostics;
   $('open-replay').onclick = () => { if (state.replayUrl) window.open(state.replayUrl, '_blank', 'noopener'); };
   $('source').onclick = () => { const link = document.createElement('a'); link.href = './source.zip'; link.download = ''; link.click(); };
-  if (!reopen) modal.querySelector('.menu-grid button:not(:disabled)')?.focus({preventScroll: true});
+  if (!reopen) $('chat').focus({preventScroll: true});
 }
 
 function setup() {
@@ -200,7 +221,7 @@ function showInfo(page) {
       const speedInfo = `<div class="identity-speed"><small>${escape(speedLabel)}</small><strong>${escape(speed.value)}</strong>${speed.kind === 'estimate' ? '<small>before modifiers</small>' : speed.modified != null && speed.modified !== speed.value ? `<small>Current: ${escape(speed.modified)}</small>` : ''}</div>`;
       // Same reading order as the main screen: who it is, what it holds, how fast, what it can do.
       const hp = own ? arena.ownHealth(p).condition : `${p.health}${p.status ? ` · ${p.status.toUpperCase()}` : ''}`;
-      banner = `<div class="inspection-banner"><div class="identity-types">${typeBadges(own ? species.types : p.types)}${inference?.identified ? '<small data-identified="true">Role identified</small>' : ''}</div>
+      banner = `<div class="inspection-banner"><div class="identity-types">${typeBadges(own ? species.types : p.types)}</div>
         <div class="identity-hp"><small>${own ? 'HP' : 'Last shown HP'}</small><strong>${escape(hp)}</strong></div></div>`;
       const abilityEntry = [!own && !ability ? 'Possible abilities' : 'Ability', abilityText];
       const summary = own ? [abilityEntry, ['Item', effectName('items', p.item) || 'No item', {item: true}], ['Tera', p.teraType || 'Unknown', p.teraType]] :
@@ -216,7 +237,7 @@ function showInfo(page) {
           <h3>${own ? 'Moves' : 'Revealed moves'}</h3>${moveList(moves.slice(i * 4, i * 4 + 4), 4)}</div>`,
         note: moves.some(m => m.copied) ? '* Copied move' : own ? '' : inference?.identified ? `Role inferred: ${inference.role}. Unrevealed moves/items remain candidates.` : inference?.status === 'unmatched' ? 'Reveals do not match this snapshot; showing all candidates.' : 'Unrevealed information stays unknown.'}));
       // Opponents get one page per role: revealed facts on top, that role's possible sets below, revealed moves highlighted.
-      if (!own) pages = rolePages(sets, slot.name, slot.level, speedInfo, inference, {overview: `<div class="merged-overview">${facts(summary)}</div>`, revealed: new Set(moves.map(m => moveInformation(m.id).id))});
+      if (!own) pages = rolePages(sets, slot.name, slot.level, speedInfo, inference, {known: {ability, item: p.item, previousItem: p.previousItem, teraType: p.teraType, inferredTera: inference?.teraType}, revealed: new Set(moves.map(m => moveInformation(m.id).id))});
     }
   }
   const tab = Math.max(0, Math.min(page.tab || 0, pages.length - 1));
@@ -227,7 +248,7 @@ function showInfo(page) {
   const pagingArrows = page.kind === 'pokemon' ? ['↑', '↓'] : ['←', '→'];
   const nav = `<div class="inspection-footer">${single ? '' : `<div class="inspection-paging"><button id="prev-info-page" aria-label="Previous page">${pagingArrows[0]}</button><span>Page ${tab + 1} / ${pages.length}</span><button id="next-info-page" aria-label="Next page">${pagingArrows[1]}</button></div>`}
     ${page.kind === 'pokemon' ? '<div class="inspection-paging"><button id="prev-info-mon" aria-label="Previous Pokémon">←</button><span>Pokémon</span><button id="next-info-mon" aria-label="Next Pokémon">→</button></div>' : ''}<span><kbd>B</kbd> Close</span></div>`;
-  showModal(title, `${banner}${tabs}<div id="info-content" role="tabpanel"${single ? '' : ` aria-labelledby="info-tab-${tab}"`}>${current.content}</div>${current.note ? `<p class="inspection-note">${escape(current.note)}</p>` : ''}${nav}`, page.kind);
+  showModal(current.title || title, `${banner}${tabs}<div id="info-content" role="tabpanel"${single ? '' : ` aria-labelledby="info-tab-${tab}"`}>${current.content}</div>${current.note ? `<p class="inspection-note">${escape(current.note)}</p>` : ''}${nav}`, page.kind);
   infoPage = {...page, tab, total: pages.length};
   for (const button of modal.querySelectorAll('[data-info-tab]')) button.onclick = () => showInfo({...infoPage, tab: Number(button.dataset.infoTab)});
   if ($('prev-info-page')) { $('prev-info-page').onclick = () => turnPage(-1); $('next-info-page').onclick = () => turnPage(1); }
@@ -281,10 +302,32 @@ document.addEventListener('focusin', event => {
   const own = id.match(/^switch-(\d+)$/);
   if (own) setPreview(Number(own[1]));
   else if (move || event.target.closest('.moves') && !event.target.classList.contains('move-preview')) setPreview(null);
-  // The cursor on an opponent roster button swaps that Pokémon into the side panels.
+  // The cursor on an opponent roster button swaps that Pokémon into the side panels and the move row.
   const foe = id.match(/^opponent-(\d+)$/);
   setFoePreview(foe ? Number(foe[1]) : null);
+  if (foe || move || event.target.closest('.moves') && !event.target.classList.contains('move-preview') || own) setFoeMovePreview(foe ? Number(foe[1]) : null);
 });
+function focusFirstMove() {
+  setPreview(null); setFoeMovePreview(null);
+  (document.querySelector('#choices .moves > button[id^="move-"]:not([hidden])') || document.querySelector('#choices .moves > button:not([hidden])'))?.focus({preventScroll: true});
+}
+// Which opponent the move row describes. null = the own side (active or previewed own Pokémon).
+let foeMoveIndex = null;
+function setFoeMovePreview(index) {
+  if (index === foeMoveIndex) return;
+  foeMoveIndex = index;
+  renderMovePreview();
+}
+// The opponent's four move slots: revealed moves first; the rest come from the identified role only
+// when that role has exactly as many unrevealed moves as there are empty slots. Otherwise they stay blank.
+function foeMoveSlots(slot) {
+  const revealed = slot?.moves || [];
+  const inference = slot?.revealed && sets.snapshot ? narrowSets(sets.snapshot, slot.name, slot.level, slot) : null;
+  const revealedIds = new Set(revealed.map(m => moveInformation(m.id).id));
+  const pool = inference?.identified ? inference.sets.flatMap(set => set.roles.flatMap(role => Object.keys(role.moves))).map(name => moveInformation(name)).filter(move => !revealedIds.has(move.id)) : [];
+  const filled = pool.length === 4 - revealed.length ? pool.map(move => ({id: move.id, name: move.name, type: move.type})) : [];
+  return {moves: [...revealed, ...filled], teraType: slot?.teraType || inference?.teraType || ''};
+}
 function setFoePreview(index) {
   const slot = index ? arena?.opponents()[index - 1] : null;
   const next = slot?.revealed && !slot.active ? index : null;
@@ -319,6 +362,19 @@ function renderMovePreview() {
   const previewed = previewIndex ? ownTeam()[previewIndex - 1] : null;
   // Once anyone on the team has Terastallized, the previewed Pokémon's Tera button is grayed out too.
   const teraUsed = ownTeam().some(p => p.terastallized);
+  if (foeMoveIndex) {
+    const slot = arena?.opponents()[foeMoveIndex - 1];
+    const foe = foeMoveSlots(slot);
+    row.dataset.preview = 'true';
+    $('tera').innerHTML = teraMarkup(foe.teraType || 'Unknown'); $('tera').dataset.type = foe.teraType || 'Unknown'; $('tera').disabled = true;
+    row.insertAdjacentHTML('afterbegin', Array.from({length: 4}, (_, i) => {
+      const move = foe.moves[i];
+      if (!move) return `<button id="preview-move-${i + 1}" class="move-preview unknown-move" data-nav data-row="moves" aria-disabled="true" aria-label="Unknown move">—</button>`;
+      const type = move.type || window.BattleMovedex[move.id]?.type || '';
+      return `<button id="preview-move-${i + 1}" class="move-preview" data-nav data-row="moves" aria-disabled="true" data-type="${escape(type)}" aria-description="Not selectable: opponent's move"><strong>${escape(move.name)}</strong><small><span class="move-type">${escape(type)}</span><span></span></small></button>`;
+    }).join(''));
+    return;
+  }
   if (previewed) { const type = previewed.terastallized || previewed.teraType || 'Unknown'; $('tera').innerHTML = teraMarkup(type); $('tera').dataset.type = type; $('tera').disabled = teraLabel ? teraLabel.disabled || teraUsed : teraUsed; }
   else if (teraLabel) { $('tera').innerHTML = teraLabel.html; $('tera').dataset.type = teraLabel.type; $('tera').disabled = teraLabel.disabled; }
   if (!previewIndex) return;
@@ -418,12 +474,12 @@ function renderRoster() {
 }
 
 // One team row shows at a time; the right stick, a bumper (10) or F flips between them.
-// Focus lands on the active Pokémon of the shown side so the cursor does not vanish.
+// Focus always lands on the shown side's active Pokémon, wherever the cursor was.
 function showTeam(side = shownTeam === 'own' ? 'opponent' : 'own') {
   shownTeam = side;
   const focused = document.activeElement?.id.match(/^(switch|opponent)-(\d+)$/);
   for (const row of document.querySelectorAll('.team-row')) row.hidden = row.dataset.side !== side;
-  if (focused) (document.querySelector(`.team-row[data-side="${side}"] [data-active="true"]`) || $(`${side === 'own' ? 'switch' : 'opponent'}-${focused[2]}`))?.focus({preventScroll: true});
+  (document.querySelector(`.team-row[data-side="${side}"] [data-active="true"]`) || $(`${side === 'own' ? 'switch' : 'opponent'}-${focused?.[2] || 1}`))?.focus({preventScroll: true});
   arena?.resize();
 }
 
@@ -501,7 +557,7 @@ function render() {
   for (const move of choices.moves) $(`move-${move.index}`).onclick = () => { if (!waiting && move.enabled) choose('move', move.index); };
   if (endControls) {
     $('replay').onclick = () => arena.replay();
-    $('first-turn').onclick = () => arena.seekTurn(0);
+    $('first-turn').onclick = () => arena.seekTurn(1);
     $('prev-turn').onclick = () => arena.seekTurn(arena.turn - 1);
     $('next-turn').onclick = () => arena.seekTurn(arena.turn + 1);
     $('end-turn').onclick = () => arena.seekTurn(Infinity);
@@ -561,12 +617,14 @@ async function init() {
   }, action(action) {
     if (['up', 'down', 'left', 'right'].includes(action)) {
       if (modal.open && infoPage) { navigateInfo(action); return; }
+      if (modal.open && modal.dataset.view === 'chat') { if (action === 'up') showChat(-1); if (action === 'down') showChat(1); return; }
       navigate(action); return;
     }
     if (action === 'cancel') {
-      // B never moves the cursor: it closes a modal or undoes a pending choice, nothing else.
-      if (modal.open) closeModal();
-      else $('undo')?.click();
+      // B on the battle screen undoes a pending choice and puts the cursor on the active Pokémon's first move.
+      if (modal.open && modal.dataset.view === 'chat') showMenu();
+      else if (modal.open) closeModal();
+      else { $('undo')?.click(); focusFirstMove(); }
       return;
     }
     if (action === 'team' && modal.open) { flipInfoTeam(); return; }
@@ -576,8 +634,7 @@ async function init() {
       return;
     }
     if (modal.open) return;
-    ({tera: () => $('tera')?.click(), menu: forfeit, info, team: () => showTeam(), tools: showMenu, chat: () => showChat(),
-      chatUp: () => scrollChat(-80), chatDown: () => scrollChat(80)})[action]?.();
+    ({tera: () => $('tera')?.click(), info, team: () => showTeam(), tools: showMenu, chat: () => { chatTurn = null; showChat(); }})[action]?.();
   }});
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { music.update(false); return; }

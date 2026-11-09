@@ -50,13 +50,13 @@ test('opponent timer warnings never replace our clock and new rooms reset it', (
   const f = fixture(); f.authenticate(); f.battle();
   f.socket.receive(`>${room}\n|inactive|Time left: 120 sec this turn | 150 sec total`);
   f.socket.receive(`>${room}\n|inactive|Opponent has 15 seconds left.`);
-  assert.equal(f.session.state.timerSeconds, 120); assert.equal(f.session.state.timerWarning, 'Opponent: 15s left');
+  assert.equal(f.session.state.timerSeconds, 120); assert.equal(f.session.state.timerWarning, 'Opponent: 15s left'); assert.equal(f.session.state.foeTimerSeconds, 15);
   f.socket.receive(`>${room}\n|inactive|mepc36363636 has 30 seconds left.`);
   assert.equal(f.session.state.timerSeconds, 30); assert.equal(f.session.state.timerWarning, 'You: 30s left');
   f.session.choose('move', 1); assert.equal(f.session.state.timerRunning, false);
   f.session.undo(); assert.equal(f.session.state.timerRunning, true);
   f.socket.receive(`>${room}\n|win|mepc36363636`); f.session.search();
-  assert.equal(f.session.state.timerOn, false); assert.equal(f.session.state.timerWarning, '');
+  assert.equal(f.session.state.timerOn, false); assert.equal(f.session.state.timerWarning, ''); assert.equal(f.session.state.foeTimerSeconds, null);
 });
 test('a silently ignored timer-off request remains on and allows retry', () => {
   const f = fixture(); f.authenticate(); f.battle();
