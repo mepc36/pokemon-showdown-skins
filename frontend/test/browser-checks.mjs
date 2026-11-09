@@ -459,12 +459,23 @@ try {
   await cancel.keyboard.press('Escape');
   check(await cancel.locator('#tera').isVisible(), 'Tera shows during the battle');
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|win|Opponent'}));
-  await cancel.waitForFunction(() => document.querySelector('#tera').hidden);
-  check(await cancel.locator('#tera').count() === 1 && !await cancel.locator('#tera').isVisible(), 'Tera is hidden once the battle ends');
-  check(await cancel.locator('.moves #replay, .moves #first-turn, .moves #prev-turn, .moves #next-turn, .moves #end-turn').count() === 5 && await cancel.locator('#upload-replay, #download-replay, #rematch, #main-menu').count() === 0 && await cancel.locator('#replay').innerText() === '🔁 Replay battle', 'After the battle the move row holds Replay battle, First turn, Prev turn, Next turn and Last turn');
+  await cancel.waitForSelector('.replay-row #replay');
+  check(await cancel.locator('#tera').isVisible() && await cancel.locator('#tera').isDisabled(), 'Tera keeps its move-row cell after the battle, disabled');
+  check(await cancel.locator('.replay-row #replay, .replay-row #first-turn, .replay-row #prev-turn, .replay-row #next-turn, .replay-row #end-turn').count() === 5 && await cancel.locator('#upload-replay, #download-replay, #rematch, #main-menu').count() === 0 && await cancel.locator('#replay').innerText() === '🔁 Replay battle', 'After the battle a replay row holds Replay battle, First turn, Prev turn, Next turn and Last turn');
+  check(await cancel.evaluate(() => {
+    const replay = document.querySelector('.replay-row').getBoundingClientRect(), moves = document.querySelector('#choices .moves').getBoundingClientRect();
+    const own = [...document.querySelectorAll('#choices .moves > button[id^="move-"]')];
+    return replay.bottom <= moves.top && own.length === 4 && own.every(button => !button.disabled && button.dataset.locked === 'true');
+  }), 'After the battle the replay row sits above the move slots, which keep the four own moves, locked');
   check((await cancel.locator('#test-commands').innerText()).includes('|/savereplay'), 'The replay is saved automatically when the battle ends');
+  const fieldEnded = await cancel.locator('#arena-wrap').boundingBox();
+  await cancel.keyboard.press('f'); await cancel.waitForTimeout(150);
+  const fieldFoe = await cancel.locator('#arena-wrap').boundingBox(), foeSlots = await cancel.locator('.move-preview').count();
+  await cancel.keyboard.press('f'); await cancel.waitForTimeout(150);
+  const fieldOwn = await cancel.locator('#arena-wrap').boundingBox();
+  check(foeSlots === 4 && fieldFoe.height === fieldEnded.height && fieldOwn.height === fieldEnded.height, `After the battle flipping teams shows the foe's four move slots and keeps the field size: ${fieldEnded.height}, ${fieldFoe.height}, ${fieldOwn.height}`);
   await cancel.locator('#switch-2').focus(); await cancel.waitForTimeout(100);
-  check(await cancel.locator('.move-preview, .moves #move-1').count() === 0 && await cancel.locator('.moves > button:not([hidden])').count() === 5, 'After the battle the cursor on a benched Pokémon previews nothing; only the replay row shows');
+  check(await cancel.locator('.move-preview').count() === 4 && await cancel.locator('.replay-row > button').count() === 5, 'After the battle the cursor on a benched Pokémon previews its moves below the replay row');
   await cancel.keyboard.press('h');
   check(await cancel.locator('#open-replay').isDisabled(), 'Open replay in the menu is disabled until the upload finishes');
   await cancel.keyboard.press('Escape');
@@ -480,8 +491,8 @@ try {
   await cancel.locator('#prev-turn').click();
   check(await earliestTurn().then(t => !t.play && t.shown === t.first), 'Prev turn never goes before the first turn');
   await cancel.locator('#next-turn').click(); await cancel.locator('#end-turn').click();
-  check(await cancel.locator('.moves #first-turn').count() === 1, 'Next turn and Last turn seek without error');
-  check((await cancel.locator('.moves #replay, .moves #first-turn, .moves #prev-turn, .moves #next-turn, .moves #end-turn').allInnerTexts()).every((t, i) => t.trim().startsWith(['🔁', '⏮️', '◀️', '▶️', '⏭️'][i])), 'Replay controls lead with their emojis');
+  check(await cancel.locator('.replay-row #first-turn').count() === 1, 'Next turn and Last turn seek without error');
+  check((await cancel.locator('.replay-row #replay, .replay-row #first-turn, .replay-row #prev-turn, .replay-row #next-turn, .replay-row #end-turn').allInnerTexts()).every((t, i) => t.trim().startsWith(['🔁', '⏮️', '◀️', '▶️', '⏭️'][i])), 'Replay controls lead with their emojis');
   await cancel.keyboard.press('s');
   const fieldBefore = await cancel.locator('#arena-wrap').boundingBox();
   await cancel.locator('#primary').click();

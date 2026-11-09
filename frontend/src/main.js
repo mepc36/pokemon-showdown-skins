@@ -369,8 +369,7 @@ function setFoePreview(index) {
 
 // Preview: which own Pokémon the move row and side panels describe. null = the active one.
 function setPreview(index) {
-  // After the battle the move row holds only the replay controls; nothing is previewed.
-  const next = index && !state.ended && !ownTeam()[index - 1]?.active ? index : null;
+  const next = index && !ownTeam()[index - 1]?.active ? index : null;
   if (next === previewIndex) return;
   previewIndex = next;
   renderMovePreview();
@@ -553,14 +552,14 @@ function render() {
   if (request?.active?.[0]?.moves?.length) lastMovesRequest = request;
   if (request !== selectedRequest) { selectedRequest = request; tera = false; }
   const choices = availableChoices(request);
-  // While the opponent picks a replacement, keep showing the active Pokémon's four moves, locked.
-  if (!fixture && (request?.wait || request?.forceSwitch) && !state.ended && lastMovesRequest) choices.moves = availableChoices({...lastMovesRequest, wait: false}).moves;
+  // While the opponent picks a replacement, and after the battle, keep showing the active Pokémon's four moves, locked.
+  if (!fixture && (request?.wait || request?.forceSwitch || state.ended) && lastMovesRequest) choices.moves = availableChoices({...lastMovesRequest, wait: false}).moves;
   const disabled = choicesDisabled(request);
   // While a choice is pending or the opponent is moving, moves stay focusable for review but cannot be chosen.
   const waiting = !fixture && !disabled && (state.pending || !!request.wait || !!request.forceSwitch);
   const activePokemon = request?.side?.pokemon?.find(p => p.active) || lastRequest?.side?.pokemon?.find(p => p.active);
   const teraType = request?.active?.[0]?.canTerastallize || activePokemon?.teraType || 'Unknown';
-  $('tera').hidden = !activePokemon || !!state.ended;
+  $('tera').hidden = !activePokemon;
   $('tera').disabled = disabled || waiting || !choices.tera;
   $('tera').innerHTML = teraMarkup(teraType, !!activePokemon?.terastallized);
   $('tera').dataset.active = String(!!activePokemon?.terastallized);
@@ -583,12 +582,14 @@ function render() {
   $('notice').textContent = localNotice || (!redundantNotice && state.notice) || (!fixture && !state.authenticated ? state.status : prompt);
   $('notice').parentElement.hidden = true; // the top strip never shows; it would resize the field
   $('action-slots').append($('tera'), $('undo'));
-  // After the battle the move row holds the replay controls instead of moves.
-  const endControls = !fixture && state.ended ? [btn('replay', '🔁 Replay battle', 'moves'), btn('first-turn', '⏮️ First turn', 'moves'), btn('prev-turn', '◀️ Prev turn', 'moves'), btn('next-turn', '▶️ Next turn', 'moves'), btn('end-turn', '⏭️ Last turn', 'moves')].map(html => html.replace('<button ', '<button class="end-control" ')).join('') : '';
-  if (!fixture && state.ended) previewIndex = null;
-  $('choices').innerHTML = `<div class="moves${endControls ? ' end-row' : ''}" role="group" aria-label="Moves">${endControls}${choices.moves.map(move => {
+  // After the battle the replay controls get their own row above the move slots. The panel grows once,
+  // when the battle ends; both team sides keep their move slots, so flipping teams never resizes it.
+  const endControls = !fixture && state.ended ? `<div class="replay-row" role="group" aria-label="Replay">${[btn('replay', '🔁 Replay battle', 'replay'), btn('first-turn', '⏮️ First turn', 'replay'), btn('prev-turn', '◀️ Prev turn', 'replay'), btn('next-turn', '▶️ Next turn', 'replay'), btn('end-turn', '⏭️ Last turn', 'replay')].map(html => html.replace('<button ', '<button class="end-control" ')).join('')}</div>` : '';
+  // After the battle the own moves stay as locked slots: the cursor can land on them, nothing can be chosen.
+  const reviewOnly = !fixture && state.ended;
+  $('choices').innerHTML = `${endControls}<div class="moves" role="group" aria-label="Moves">${choices.moves.map(move => {
     const type = window.BattleMovedex[move.id]?.type || '';
-    return btn(`move-${move.index}`, `<strong>${escape(move.move)}</strong><small><span class="move-type">${escape(type)}</span><span>${escape(move.pp ?? '—')} / ${escape(move.maxpp ?? '—')} PP</span></small>`, 'moves', disabled || !waiting && !move.enabled, `data-type="${escape(type)}" data-locked="${waiting || !move.enabled}" aria-description="R3 or I for move information"`);
+    return btn(`move-${move.index}`, `<strong>${escape(move.move)}</strong><small><span class="move-type">${escape(type)}</span><span>${escape(move.pp ?? '—')} / ${escape(move.maxpp ?? '—')} PP</span></small>`, 'moves', !reviewOnly && (disabled || !waiting && !move.enabled), `data-type="${escape(type)}" data-locked="${reviewOnly || waiting || !move.enabled}" aria-description="R3 or I for move information"`);
   }).join('')}</div>
     <div class="team-row" data-side="own" ${shownTeam === 'own' ? '' : 'hidden'}><span class="team-label">You</span><div id="roster" class="team" role="group" aria-label="Your six Pokémon"></div></div>
     <div class="team-row" data-side="opponent" ${shownTeam === 'opponent' ? '' : 'hidden'}><span class="team-label">Foe</span><div id="opponent-roster" class="team" role="group" aria-label="Opponent’s six Pokémon"></div></div>`;
@@ -597,9 +598,9 @@ function render() {
   renderRoster();
   refreshMoveHints();
   renderMovePreview();
-  for (const move of choices.moves) $(`move-${move.index}`).onclick = () => { if (!waiting && move.enabled) choose('move', move.index); };
+  for (const move of choices.moves) $(`move-${move.index}`).onclick = () => { if (!reviewOnly && !waiting && move.enabled) choose('move', move.index); };
   if (endControls) {
-    $('replay').onclick = () => arena.replay();
+    $('replay').onclick = () => { arena.replay(); replayMusic = true; music.rewind(); updateMusic(); };
     $('first-turn').onclick = () => arena.seekTurn(1);
     $('prev-turn').onclick = () => arena.seekTurn(arena.turn - 1);
     $('next-turn').onclick = () => arena.seekTurn(arena.turn + 1);
@@ -628,7 +629,14 @@ function startLive() {
   arena.reset('battle-gen9randombattle-0');
   session.connect();
 }
-document.addEventListener('pointerdown', () => music.unlock(), {passive: true});
+// On touch screens pointerdown is not a user gesture that may start audio; pointerup is. Mouse clicks count on pointerdown.
+for (const type of ['pointerdown', 'pointerup']) document.addEventListener(type, () => music.unlock(), {passive: true});
+// Music follows the live battle, and after it ends, a replay started with 🔁 until the replay stops or reaches the end.
+let replayMusic = false;
+function updateMusic() {
+  if (replayMusic && !(state.ended && arena.playing)) replayMusic = false;
+  music.update(musicActive(state, {fixture, hidden: document.hidden, stopped: session.stopped, replaying: replayMusic}));
+}
 document.addEventListener('keydown', event => { if (!event.repeat && event.isTrusted) music.unlock(); });
 
 async function init() {
@@ -643,11 +651,13 @@ async function init() {
     renderRoster();
     refreshMoveHints();
     refreshInformation();
+    // A replay ends when it reaches the last step or a turn button pauses it; both land here.
+    if (replayMusic) updateMusic();
   });
   arena.setFit('wide');
   arena.receive({room: 'battle-gen9randombattle-0', lines: demoLines, snapshot: true, request: demoRequest});
   session = new ShowdownSession({url: config.server, username: config.username, auth, storage: localStorage,
-    onState(next) { if (state.room && !next.room) { lastRequest = null; lastMovesRequest = null; ownOrder = []; } state = next; music.update(musicActive(state, {fixture, hidden: document.hidden, stopped: session.stopped})); render(); },
+    onState(next) { if (state.room && !next.room) { lastRequest = null; lastMovesRequest = null; ownOrder = []; } state = next; updateMusic(); render(); },
     onBattle(packet) { try {
       if (arena.room !== packet.room) { lastRequest = null; lastMovesRequest = null; ownOrder = []; if (modal.open && infoPage) closeModal(); }
       arena.receive(packet);
@@ -688,7 +698,7 @@ async function init() {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { music.update(false); return; }
     if (!fixture && !session.stopped && Date.now() - session.lastMessage > 30000) session.connect();
-    music.update(musicActive(state, {fixture, hidden: document.hidden, stopped: session.stopped}));
+    updateMusic();
   });
 }
 init().catch(error => { $('notice').textContent = error.message; console.error(error); });

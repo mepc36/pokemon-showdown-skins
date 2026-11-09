@@ -98,6 +98,23 @@ test('background updates, explicit sign out and ended battles stay silent; recon
   assert.equal(musicActive({}), false);
 });
 
+test('after the battle, music plays only while its replay plays', () => {
+  const ended = {room: 'battle-gen9randombattle-1', authenticated: true, ended: true};
+  assert.equal(musicActive(ended, {replaying: true}), true);
+  assert.equal(musicActive(ended, {replaying: false}), false);
+  assert.equal(musicActive(ended, {replaying: true, hidden: true}), false);
+});
+
+test('rewind restarts the song from its very beginning, intro included', async () => {
+  const {music, context, sources} = setup();
+  music.update(true); music.unlock(); await flush();
+  context.currentTime = 40; music.update(false); music.update(true);
+  assert.equal(sources.at(-1).offset, 40);
+  music.rewind(); music.update(true);
+  assert.ok(sources.at(-2).stopped);
+  assert.equal(sources.at(-1).offset, 0);
+});
+
 test('loop boundary wraps to upstream intro-free start', () => {
   assert.equal(loopPosition(0), 0);
   assert.equal(loopPosition(TRACK.loopEnd), TRACK.loopStart);
