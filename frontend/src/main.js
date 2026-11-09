@@ -146,6 +146,16 @@ function diagnostics() {
 }
 
 const currentRequest = () => fixture ? demoRequest : state.request;
+// Set inference is pure in the slot's revealed facts, and the roster re-renders several times a
+// second during animations, so each opponent's result is cached until one of those facts changes.
+const inferenceCache = new Map(); let inferenceSnapshot = null;
+function inferSets(slot) {
+  if (inferenceSnapshot !== sets.snapshot) { inferenceCache.clear(); inferenceSnapshot = sets.snapshot; }
+  const key = JSON.stringify([slot.name, slot.level, !!slot.transformed, slot.baseAbility || '', slot.teraType || '',
+    (slot.moves || []).map(move => [move.id || move.name, !!move.copied])]);
+  if (!inferenceCache.has(key)) inferenceCache.set(key, narrowSets(sets.snapshot, slot.name, slot.level, slot));
+  return inferenceCache.get(key);
+}
 // Display order: the lead first, then the rest as first seen. Each entry keeps
 // serverIndex, the position in the latest request, for stats and switches.
 function ownTeam() {
@@ -217,7 +227,7 @@ function showInfo(page) {
     } else {
       const own = page.side === 'own', p = own ? ownTeam()[page.index - 1] : slot;
       const species = speciesInformation(slot.name);
-      const inference = own ? null : narrowSets(sets.snapshot, slot.name, slot.level, slot);
+      const inference = own ? null : inferSets(slot);
       const candidates = inference?.sets || possibleSets(sets.snapshot, slot.name, slot.level);
       const abilities = [...new Set(candidates.flatMap(set => set.roles.flatMap(role => Object.keys(role.abilities))))];
       const ability = own ? effectName('abilities', p.ability || p.baseAbility) : p.ability;
@@ -329,7 +339,7 @@ function setFoeMovePreview(index) {
 // when that role has exactly as many unrevealed moves as there are empty slots. Otherwise they stay blank.
 function foeMoveSlots(slot) {
   const revealed = slot?.moves || [];
-  const inference = slot?.revealed && sets.snapshot ? narrowSets(sets.snapshot, slot.name, slot.level, slot) : null;
+  const inference = slot?.revealed && sets.snapshot ? inferSets(slot) : null;
   const revealedIds = new Set(revealed.map(m => moveInformation(m.id).id));
   const pool = inference?.identified ? inference.sets.flatMap(set => set.roles.flatMap(role => Object.keys(role.moves))).map(name => moveInformation(name)).filter(move => !revealedIds.has(move.id)) : [];
   const filled = pool.length === 4 - revealed.length ? pool.map(move => ({id: move.id, name: move.name, type: move.type})) : [];
@@ -449,7 +459,7 @@ function renderRoster() {
     // Between battles your row keeps six empty slots so the field above never resizes.
     if (rosterSide === 'own' && !fixture && !team.length) for (let slot = 1; slot <= 6; slot++) team.push({index: slot, serverIndex: null, name: '', revealed: false, fainted: false, active: false, item: '', ability: '', teraType: '', percent: null, health: '', status: '', canSwitch: false});
     roster.innerHTML = team.map(p => {
-      const inference = rosterSide === 'opponent' && p.revealed ? narrowSets(sets.snapshot, p.name, p.level, p) : null;
+      const inference = rosterSide === 'opponent' && p.revealed ? inferSets(p) : null;
       // Speed and stat comparisons live in the side panels now, not on borders.
       const speed = rosterSide === 'own' ? {} : inference?.identified ? {cue: 'green', label: `Role inferred: ${inference.role}${inference.teraType ? `; Tera inferred: ${inference.teraType}` : ''}. Open details.`} : {};
       // No HP numbers or "Active" text on the roster: the bar shows HP, the
