@@ -89,6 +89,6 @@ export function textPages(text, limit = 420) {
 export function movePages(move) {
   return textPages(move.description).map((text, i, all) => ({key: `move:${i}`, label: all.length > 1 ? `Details ${i + 1}/${all.length}` : 'Details',
     // Description first, then two rows of three fact boxes in the stat-box style, each led by its emoji.
-    content: `<div class="move-detail-layout"><p class="move-description">${escape(text)}</p>${facts([['💥 Power', move.power], ['🎯 Accuracy', move.accuracy], ['🔋 PP', move.pp], ['⚡ Priority', move.priority], ['🤝 Contact', move.contact], ['👥 Target', move.target]])}</div>`,
+    content: `<div class="move-detail-layout"><p class="move-description">${escape(text)}</p>${facts([['💥 Power', move.power], ['🎯 Accuracy', move.accuracy], ['🔋 PP', move.pp], ['🏃 Priority', move.priority], ['🥊 Contact', move.contact], ['👥 Target', move.target]])}</div>`,
     note: move.disabled ? 'Currently unavailable.' : 'Gen 9 reference values · battle effects may change power or accuracy.'}));
 }

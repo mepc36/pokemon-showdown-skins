@@ -93,7 +93,7 @@ try {
     check(await page.evaluate(() => { const badge = document.querySelector('#app-version'), timer = document.querySelector('#battle-timer'); const wrap = document.querySelector('#arena-wrap').getBoundingClientRect(), r = badge.getBoundingClientRect(); return /^v\d+\.\d+\.\d+$/.test(badge.textContent) && getComputedStyle(badge).color === getComputedStyle(timer).color && r.left - wrap.left < 20 && wrap.bottom - r.bottom < 20; }), `Version badge shows a semver in the timer's blue at the bottom left: ${await page.locator('#app-version').innerText()}`);
     if (viewport.width === 1024 && viewport.height === 650) {
       const fresh = await browser.newPage(); await fresh.goto(`${base}/fresh.html`); await fresh.waitForSelector('#switch-1');
-      check(/\?fresh=\d{13}$/.test(fresh.url()) && await fresh.locator('#app-version').innerText() === 'v1.1.1', `fresh.html redirects to the app under a timestamped query string: ${fresh.url()}`);
+      check(/\?fresh=\d{13}$/.test(fresh.url()) && await fresh.locator('#app-version').innerText() === 'v1.2.0', `fresh.html redirects to the app under a timestamped query string: ${fresh.url()}`);
       await fresh.close();
     }
     check(await page.evaluate(() => getComputedStyle(document.querySelector('#battle-timer')).alignItems === 'flex-start' && [...document.querySelectorAll('.timer-who')].every(el => getComputedStyle(el).textAlign === 'left')), 'Timer rows are left-justified');
@@ -241,7 +241,7 @@ try {
     await page.locator('#switch-1').focus(); await page.locator('#move-2').focus(); await pad(page, 11);
     check(await page.locator('#modal-title').innerText() === 'Shadow Ball' && (await page.locator('#info-content').innerText()).includes('20%'), 'R3 on a main move opens its detailed effects');
     check(!(await fit(page)).length, `Move details fit: ${await fit(page)}`);
-    check(await page.evaluate(() => { const layout = document.querySelector('.move-detail-layout'); const desc = layout.querySelector('.move-description'), facts = layout.querySelector('.info-facts'); const labels = [...facts.querySelectorAll('dt')].map(d => d.textContent); return desc && facts && desc.getBoundingClientRect().bottom <= facts.getBoundingClientRect().top && getComputedStyle(facts).gridTemplateColumns.split(' ').length === 3 && labels.join('|') === '💥 Power|🎯 Accuracy|🔋 PP|⚡ Priority|🤝 Contact|👥 Target' && /^[⚔️✨🛡️]/u.test(document.querySelector('.move-banner strong').textContent); }), 'Move page: description on top, then two rows of three emoji-led fact boxes, category emoji in the banner');
+    check(await page.evaluate(() => { const layout = document.querySelector('.move-detail-layout'); const desc = layout.querySelector('.move-description'), facts = layout.querySelector('.info-facts'); const labels = [...facts.querySelectorAll('dt')].map(d => d.textContent); return desc && facts && desc.getBoundingClientRect().bottom <= facts.getBoundingClientRect().top && getComputedStyle(facts).gridTemplateColumns.split(' ').length === 3 && labels.join('|') === '💥 Power|🎯 Accuracy|🔋 PP|🏃 Priority|🥊 Contact|👥 Target' && /^[⚔️✨🛡️]/u.test(document.querySelector('.move-banner strong').textContent); }), 'Move page: description on top, then two rows of three emoji-led fact boxes, category emoji in the banner');
     await page.screenshot({path: `test-results/${engineName}-move-${viewport.width}-${viewport.height}.png`});
     await pad(page, 0);
     check(await page.evaluate(() => document.activeElement.id) === 'move-2', 'Move details close directly to the battle move');
