@@ -24,7 +24,7 @@ export function itemLabel(name) {
 }
 export const facts = entries => `<dl class="info-facts">${entries.map(([label, value, meta = {}]) => {
   if (typeof meta === 'string') meta = {type: meta};
-  return `<div${meta.type ? ` data-type="${escape(meta.type)}"` : ''}${meta.cue ? ` data-cue="${escape(meta.cue)}" title="${escape(meta.hint || {green: 'Highest stat', yellow: 'Next-highest stat', red: 'Lowest stat'}[meta.cue])}"` : ''}><dt>${escape(label)}</dt><dd>${meta.item ? itemLabel(value) : escape(value)}</dd></div>`;
+  return `<div${meta.type ? ` data-type="${escape(meta.type)}"` : ''}${meta.list ? ' data-list="true"' : ''}${meta.cue ? ` data-cue="${escape(meta.cue)}" title="${escape(meta.hint || {green: 'Highest stat', yellow: 'Next-highest stat', red: 'Lowest stat'}[meta.cue])}"` : ''}><dt>${escape(label)}</dt><dd>${meta.item ? itemLabel(value) : escape(value)}</dd></div>`;
 }).join('')}</dl>`;
 export const typeBadges = types => types.map(type => `<span class="type-badge" data-type="${escape(type)}">${escape(type)}</span>`).join('');
 const chunks = (values, size) => Array.from({length: Math.ceil(values.length / size)}, (_, i) => values.slice(i * size, (i + 1) * size));
@@ -42,22 +42,28 @@ export function moveList(moves, placeholders = 0) {
 
 // Pages have bounded row counts. New/expanded datasets get sibling continuation
 // pages instead of unbounded cards or a second menu level.
-// overview: HTML placed above the role (the opponent's revealed facts). revealed: move ids seen in battle, highlighted in the list.
-export function rolePages(store, name, level, speedInfo = '', inference, {overview = '', revealed = new Set()} = {}) {
+// Opponent pages use the same layout as the own-Pokémon page: three fact cards, a stats block, a
+// move list. known: what the battle has revealed ({ability, item, previousItem, teraType, inferredTera}); a card
+// shows the revealed fact, otherwise that role's possibilities. revealed: move ids seen in battle.
+export function rolePages(store, name, level, speedInfo = '', inference, {known = {}, revealed = new Set()} = {}) {
   if (!store.snapshot) return [{key: 'sets-status', label: 'Possible sets', content: store.status === 'error' ?
     '<p>Possible sets could not load.</p><button id="retry-sets" data-nav data-row="retry-sets">Retry set data</button>' : '<p>Loading possible sets…</p>', note: 'Known and revealed information still works.'}];
   const sets = inference?.sets || possibleSets(store.snapshot, name, level);
   if (!sets.length) return [{key: 'sets-missing', label: 'Possible sets', content: '<p>No matching set data.</p>', note: 'This species or form is absent from the snapshot.'}];
-  const options = (label, values, typed = false) => `<div><dt>${label}</dt><dd>${values.length ? (typed ? typeBadges(values) : values.map(name => `<span class="option-chip">${label === 'Items' ? itemLabel(name) : escape(name)}</span>`).join('')) : '—'}</dd></div>`;
+  const identified = !!inference?.identified;
   return sets.flatMap(set => set.roles.flatMap(role => {
-    const moves = chunks(Object.keys(role.moves).map(name => { const id = moveInformation(name).id; return {id, revealed: revealed.has(id)}; }), 10);
-    const abilities = chunks(Object.keys(role.abilities), 3), items = chunks(Object.keys(role.items || {'No item': 1}), 3), tera = chunks(Object.keys(role.teraTypes), 4);
-    const count = Math.max(moves.length, abilities.length, items.length, tera.length);
+    const moves = chunks(Object.keys(role.moves).map(name => { const id = moveInformation(name).id; return {id, revealed: revealed.has(id)}; }), 8);
+    const abilities = Object.keys(role.abilities), items = Object.keys(role.items || {'No item': 1}), tera = Object.keys(role.teraTypes);
+    const cards = [
+      known.ability ? ['Ability', known.ability] : ['Possible abilities', abilities.join(' / ') || 'Unknown', {list: true}],
+      known.item ? ['Item', known.item, {item: true}] : known.previousItem ? ['Item', `Lost ${known.previousItem}`] : ['Possible items', items.join(' / '), {list: true}],
+      known.teraType ? ['Tera', known.teraType, known.teraType] : known.inferredTera ? ['Tera · inferred', known.inferredTera, {type: known.inferredTera, cue: 'green', hint: 'All remaining set definitions have this Tera type'}] : ['Possible Tera', tera.join(' / ') || 'Unknown', {list: true}]];
+    const count = Math.max(1, moves.length);
     return Array.from({length: count}, (_, i) => ({key: `${set.name}:${role.name}:${i}`, label: `${role.name}${count > 1 ? ` ${i + 1}/${count}` : ''}`,
-      content: `${overview}<div class="role-heading" data-identified="${!!inference?.identified}"><strong>${escape(set.name)} · ${escape(role.name)}</strong><span>${inference?.identified ? 'Role identified' : 'Possible role'}${set.levelMismatch ? ` · snapshot level ${set.level}` : ''}</span></div>
-        <div class="role-layout"><div class="role-details"><dl class="role-options">${options('Abilities', abilities[i] || abilities[0])}${options('Items', items[i] || items[0])}${options('Tera types', tera[i] || tera[0], true)}</dl>${speedInfo}</div>
-        <section aria-label="Possible moves">${moveList(moves[i] || [])}</section></div>`,
-      note: `${inference?.status === 'unmatched' ? 'Reveals do not match this snapshot; showing all candidates' : inference?.identified ? 'Role inferred; unrevealed moves/items remain candidates' : 'Candidates, not confirmed'} · snapshot ${store.snapshot.source.updatedAt.slice(0, 10)}${count > 1 ? ' · continued role' : ''}`}));
+      title: `${name} · Lv ${level} · ${identified ? '🎯' : '❓'} ${role.name}`,
+      content: `<div class="overview-layout">${facts(cards)}<h3>Speed estimate · before modifiers</h3><div class="stats-layout">${speedInfo}</div>
+        <h3>${identified ? 'Moves' : 'Possible moves'}</h3>${moveList(moves[i] || [], 4)}</div>`,
+      note: `${inference?.status === 'unmatched' ? 'Reveals do not match this snapshot; showing all candidates' : identified ? 'Role identified; unrevealed moves and items remain candidates' : 'Candidates, not confirmed'}${set.levelMismatch ? ` · snapshot level ${set.level}` : ''} · snapshot ${store.snapshot.source.updatedAt.slice(0, 10)}${count > 1 ? ' · continued role' : ''}`}));
   }));
 }
 

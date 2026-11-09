@@ -218,7 +218,7 @@ function showInfo(page) {
       const speedInfo = `<div class="identity-speed"><small>${escape(speedLabel)}</small><strong>${escape(speed.value)}</strong>${speed.kind === 'estimate' ? '<small>before modifiers</small>' : speed.modified != null && speed.modified !== speed.value ? `<small>Current: ${escape(speed.modified)}</small>` : ''}</div>`;
       // Same reading order as the main screen: who it is, what it holds, how fast, what it can do.
       const hp = own ? arena.ownHealth(p).condition : `${p.health}${p.status ? ` · ${p.status.toUpperCase()}` : ''}`;
-      banner = `<div class="inspection-banner"><div class="identity-types">${typeBadges(own ? species.types : p.types)}${inference?.identified ? '<small data-identified="true">Role identified</small>' : ''}</div>
+      banner = `<div class="inspection-banner"><div class="identity-types">${typeBadges(own ? species.types : p.types)}</div>
         <div class="identity-hp"><small>${own ? 'HP' : 'Last shown HP'}</small><strong>${escape(hp)}</strong></div></div>`;
       const abilityEntry = [!own && !ability ? 'Possible abilities' : 'Ability', abilityText];
       const summary = own ? [abilityEntry, ['Item', effectName('items', p.item) || 'No item', {item: true}], ['Tera', p.teraType || 'Unknown', p.teraType]] :
@@ -234,7 +234,7 @@ function showInfo(page) {
           <h3>${own ? 'Moves' : 'Revealed moves'}</h3>${moveList(moves.slice(i * 4, i * 4 + 4), 4)}</div>`,
         note: moves.some(m => m.copied) ? '* Copied move' : own ? '' : inference?.identified ? `Role inferred: ${inference.role}. Unrevealed moves/items remain candidates.` : inference?.status === 'unmatched' ? 'Reveals do not match this snapshot; showing all candidates.' : 'Unrevealed information stays unknown.'}));
       // Opponents get one page per role: revealed facts on top, that role's possible sets below, revealed moves highlighted.
-      if (!own) pages = rolePages(sets, slot.name, slot.level, speedInfo, inference, {overview: `<div class="merged-overview">${facts(summary)}</div>`, revealed: new Set(moves.map(m => moveInformation(m.id).id))});
+      if (!own) pages = rolePages(sets, slot.name, slot.level, speedInfo, inference, {known: {ability, item: p.item, previousItem: p.previousItem, teraType: p.teraType, inferredTera: inference?.teraType}, revealed: new Set(moves.map(m => moveInformation(m.id).id))});
     }
   }
   const tab = Math.max(0, Math.min(page.tab || 0, pages.length - 1));
@@ -245,7 +245,7 @@ function showInfo(page) {
   const pagingArrows = page.kind === 'pokemon' ? ['↑', '↓'] : ['←', '→'];
   const nav = `<div class="inspection-footer">${single ? '' : `<div class="inspection-paging"><button id="prev-info-page" aria-label="Previous page">${pagingArrows[0]}</button><span>Page ${tab + 1} / ${pages.length}</span><button id="next-info-page" aria-label="Next page">${pagingArrows[1]}</button></div>`}
     ${page.kind === 'pokemon' ? '<div class="inspection-paging"><button id="prev-info-mon" aria-label="Previous Pokémon">←</button><span>Pokémon</span><button id="next-info-mon" aria-label="Next Pokémon">→</button></div>' : ''}<span><kbd>B</kbd> Close</span></div>`;
-  showModal(title, `${banner}${tabs}<div id="info-content" role="tabpanel"${single ? '' : ` aria-labelledby="info-tab-${tab}"`}>${current.content}</div>${current.note ? `<p class="inspection-note">${escape(current.note)}</p>` : ''}${nav}`, page.kind);
+  showModal(current.title || title, `${banner}${tabs}<div id="info-content" role="tabpanel"${single ? '' : ` aria-labelledby="info-tab-${tab}"`}>${current.content}</div>${current.note ? `<p class="inspection-note">${escape(current.note)}</p>` : ''}${nav}`, page.kind);
   infoPage = {...page, tab, total: pages.length};
   for (const button of modal.querySelectorAll('[data-info-tab]')) button.onclick = () => showInfo({...infoPage, tab: Number(button.dataset.infoTab)});
   if ($('prev-info-page')) { $('prev-info-page').onclick = () => turnPage(-1); $('next-info-page').onclick = () => turnPage(1); }
