@@ -283,7 +283,7 @@ footer{display:none}
 /* Opponent panel: revealed facts above the role; moves seen in battle stand out among the candidates. */
 .merged-overview{margin-bottom:10px}
 .compact-move[data-revealed="true"]{border-width:2px;border-color:#27303b;box-shadow:inset 0 0 0 1px #27303b}
-.compact-move[data-revealed="true"] strong::after{content:" ✓";font-size:12px}
+.compact-move[data-revealed="true"] strong::after{content:" 👀";font-size:12px}
 @media(max-height:620px){.merged-overview{margin-bottom:6px}.merged-overview .info-facts{margin:0;gap:6px}.merged-overview .info-facts>div{padding:3px 8px}.merged-overview .info-facts dt{font-size:11px}.merged-overview .info-facts dd{font-size:14px;margin-top:1px}}
 /* Stability rule: hidden Tera and Cancel keep their grid cells, so the four move buttons never change width. */
 .moves #tera[hidden],.moves #undo[hidden]{display:flex!important;visibility:hidden;pointer-events:none}
@@ -325,7 +325,7 @@ footer{display:none}
 
 /* Chat modal: one turn of the battle log per page, large enough to read from the couch. */
 .chat-turn{font-size:18px;line-height:1.5}.chat-turn .battle-history,.chat-turn .chat{margin:6px 0}
-.chat-turn .spoiler{color:inherit;background:none}.chat-hint{font-size:13px;color:var(--muted);margin:14px 0 0}
+.chat-turn .spoiler{color:inherit;background:none}
 
 /* Opponent R3 page: same layout as the own page; the speed estimate sits on one line so the move rows fit. */
 .stats-layout .identity-speed{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;padding:8px 10px}.stats-layout .identity-speed>strong{margin:0;font-size:18px}.stats-layout .identity-speed small{font-size:13px}
@@ -343,3 +343,11 @@ dialog[data-view=chat] .chat-turn{flex:1;min-height:0;overflow:auto}
 
 /* Select menu is two rows of three; the Start battle menu is one row of two. */
 .menu-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.battle-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+/* Forfeit dialog buttons sit centered. Candidate foe moves are dashed; the +N more slot is plain text. */
+.modal-actions{justify-content:center}
+.move-preview[data-candidate="true"],.move-preview.more-moves{border-style:dashed}
+.move-preview.more-moves strong{color:var(--muted)}
+/* Foe move row marks: 👀 seen in battle, ❓ inferred from the identified role. */
+.move-preview[data-seen="true"] strong::after{content:" 👀";font-size:12px}
+.move-preview[data-candidate="true"] strong::after{content:" ❓";font-size:12px}
