@@ -24,7 +24,7 @@ export class Arena {
     this.fit = 'wide';
     this.observer = new ResizeObserver(() => this.resize());
     this.observer.observe(frame.parentElement);
-    for (const selector of ['.app-header', '.arena-top', '.command-panel', 'footer']) { const el = document.querySelector(selector); if (el) this.observer.observe(el); }
+    for (const selector of ['.arena-top', '.command-panel', 'footer']) { const el = document.querySelector(selector); if (el) this.observer.observe(el); }
     window.addEventListener('resize', () => this.resize());
     window.visualViewport?.addEventListener('resize', () => this.resize());
   }
@@ -174,6 +174,5 @@ export class Arena {
   get turn() { return this.battle?.turn ?? 0; }
   // Turn 0 is the pre-battle state; paused there, Showdown shows its own Play overlay. Paused seeks stop at turn 1.
   seekTurn(turn) { if (this.battle) { this.battle.seekTurn(Math.max(1, turn)); this.battle.pause(); this.followAnimations(); this.onUpdate(); } }
-  skip() { this.battle?.seekTurn(Infinity); }
   icon(name) { return Dex.getPokemonIcon(name); }
 }
