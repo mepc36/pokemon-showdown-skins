@@ -68,7 +68,13 @@ try {
     check(rosterText.length === 12 && rosterText.every(text => !/%|\d+\/\d+|Active/.test(text)), `Roster entries show no HP numbers and no Active text: ${rosterText.join(' | ')}`);
     check(await page.locator('#switch-1[data-active=true]').count() === 1 && await page.locator('#roster [data-active=true]').count() === 1, 'The active Pokémon is marked by attribute, not text');
     await page.locator('#switch-3').focus(); await stick(page, 1);
-    check(await page.locator('#opponent-roster').isVisible() && !await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'preview-move-1', 'Right stick flips to the opponent row and focuses their active Pokémon\'s first move');
+    check(await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-3', 'The right stick no longer flips the team row');
+    await pad(page, 10);
+    check(await page.locator('#opponent-roster').isVisible() && !await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'preview-move-1', 'A bumper flips to the opponent row and focuses their active Pokémon\'s first move');
+    const foeFirstMove = await page.locator('#preview-move-1 strong').innerText();
+    await pad(page, 11); await page.waitForSelector('#info-content');
+    check((await page.locator('#modal-title').innerText()).startsWith(foeFirstMove.replace(/ 👀$/, '')), `R3 on the foe's first move opens that move, not an own move: ${await page.locator('#modal-title').innerText()}`);
+    await pad(page, 0);
     await page.locator('#opponent-3').focus();
     check((await page.locator('#opponent-3 strong').innerText()).replace(/\s+/g, ' ') === 'Rotom-Wash PAR', 'Status sits on the name line of the roster button');
     check(await page.locator('.move-preview').count() === 4 && await page.locator('.move-preview:not(.unknown-move)').count() >= 1 && (await page.locator('.move-preview').first().innerText()).includes('Hydro Pump') && !await page.locator('#move-1').isVisible() && await page.locator('#tera').isDisabled(), 'The cursor on an opponent shows that Pokémon\'s known moves in the move row, blanks for the rest');
@@ -78,7 +84,7 @@ try {
     await page.waitForFunction(() => document.querySelector('#matchup-own .matchup-names > span:last-child')?.textContent === 'Rotom-Wash', null, {timeout: 20000});
     check((await page.locator('#matchup-foe .matchup-names span').first().innerText()) === 'Rotom-Wash', 'The cursor on an opponent roster button swaps that Pokémon into both side panels');
     await page.keyboard.press('f');
-    check(await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-1', 'F flips back to your row and focuses your active Pokémon');
+    check(await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'move-1', 'F flips back to your row and focuses your active Pokémon\'s first move');
     await page.waitForFunction(() => document.querySelector('#matchup-own .matchup-names > span:last-child')?.textContent === 'Landorus', null, {timeout: 20000});
     check(true, 'Leaving the opponent row returns the panels to their active Pokémon');
     check(await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('#switch-1 strong')).fontSize)) >= 14.5, 'Roster names are larger');
@@ -141,6 +147,10 @@ try {
     check(await page.locator('dialog[open]').count() === 1 && await page.locator('#modal-title').innerText() === 'Battle' && (await page.locator('.menu-grid button').allInnerTexts()).join(',') === 'Connect to Showdown,Forfeit…' && await page.evaluate(() => document.activeElement.id) === 'primary', 'Start opens the battle menu with the primary button and Forfeit, primary focused');
     await pad(page, 0);
     check(await page.locator('dialog[open]').count() === 0, 'B closes the battle menu');
+    await pad(page, 9); await pad(page, 9);
+    check(await page.locator('dialog[open]').count() === 0, 'Start pressed again closes the battle menu');
+    await pad(page, 8); await pad(page, 8);
+    check(await page.locator('dialog[open]').count() === 0, 'Select pressed again closes the Select menu');
     await pad(page, 8);
     check(!(await fit(page)).length, `Menu has no scrolling: ${await fit(page)}`);
     await page.screenshot({path: `test-results/${engineName}-menu-${viewport.width}-${viewport.height}.png`});
@@ -149,7 +159,7 @@ try {
     await page.locator('#move-1').focus(); await pad(page, 10);
     check(await page.locator('dialog[open]').count() === 0 && await page.locator('#opponent-roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'preview-move-1' && await page.locator('.move-preview').count() === 4, 'Button 10 (bumper) from the move row flips to the opponent row, shows their active Pokémon\'s moves and focuses the first one');
     await pad(page, 10); await page.keyboard.press('t');
-    check(await page.locator('dialog[open]').count() === 0 && await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-1', 'Button 10 flips back; T does nothing');
+    check(await page.locator('dialog[open]').count() === 0 && await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'move-1', 'Button 10 flips back to the own side on the active Pokémon\'s first move; T does nothing');
     const fieldBefore = await page.locator('#arena').evaluate(el => el.getBoundingClientRect().width);
     await page.keyboard.press('h');
     check(await page.evaluate(() => document.activeElement.id) === 'chat' && await page.locator('.menu-grid button').first().evaluate(el => el.id) === 'chat', 'The menu opens with Chat as the first button and focused');
@@ -208,8 +218,8 @@ try {
     check((await page.locator('#modal-title').innerText()).includes('Grumpig') && await page.locator('[data-info-tab]').count() === 0, 'Down on an own Pokémon has no pages to reveal');
     await pad(page, 15);
     check((await page.locator('#modal-title').innerText()).includes('Palossand'), 'D-pad right moves to the next Pokémon, matching the roster');
-    await stick(page, -1);
-    check((await page.locator('#modal-title').innerText()).includes('Corviknight') && await page.locator('.overview-layout').count() === 1, 'Right stick inside R3 jumps to the other team, same slot number');
+    await pad(page, 10);
+    check((await page.locator('#modal-title').innerText()).includes('Corviknight') && await page.locator('.overview-layout').count() === 1, 'A bumper inside R3 jumps to the other team, same slot number');
     await page.keyboard.press('f');
     check((await page.locator('#modal-title').innerText()).includes('Palossand'), 'F flips back to your own Pokémon in R3');
     await pad(page, 14); await pad(page, 14);
@@ -227,7 +237,7 @@ try {
     await pad(page, 0);
     check(await page.evaluate(() => document.activeElement.id) === 'move-2', 'Move details close directly to the battle move');
     await page.keyboard.press('f'); await page.locator('#opponent-1').focus(); await pad(page, 11);
-    check(/^Landorus · Lv 76 · [🎯❓] /u.test(await page.locator('#modal-title').innerText()) && (await page.locator('.info-facts').innerText()).includes('Sheer Force') && (await page.locator('.identity-hp').innerText()).includes('31%'), 'Opponent title shows level and the role badge; cards show the revealed ability and last shown HP');
+    check(/^Landorus · Lv 76 · [🎯❓] /u.test(await page.locator('#modal-title').innerText()) && (await page.locator('.info-facts').first().innerText()).includes('Sheer Force') && (await page.locator('.identity-hp').innerText()).includes('31%'), 'Opponent title shows level and the role badge; cards show the revealed ability and last shown HP');
     check(await page.locator('.overview-layout').count() === 1 && await page.locator('.role-heading, .role-layout, .merged-overview, [data-identified]').count() === 0 && await page.locator('.compact-move[data-revealed="true"]').count() >= 1, 'The opponent page uses the own-Pokémon layout, with revealed moves marked and no duplicate role tags');
     const roleTitle = await page.locator('#modal-title').innerText();
     await page.locator('.compact-move').first().click(); await pad(page, 11);
@@ -236,7 +246,7 @@ try {
     check(!(await fit(page)).length, `Role fits without scrolling: ${await fit(page)}`);
     await page.screenshot({path: `test-results/${engineName}-possible-role-${viewport.width}-${viewport.height}.png`});
     await pad(page, 15); await pad(page, 15);
-    check((await page.locator('.info-facts').innerText()).includes('Possible abilities') && (await page.locator('.identity-speed').innerText()).includes('estimated'), 'Right moves to the next opponent; unrevealed ability and Speed are labelled as estimates');
+    check(await page.locator('.info-facts > div[data-list="true"]').count() >= 1 && (await page.locator('.overview-layout h3').allInnerTexts()).join('|') === 'Stats (before modifiers)|Moves' && (await page.locator('.stats-layout dt').allInnerTexts()).join(',') === 'Attack,Defense,Sp. Atk,Sp. Def,Speed' && (await page.locator('.stats-layout dd').allInnerTexts()).every(text => text.startsWith('~')), 'Right moves to the next opponent; the page uses the own layout: Ability/Item/Tera cards, five ~estimated stat boxes, Moves');
     await pad(page, 15);
     check(await page.locator('[data-info-tab]').count() === 0 && await page.locator('#modal .type-badge, #modal .compact-move').count() === 0, 'Unknown slots expose neither a guessed identity nor possible sets');
     await pad(page, 0); await page.keyboard.press('f');
@@ -346,12 +356,13 @@ try {
   check(await cancel.locator('[data-info-tab]').count() > 2 && (await cancel.locator('#modal-title').innerText()).includes('❓'), 'Ambiguous opponent keeps all matching roles and shows the ❓ badge');
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|move|p2a: Raichu|Tera Blast|p1a: Grumpig\n|turn|18'}));
   await cancel.waitForFunction(() => document.querySelector('#modal-title').textContent.includes('🎯'));
-  const inferredTera = cancel.locator('.info-facts > div').filter({has: cancel.getByText('Tera · inferred', {exact: true})});
+  const inferredTera = cancel.locator('.info-facts > div').filter({has: cancel.getByText('Tera', {exact: true})});
   check(await inferredTera.locator('dd').innerText() === 'Ice' && await inferredTera.getAttribute('data-cue') === 'green', 'A unique live move infers the fixed Tera and marks it green');
   check(await cancel.locator('[data-info-tab]').count() === 0 && await cancel.locator('.overview-layout').count() === 1 && (await cancel.locator('#modal-title').innerText()).includes('🎯 Tera Blast user'), 'Live inference removes incompatible sibling pages, leaving one role page with the 🎯 badge');
   check(await cancel.locator('#opponent-4').getAttribute('data-cue') === 'green', 'Identified opponent gets a green roster border');
   check(!(await fit(cancel)).length, `Inferred overview fits the smallest viewport: ${await fit(cancel)}`);
   check(await cancel.locator('.compact-move[data-revealed="true"]').count() >= 1 && await cancel.evaluate(() => getComputedStyle(document.querySelector('.compact-move[data-revealed="true"] strong'), '::after').content.includes('👀')), 'Seen moves on the role page carry the 👀 mark');
+  check(await cancel.evaluate(() => { const items = [...document.querySelectorAll('.compact-move:not(.unknown-move)')]; const firstUnseen = items.findIndex(li => li.dataset.revealed !== 'true'); return items[0]?.dataset.revealed === 'true' && items.slice(Math.max(firstUnseen, 0)).every(li => firstUnseen < 0 || li.dataset.revealed !== 'true'); }), 'Seen moves come first in the role page move list');
   await cancel.keyboard.press('Escape'); await cancel.locator('#opponent-3').focus(); await cancel.locator('#opponent-4').focus();
   const foeRow = await cancel.evaluate(() => { const b = [...document.querySelectorAll('.move-preview')]; return {total: b.length, revealed: b.filter(x => !x.dataset.candidate && !x.classList.contains('more-moves') && !x.classList.contains('unknown-move')).length, candidates: b.filter(x => x.dataset.candidate).length, more: b.filter(x => x.classList.contains('more-moves')).map(x => x.textContent), blanks: b.filter(x => x.classList.contains('unknown-move')).length}; });
   check(foeRow.total === 4 && foeRow.revealed === 1 && foeRow.blanks === 0 && foeRow.candidates + foeRow.more.length === 3 && (!foeRow.more.length || /^\+\d+ more$/.test(foeRow.more[0])), `An identified role fills the foe move row with candidates, no blanks: ${JSON.stringify(foeRow)}`);
@@ -363,7 +374,7 @@ try {
   await cancel.screenshot({path: `test-results/${engineName}-inferred-set.png`});
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|move|p2a: Raichu|Spore|p1a: Grumpig\n|turn|19'}));
   await cancel.waitForFunction(() => document.querySelector('.inspection-note').textContent.includes('do not match'));
-  check(await cancel.locator('#opponent-4').getAttribute('data-cue') === '' && await cancel.getByText('Tera · inferred', {exact: true}).count() === 0, 'Contradictory reveals clear inferred certainty and restore the full list');
+  check(await cancel.locator('#opponent-4').getAttribute('data-cue') === '' && await cancel.locator('.info-facts > div[data-cue="green"]').count() === 0, 'Contradictory reveals clear inferred certainty and restore the full list');
   await cancel.keyboard.press('Escape'); await cancel.keyboard.press('f');
 
   // The server request already knows the turn's result; the roster must wait for the hit to land.

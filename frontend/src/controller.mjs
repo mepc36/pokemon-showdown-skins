@@ -3,7 +3,7 @@ export const BUTTONS = {0: 'cancel', 1: 'confirm', 3: 'tera', 8: 'tools', 9: 'ba
 export const risingEdges = (current, previous) => current.flatMap((pressed, index) => pressed && !previous[index] ? [index] : []);
 
 export function startController({action, diagnostic, ignored = () => new Set()}) {
-  let previous = [], device = '', repeatAt = 0, heldDirection = '', heldFlip = '';
+  let previous = [], device = '', repeatAt = 0, heldDirection = '';
   const keys = {ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Enter: 'confirm', Escape: 'cancel', x: 'tera', i: 'info', h: 'tools', s: 'battle', f: 'team', c: 'chat'};
   document.addEventListener('keydown', event => {
     if (/INPUT|TEXTAREA|SELECT/.test(event.target.tagName)) return;
@@ -31,9 +31,6 @@ export function startController({action, diagnostic, ignored = () => new Set()})
       heldDirection = direction; repeatAt = now + 350;
       if (direction && !current.slice(12, 16).some(Boolean)) { diagnostic(`Axis → ${direction}`); action(direction); }
     } else if (direction && now >= repeatAt) { action(direction); repeatAt = now + 150; }
-    // Right stick left/right flips the shown team row; one action per push, no repeat.
-    const flip = Math.abs(gamepad.axes[2] || 0) > .65 ? (gamepad.axes[2] > 0 ? 'right' : 'left') : '';
-    if (flip !== heldFlip) { heldFlip = flip; if (flip) { diagnostic(`Right stick → ${flip}`); action('team'); } }
     previous = current;
     requestAnimationFrame(poll);
   }
