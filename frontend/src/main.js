@@ -220,7 +220,8 @@ function showInfo(page) {
     const current = currentRequest()?.active?.[0]?.moves?.find(m => m.id === page.id);
     const move = moveInformation(page.id, current);
     title = move.name;
-    banner = `<div class="inspection-banner move-banner">${typeBadges([move.type])}<strong>${escape(move.category)}</strong></div>`;
+    const categoryEmoji = {Physical: '⚔️', Special: '✨', Status: '🌀'}[move.category] || '';
+    banner = `<div class="inspection-banner move-banner">${typeBadges([move.type])}<strong>${categoryEmoji} ${escape(move.category)}</strong></div>`;
     pages = movePages(move);
   } else {
     const slot = teamSlots(page.side)[page.index - 1];
@@ -583,7 +584,7 @@ function render() {
   $('notice').parentElement.hidden = true; // the top strip never shows; it would resize the field
   $('action-slots').append($('tera'), $('undo'));
   // After the battle the move row holds the replay controls instead of moves.
-  const endControls = !fixture && state.ended ? [btn('replay', 'Replay battle', 'moves'), btn('first-turn', 'First turn', 'moves'), btn('prev-turn', 'Prev turn', 'moves'), btn('next-turn', 'Next turn', 'moves'), btn('end-turn', 'Last turn', 'moves')].map(html => html.replace('<button ', '<button class="end-control" ')).join('') : '';
+  const endControls = !fixture && state.ended ? [btn('replay', '🔁 Replay battle', 'moves'), btn('first-turn', '⏮️ First turn', 'moves'), btn('prev-turn', '◀️ Prev turn', 'moves'), btn('next-turn', '▶️ Next turn', 'moves'), btn('end-turn', '⏭️ Last turn', 'moves')].map(html => html.replace('<button ', '<button class="end-control" ')).join('') : '';
   if (!fixture && state.ended) previewIndex = null;
   $('choices').innerHTML = `<div class="moves${endControls ? ' end-row' : ''}" role="group" aria-label="Moves">${endControls}${choices.moves.map(move => {
     const type = window.BattleMovedex[move.id]?.type || '';
@@ -632,7 +633,7 @@ document.addEventListener('keydown', event => { if (!event.repeat && event.isTru
 
 async function init() {
   // The version badge tells a fresh deploy from an iPad cache hit. Bump package.json on every release.
-  $('app-version').textContent = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '';
+  $('app-version').textContent = typeof __APP_VERSION__ === 'string' ? `v${__APP_VERSION__}` : '';
   config = await fetch('./config.json', {cache: 'no-store'}).then(response => response.json());
   rating = new PlayerRating(config.username);
   auth = new ShowdownAuth(localStorage.getItem('ps-mve-client-id') || config.clientId);

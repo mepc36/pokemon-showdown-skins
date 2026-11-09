@@ -90,10 +90,10 @@ try {
     check(true, 'Leaving the opponent row returns the panels to their active Pokémon');
     check(await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('#switch-1 strong')).fontSize)) >= 14.5, 'Roster names are larger');
     check(await page.locator('#battle-timer').evaluate(el => getComputedStyle(el).color) !== 'rgb(17, 17, 17)', 'Timer is no longer black');
-    check(await page.evaluate(() => { const badge = document.querySelector('#app-version'), timer = document.querySelector('#battle-timer'); const wrap = document.querySelector('#arena-wrap').getBoundingClientRect(), r = badge.getBoundingClientRect(); return /^\d+\.\d+\.\d+$/.test(badge.textContent) && getComputedStyle(badge).color === getComputedStyle(timer).color && r.left - wrap.left < 20 && wrap.bottom - r.bottom < 20; }), `Version badge shows a semver in the timer's blue at the bottom left: ${await page.locator('#app-version').innerText()}`);
+    check(await page.evaluate(() => { const badge = document.querySelector('#app-version'), timer = document.querySelector('#battle-timer'); const wrap = document.querySelector('#arena-wrap').getBoundingClientRect(), r = badge.getBoundingClientRect(); return /^v\d+\.\d+\.\d+$/.test(badge.textContent) && getComputedStyle(badge).color === getComputedStyle(timer).color && r.left - wrap.left < 20 && wrap.bottom - r.bottom < 20; }), `Version badge shows a semver in the timer's blue at the bottom left: ${await page.locator('#app-version').innerText()}`);
     if (viewport.width === 1024 && viewport.height === 650) {
       const fresh = await browser.newPage(); await fresh.goto(`${base}/fresh.html`); await fresh.waitForSelector('#switch-1');
-      check(/\?fresh=\d{13}$/.test(fresh.url()) && await fresh.locator('#app-version').innerText() === '1.1.0', `fresh.html redirects to the app under a timestamped query string: ${fresh.url()}`);
+      check(/\?fresh=\d{13}$/.test(fresh.url()) && await fresh.locator('#app-version').innerText() === 'v1.2.0', `fresh.html redirects to the app under a timestamped query string: ${fresh.url()}`);
       await fresh.close();
     }
     check(await page.evaluate(() => getComputedStyle(document.querySelector('#battle-timer')).alignItems === 'flex-start' && [...document.querySelectorAll('.timer-who')].every(el => getComputedStyle(el).textAlign === 'left')), 'Timer rows are left-justified');
@@ -241,11 +241,12 @@ try {
     await page.locator('#switch-1').focus(); await page.locator('#move-2').focus(); await pad(page, 11);
     check(await page.locator('#modal-title').innerText() === 'Shadow Ball' && (await page.locator('#info-content').innerText()).includes('20%'), 'R3 on a main move opens its detailed effects');
     check(!(await fit(page)).length, `Move details fit: ${await fit(page)}`);
+    check(await page.evaluate(() => { const layout = document.querySelector('.move-detail-layout'); const desc = layout.querySelector('.move-description'), facts = layout.querySelector('.info-facts'); const labels = [...facts.querySelectorAll('dt')].map(d => d.textContent); return desc && facts && desc.getBoundingClientRect().bottom <= facts.getBoundingClientRect().top && getComputedStyle(facts).gridTemplateColumns.split(' ').length === 3 && labels.join('|') === '💥 Power|🎯 Accuracy|🔋 PP|🏃 Priority|🥊 Contact|👥 Target' && /^[⚔️✨🌀]/u.test(document.querySelector('.move-banner strong').textContent); }), 'Move page: description on top, then two rows of three emoji-led fact boxes, category emoji in the banner');
     await page.screenshot({path: `test-results/${engineName}-move-${viewport.width}-${viewport.height}.png`});
     await pad(page, 0);
     check(await page.evaluate(() => document.activeElement.id) === 'move-2', 'Move details close directly to the battle move');
     await page.keyboard.press('f'); await page.locator('#opponent-1').focus(); await pad(page, 11);
-    check(/^Landorus · Lv 76 · [🎯❓] /u.test(await page.locator('#modal-title').innerText()) && (await page.locator('.info-facts').first().innerText()).includes('Sheer Force') && (await page.locator('.identity-hp').innerText()).includes('31%'), 'Opponent title shows level and the role badge; cards show the revealed ability and last shown HP');
+    check(/^Landorus · Lv 76 · [✅❓] /u.test(await page.locator('#modal-title').innerText()) && (await page.locator('.info-facts').first().innerText()).includes('Sheer Force') && (await page.locator('.identity-hp').innerText()).includes('31%'), 'Opponent title shows level and the role badge; cards show the revealed ability and last shown HP');
     check(await page.locator('.overview-layout').count() === 1 && await page.locator('.role-layout, .merged-overview, [data-identified]').count() === 0 && await page.evaluate(() => [...document.querySelectorAll('.role-group')].every(group => group.querySelector('.role-heading') && group.querySelector('.compact-moves'))) && await page.locator('.compact-move[data-revealed="true"]').count() >= 1, 'The opponent page uses the own-Pokémon layout, with revealed moves marked and no duplicate role tags');
     const roleTitle = await page.locator('#modal-title').innerText();
     await page.locator('.compact-move').first().click(); await pad(page, 11);
@@ -364,10 +365,10 @@ try {
   check(await cancel.evaluate(() => { const rows = [...document.querySelectorAll('.role-group')].map(g => [...g.querySelectorAll('.compact-move[data-move]')].map(li => li.dataset.move)); if (rows.length < 2) return false; const shared = rows[0].filter(id => rows.every(row => row.includes(id))); return shared.every((id, i) => rows.every(row => row[i] === id)); }), 'Moves shared by every candidate role sit in the same leftmost columns of each row');
   check(await cancel.locator('[data-info-tab]').count() === 0 && await cancel.locator('.role-group').count() >= 2 && (await cancel.locator('#modal-title').innerText()).includes('❓') && (await cancel.locator('#modal-title').innerText()).includes('possible roles'), 'Ambiguous opponent lists every matching role on one page with the ❓ badge');
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|move|p2a: Raichu|Tera Blast|p1a: Grumpig\n|turn|18'}));
-  await cancel.waitForFunction(() => document.querySelector('#modal-title').textContent.includes('🎯'));
+  await cancel.waitForFunction(() => document.querySelector('#modal-title').textContent.includes('✅'));
   const inferredTera = cancel.locator('.info-facts > div').filter({has: cancel.getByText('Tera', {exact: true})});
   check(await inferredTera.locator('dd').innerText() === 'Ice' && await inferredTera.getAttribute('data-cue') === 'green', 'A unique live move infers the fixed Tera and marks it green');
-  check(await cancel.locator('.role-group').count() === 1 && await cancel.locator('.overview-layout').count() === 1 && (await cancel.locator('#modal-title').innerText()).includes('🎯 Tera Blast user'), 'Live inference removes incompatible roles, leaving one role row with the 🎯 badge');
+  check(await cancel.locator('.role-group').count() === 1 && await cancel.locator('.overview-layout').count() === 1 && (await cancel.locator('#modal-title').innerText()).includes('✅ Tera Blast user'), 'Live inference removes incompatible roles, leaving one role row with the ✅ badge');
   check(await cancel.locator('#opponent-4').getAttribute('data-cue') === 'green', 'Identified opponent gets a green roster border');
   check(!(await fit(cancel)).length, `Inferred overview fits the smallest viewport: ${await fit(cancel)}`);
   check(await cancel.locator('.compact-move[data-revealed="true"]').count() >= 1 && await cancel.evaluate(() => getComputedStyle(document.querySelector('.compact-move[data-revealed="true"] strong'), '::after').content.includes('👀')), 'Seen moves on the role page carry the 👀 mark');
@@ -460,7 +461,7 @@ try {
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|win|Opponent'}));
   await cancel.waitForFunction(() => document.querySelector('#tera').hidden);
   check(await cancel.locator('#tera').count() === 1 && !await cancel.locator('#tera').isVisible(), 'Tera is hidden once the battle ends');
-  check(await cancel.locator('.moves #replay, .moves #first-turn, .moves #prev-turn, .moves #next-turn, .moves #end-turn').count() === 5 && await cancel.locator('#upload-replay, #download-replay, #rematch, #main-menu').count() === 0 && await cancel.locator('#replay').innerText() === 'Replay battle', 'After the battle the move row holds Replay battle, First turn, Prev turn, Next turn and Last turn');
+  check(await cancel.locator('.moves #replay, .moves #first-turn, .moves #prev-turn, .moves #next-turn, .moves #end-turn').count() === 5 && await cancel.locator('#upload-replay, #download-replay, #rematch, #main-menu').count() === 0 && await cancel.locator('#replay').innerText() === '🔁 Replay battle', 'After the battle the move row holds Replay battle, First turn, Prev turn, Next turn and Last turn');
   check((await cancel.locator('#test-commands').innerText()).includes('|/savereplay'), 'The replay is saved automatically when the battle ends');
   await cancel.locator('#switch-2').focus(); await cancel.waitForTimeout(100);
   check(await cancel.locator('.move-preview, .moves #move-1').count() === 0 && await cancel.locator('.moves > button:not([hidden])').count() === 5, 'After the battle the cursor on a benched Pokémon previews nothing; only the replay row shows');
@@ -480,6 +481,7 @@ try {
   check(await earliestTurn().then(t => !t.play && t.shown === t.first), 'Prev turn never goes before the first turn');
   await cancel.locator('#next-turn').click(); await cancel.locator('#end-turn').click();
   check(await cancel.locator('.moves #first-turn').count() === 1, 'Next turn and Last turn seek without error');
+  check((await cancel.locator('.moves #replay, .moves #first-turn, .moves #prev-turn, .moves #next-turn, .moves #end-turn').allInnerTexts()).every((t, i) => t.trim().startsWith(['🔁', '⏮️', '◀️', '▶️', '⏭️'][i])), 'Replay controls lead with their emojis');
   await cancel.keyboard.press('s');
   const fieldBefore = await cancel.locator('#arena-wrap').boundingBox();
   await cancel.locator('#primary').click();
