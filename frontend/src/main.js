@@ -120,7 +120,8 @@ function showBattleMenu() {
     else session.search();
   });
   $('forfeit').onclick = forfeit;
-  if (!reopen) $('primary').focus({preventScroll: true});
+  // Focus the first button that can be pressed: Find Random Battle is disabled mid-battle, so Forfeit takes the cursor then.
+  if (!reopen) (document.querySelector('.battle-grid button:not([disabled])') || $('modal-close')).focus({preventScroll: true});
 }
 
 function setup() {
