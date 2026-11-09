@@ -258,8 +258,8 @@ footer{display:none}
 .move-preview{opacity:1;cursor:default;font:inherit;color:#27303b}.move-preview strong{font-weight:600}
 .stat-box[data-stat=high]{background:#238c4f;color:#fff}.stat-box[data-stat=high] small{color:#e6f4ea}.stat-box[data-stat=low]{background:#c51e26;color:#fff}.stat-box[data-stat=low] small{color:#fbe3e4}
 
-/* End-of-battle controls in the move row, menu rows, region tags, inferred roster details. */
-.moves .end-control{min-height:44px;font-size:15px;white-space:nowrap;justify-content:center;align-items:center}
+/* End-of-battle controls in their own row above the move slots, menu rows, region tags, inferred roster details. */
+.replay-row .end-control{min-width:0;min-height:44px;padding:4px 8px;display:flex;justify-content:center;align-items:center;font-size:15px;white-space:nowrap;background:linear-gradient(#fff,#e2e1dc);border-color:#b7b3a7}
 .moves button[data-locked="true"]:not(:disabled){opacity:.6}
 .form-tag{font-size:10px;font-weight:700;letter-spacing:.04em;padding:1px 4px;border-radius:4px;background:#dfe6ee;color:#2e4a66;white-space:nowrap;flex-shrink:0}
 .panel-form-tag{margin-left:3px;vertical-align:middle}
@@ -278,8 +278,8 @@ footer{display:none}
 #search-overlay .dots span:nth-child(2){animation-delay:.2s}#search-overlay .dots span:nth-child(3){animation-delay:.4s}
 @keyframes search-pulse{0%,80%,100%{opacity:.25;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
 
-/* End-of-battle row: five equal buttons (Tera and Cancel are hidden then). */
-.moves.end-row{grid-template-columns:repeat(5,minmax(0,1fr))}
+/* End-of-battle row: five equal buttons above the move slots. It appears once, when the battle ends. */
+.replay-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-bottom:6px}
 /* Opponent panel: revealed facts above the role; moves seen in battle stand out among the candidates. */
 .merged-overview{margin-bottom:10px}
 .compact-move[data-revealed="true"]{border-width:2px;border-color:#27303b;box-shadow:inset 0 0 0 1px #27303b}
@@ -287,7 +287,6 @@ footer{display:none}
 @media(max-height:620px){.merged-overview{margin-bottom:6px}.merged-overview .info-facts{margin:0;gap:6px}.merged-overview .info-facts>div{padding:3px 8px}.merged-overview .info-facts dt{font-size:11px}.merged-overview .info-facts dd{font-size:14px;margin-top:1px}}
 /* Stability rule: hidden Tera and Cancel keep their grid cells, so the four move buttons never change width. */
 .moves #tera[hidden],.moves #undo[hidden]{display:flex!important;visibility:hidden;pointer-events:none}
-.moves.end-row #tera,.moves.end-row #undo{display:none!important}
 
 /* Tera selection is shown by the button itself, not by text. */
 .moves #tera[aria-pressed="true"]{background:linear-gradient(var(--type-tint,#e2e1dc),var(--type-border,#b7b3a7));border-color:#27303b;box-shadow:inset 0 0 0 2px #27303b,0 0 0 2px #27303b55;font-weight:700}
@@ -403,3 +402,9 @@ dialog[data-view=chat] .chat-turn{flex:1;min-height:0;overflow:auto}
 .move-detail-layout{display:flex;flex-direction:column;gap:14px}
 .move-detail-layout .info-facts{grid-template-columns:repeat(3,minmax(0,1fr))}
 #modal-body .move-detail-layout .move-description{font-size:20px;line-height:1.5}
+/* Move page: bigger fact labels and values, readable from the couch. Short screens step down so nothing scrolls. */
+.move-detail-layout .info-facts>div{padding:12px 16px}
+.move-detail-layout .info-facts dt{font-size:22px}
+.move-detail-layout .info-facts dd{font-size:28px;margin-top:6px}
+#modal-body .move-detail-layout .move-description{font-size:22px}
+@media(max-height:620px){.move-detail-layout .info-facts>div{padding:8px 12px}.move-detail-layout .info-facts dt{font-size:18px}.move-detail-layout .info-facts dd{font-size:22px;margin-top:3px}#modal-body .move-detail-layout .move-description{font-size:20px}}

@@ -178,6 +178,8 @@ export class Arena {
   }
   ownStats(index) { const server = this.battle?.myPokemon?.[index - 1]; return server?.stats ? {...server.stats} : null; }
   replay() { if (this.battle) { this.battle.seekTurn(0); this.battle.play(); this.followAnimations(); } }
+  // True while the renderer is stepping through the log: not paused by a turn button and not caught up to the end.
+  get playing() { return !!this.battle && !this.battle.paused && !this.battle.atQueueEnd; }
   // End-of-battle controls: jump to a turn and hold there.
   get turn() { return this.battle?.turn ?? 0; }
   // Turn 0 is the pre-battle state; paused there, Showdown shows its own Play overlay. Paused seeks stop at turn 1.

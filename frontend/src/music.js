@@ -2,9 +2,10 @@
 export const TRACK = {url: './audio/bw-trainer.mp3',
   loopStart: 14.629, loopEnd: 110.109, volume: 0.22};
 
-export function musicActive(state, {fixture = false, hidden = false, stopped = false} = {}) {
+export function musicActive(state, {fixture = false, hidden = false, stopped = false, replaying = false} = {}) {
   // Authentication drops during reconnect; the battle itself has not ended.
-  return !fixture && !hidden && !stopped && !!state.room && !state.ended;
+  // After the battle, music plays only while a replay of it plays.
+  return !fixture && !hidden && !stopped && !!state.room && (!state.ended || replaying);
 }
 
 export function loopPosition(seconds) {
@@ -85,6 +86,8 @@ export class Music {
     this.source.stop(); this.source.disconnect(); this.source = null;
   }
   update(active) { this.active = active; this.sync(); }
+  // A replay starts the song from its very beginning, intro included.
+  rewind() { this.pause(); this.offset = 0; }
   toggle() {
     this.enabled = !this.enabled;
     try { this.storage?.setItem('ps-mve-music', this.enabled ? 'on' : 'off'); } catch {}
