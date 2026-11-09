@@ -144,11 +144,12 @@ test('compact candidates expose names/types without details, actions or markup i
   assert.equal(percent(0), '0% observed'); assert.equal(percent(0.0001), '<0.1%');
 });
 
-test('every sampled role retains all candidates in bounded sibling pages', () => {
+test('every sampled Pokémon gets one page with every candidate role and move', () => {
   for (const [name, pokemon] of Object.entries(snapshot.pokemon)) {
     const pages = rolePages({snapshot}, name, pokemon.level);
-    assert.ok(pages.length);
-    for (const page of pages) assert.ok((page.content.match(/data-move=/g) || []).length <= 10);
+    assert.equal(pages.length, 1);
+    const expected = possibleSets(snapshot, name, pokemon.level).reduce((sum, set) => sum + set.roles.length, 0);
+    assert.equal((pages[0].content.match(/class="role-heading"/g) || []).length, expected, `${name}: one heading per candidate role`);
     for (const move of possibleMoves(possibleSets(snapshot, name, pokemon.level))) {
       assert.ok(pages.some(p => p.content.includes(`data-move="${move.id}"`)), `${name}: missing ${move.name}`);
     }
