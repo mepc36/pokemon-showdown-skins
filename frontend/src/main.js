@@ -474,12 +474,12 @@ function renderRoster() {
 }
 
 // One team row shows at a time; the right stick, a bumper (10) or F flips between them.
-// Focus lands on the active Pokémon of the shown side so the cursor does not vanish.
+// Focus always lands on the shown side's active Pokémon, wherever the cursor was.
 function showTeam(side = shownTeam === 'own' ? 'opponent' : 'own') {
   shownTeam = side;
   const focused = document.activeElement?.id.match(/^(switch|opponent)-(\d+)$/);
   for (const row of document.querySelectorAll('.team-row')) row.hidden = row.dataset.side !== side;
-  if (focused) (document.querySelector(`.team-row[data-side="${side}"] [data-active="true"]`) || $(`${side === 'own' ? 'switch' : 'opponent'}-${focused[2]}`))?.focus({preventScroll: true});
+  (document.querySelector(`.team-row[data-side="${side}"] [data-active="true"]`) || $(`${side === 'own' ? 'switch' : 'opponent'}-${focused?.[2] || 1}`))?.focus({preventScroll: true});
   arena?.resize();
 }
 

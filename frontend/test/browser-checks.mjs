@@ -141,8 +141,8 @@ try {
     await page.screenshot({path: `test-results/${engineName}-menu-${viewport.width}-${viewport.height}.png`});
     await pad(page, 0);
     check(await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'switch-1', 'B closes the menu and returns to the battle choices');
-    await pad(page, 10);
-    check(await page.locator('dialog[open]').count() === 0 && await page.locator('#opponent-roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'opponent-1', 'Button 10 (bumper) flips to the opponent row and focuses their active Pokémon');
+    await page.locator('#move-1').focus(); await pad(page, 10);
+    check(await page.locator('dialog[open]').count() === 0 && await page.locator('#opponent-roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'opponent-1' && await page.locator('.move-preview').count() === 4, 'Button 10 (bumper) from the move row flips to the opponent row, focuses their active Pokémon and shows their moves');
     await pad(page, 10); await page.keyboard.press('t');
     check(await page.locator('dialog[open]').count() === 0 && await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-1', 'Button 10 flips back; T does nothing');
     const fieldBefore = await page.locator('#arena').evaluate(el => el.getBoundingClientRect().width);
