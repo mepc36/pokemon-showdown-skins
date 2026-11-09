@@ -418,13 +418,13 @@ function renderRoster() {
   renderMatchup();
 }
 
-// One team row shows at a time; the right stick (or F) flips between them.
-// Focus carries over to the same slot so the cursor does not vanish.
+// One team row shows at a time; the right stick, a bumper (10) or F flips between them.
+// Focus lands on the active Pokémon of the shown side so the cursor does not vanish.
 function showTeam(side = shownTeam === 'own' ? 'opponent' : 'own') {
   shownTeam = side;
   const focused = document.activeElement?.id.match(/^(switch|opponent)-(\d+)$/);
   for (const row of document.querySelectorAll('.team-row')) row.hidden = row.dataset.side !== side;
-  if (focused) $(`${side === 'own' ? 'switch' : 'opponent'}-${focused[2]}`)?.focus({preventScroll: true});
+  if (focused) (document.querySelector(`.team-row[data-side="${side}"] [data-active="true"]`) || $(`${side === 'own' ? 'switch' : 'opponent'}-${focused[2]}`))?.focus({preventScroll: true});
   arena?.resize();
 }
 

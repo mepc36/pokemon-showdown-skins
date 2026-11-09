@@ -68,12 +68,13 @@ try {
     check(rosterText.length === 12 && rosterText.every(text => !/%|\d+\/\d+|Active/.test(text)), `Roster entries show no HP numbers and no Active text: ${rosterText.join(' | ')}`);
     check(await page.locator('#switch-1[data-active=true]').count() === 1 && await page.locator('#roster [data-active=true]').count() === 1, 'The active Pokémon is marked by attribute, not text');
     await page.locator('#switch-3').focus(); await stick(page, 1);
-    check(await page.locator('#opponent-roster').isVisible() && !await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'opponent-3', 'Right stick flips to the opponent row and keeps the same slot focused');
+    check(await page.locator('#opponent-roster').isVisible() && !await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'opponent-1', 'Right stick flips to the opponent row and focuses their active Pokémon');
+    await page.locator('#opponent-3').focus();
     check((await page.locator('#opponent-3 strong').innerText()).replace(/\s+/g, ' ') === 'Rotom-Wash PAR', 'Status sits on the name line of the roster button');
     await page.waitForFunction(() => document.querySelector('#matchup-own .matchup-names > span:last-child')?.textContent === 'Rotom-Wash', null, {timeout: 20000});
     check((await page.locator('#matchup-foe .matchup-names span').first().innerText()) === 'Rotom-Wash', 'The cursor on an opponent roster button swaps that Pokémon into both side panels');
     await page.keyboard.press('f');
-    check(await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-3', 'F flips back to your row');
+    check(await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-1', 'F flips back to your row and focuses your active Pokémon');
     await page.waitForFunction(() => document.querySelector('#matchup-own .matchup-names > span:last-child')?.textContent === 'Landorus', null, {timeout: 20000});
     check(true, 'Leaving the opponent row returns the panels to their active Pokémon');
     check(await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('#switch-1 strong')).fontSize)) >= 14.5, 'Roster names are larger');
@@ -130,8 +131,10 @@ try {
     await page.screenshot({path: `test-results/${engineName}-menu-${viewport.width}-${viewport.height}.png`});
     await pad(page, 0);
     check(await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'switch-1', 'B closes the menu and returns to the battle choices');
+    await pad(page, 10);
+    check(await page.locator('dialog[open]').count() === 0 && await page.locator('#opponent-roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'opponent-1', 'Button 10 (bumper) flips to the opponent row and focuses their active Pokémon');
     await pad(page, 10); await page.keyboard.press('t');
-    check(await page.locator('dialog[open]').count() === 0, 'L3 and T do nothing now');
+    check(await page.locator('dialog[open]').count() === 0 && await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-1', 'Button 10 flips back; T does nothing');
     const fieldBefore = await page.locator('#arena').evaluate(el => el.getBoundingClientRect().width);
     await page.keyboard.press('h'); await page.locator('#chat').click();
     check(await page.locator('dialog[open]').count() === 0, 'Chat from the menu closes the menu');
