@@ -71,12 +71,15 @@ function chatTurns() {
 function showChat(step = 0) {
   const turns = chatTurns();
   const latest = Math.max(0, turns.length - 1);
-  const index = Math.min(Math.max((chatTurn ?? latest) + step, 0), latest);
+  // The current turn has nothing in it yet, so the chat opens on the last turn that has lines.
+  const hasLines = turn => turn.some(node => node.tagName !== 'H2');
+  const opening = chatTurn ?? Math.max(0, turns.findLastIndex(hasLines));
+  const index = Math.min(Math.max(opening + step, 0), latest);
   chatTurn = index;
   const turn = turns[index] || [];
   const title = turn[0]?.tagName === 'H2' ? turn[0].textContent : 'Battle start';
   const lines = turn.filter(node => node.tagName !== 'H2').map(node => node.outerHTML).join('');
-  showModal(title, `<div class="chat-turn">${lines || '<p class="small">Nothing happened yet.</p>'}</div><p class="chat-hint">Up: previous turn. Down: next turn. B: back to the menu.</p>`, 'chat');
+  showModal(title, `<div class="chat-turn">${lines || '<p class="small">Nothing happened yet.</p>'}</div>`, 'chat');
 }
 // New log lines while the chat is open re-render the shown turn but never move it. Showdown
 // appends lines as the animation plays, after the arena callback, so the log element is watched.
@@ -110,8 +113,8 @@ function showBattleMenu() {
   showModal('Battle', `<div class="menu-grid battle-grid">${btn('primary', primaryLabel, 'menu-1', primaryDisabled, 'class="primary"')}${btn('forfeit', 'Forfeit…', 'menu-1', !inBattle || !fixture && !state.authenticated)}</div>`, 'battle');
   $('primary').onclick = () => safe(() => {
     localNotice = ''; closeModal();
-    if (fixture || session.stopped) { startLive(); return; }
-    // Signing in from the menu searches for a battle as soon as Showdown confirms the login.
+    // Connecting or signing in from the menu searches for a battle as soon as Showdown confirms the login.
+    if (fixture || session.stopped) { searchAfterLogin = true; startLive(); return; }
     if (!state.authenticated) { if (!auth.clientId) setup(); else { searchAfterLogin = true; void session.login(true); } }
     else if (state.searching) session.cancelSearch();
     else session.search();
@@ -342,7 +345,11 @@ function foeMoveSlots(slot) {
   const inference = slot?.revealed && sets.snapshot ? inferSets(slot) : null;
   const revealedIds = new Set(revealed.map(m => moveInformation(m.id).id));
   const pool = inference?.identified ? inference.sets.flatMap(set => set.roles.flatMap(role => Object.keys(role.moves))).map(name => moveInformation(name)).filter(move => !revealedIds.has(move.id)) : [];
-  const filled = pool.length === 4 - revealed.length ? pool.map(move => ({id: move.id, name: move.name, type: move.type})) : [];
+  // Revealed moves first, then the identified role's remaining candidates. When candidates outnumber
+  // the empty slots, the last slot counts the rest; the R3 page lists them all.
+  const empty = 4 - revealed.length;
+  const candidates = pool.map(move => ({id: move.id, name: move.name, type: move.type, candidate: true}));
+  const filled = candidates.length <= empty ? candidates : [...candidates.slice(0, empty - 1), {more: candidates.length - (empty - 1)}];
   return {moves: [...revealed, ...filled], teraType: slot?.teraType || inference?.teraType || ''};
 }
 function setFoePreview(index) {
@@ -384,7 +391,7 @@ function renderMovePreview() {
     const foe = foeMoveSlots(slot);
     row.dataset.preview = 'true';
     $('tera').innerHTML = teraMarkup(foe.teraType || 'Unknown'); $('tera').dataset.type = foe.teraType || 'Unknown'; $('tera').disabled = true;
-    row.insertAdjacentHTML('afterbegin', Array.from({length: 4}, (_, i) => previewMoveButton(foe.moves[i], i, "Not selectable: opponent's move")).join(''));
+    row.insertAdjacentHTML('afterbegin', Array.from({length: 4}, (_, i) => previewMoveButton(foe.moves[i], i, foe.moves[i]?.candidate ? "Not selectable: candidate move from the identified role" : "Not selectable: opponent's move", foe.moves[i]?.candidate ? 'data-candidate="true"' : foe.moves[i] && !foe.moves[i].more ? 'data-seen="true"' : '')).join(''));
     return;
   }
   if (previewed) { const type = previewed.terastallized || previewed.teraType || 'Unknown'; $('tera').innerHTML = teraMarkup(type); $('tera').dataset.type = type; $('tera').disabled = teraLabel ? teraLabel.disabled || teraUsed : teraUsed; }
@@ -436,6 +443,7 @@ function renderMatchup() {
 const choicesDisabled = request => !fixture && (!state.authenticated || state.recovering || state.ended || !request);
 // One grayed preview-move button, shared by own bench previews and foe previews.
 function previewMoveButton(move, index, description, extra = '', pp = '') {
+  if (move?.more) return `<button id="preview-move-${index + 1}" class="move-preview more-moves" data-nav data-row="moves" aria-disabled="true" aria-description="More candidate moves; R3 on the Pokémon lists them"><strong>+${move.more} more</strong></button>`;
   if (!move) return `<button id="preview-move-${index + 1}" class="move-preview unknown-move" data-nav data-row="moves" aria-disabled="true" aria-label="Unknown move">—</button>`;
   const type = move.type || window.BattleMovedex[move.id]?.type || '';
   return `<button id="preview-move-${index + 1}" class="move-preview" data-nav data-row="moves" aria-disabled="true" data-type="${escape(type)}" ${extra} aria-description="${description}"><strong>${escape(move.name)}</strong><small><span class="move-type">${escape(type)}</span><span>${pp}</span></small></button>`;
@@ -508,7 +516,7 @@ function showTeam(side = shownTeam === 'own' ? 'opponent' : 'own') {
 function forfeit() {
   if (fixture) { localNotice = 'Forfeit opens a confirmation during a live battle.'; render(); return; }
   if (!state.room || state.ended) return;
-  showModal('Forfeit this battle?', `<p>This counts as a loss on Showdown.</p><div class="modal-actions">${btn('keep-playing', 'Keep playing', 'modal-actions')}${btn('confirm-forfeit', 'Forfeit battle', 'modal-actions', false, 'class="danger"')}</div>`);
+  showModal('Forfeit battle?', `<p>This counts as a loss on Showdown.</p><div class="modal-actions">${btn('keep-playing', 'Keep playing', 'modal-actions')}${btn('confirm-forfeit', 'Forfeit', 'modal-actions', false, 'class="danger"')}</div>`);
   $('keep-playing').onclick = () => closeModal();
   $('confirm-forfeit').onclick = () => safe(() => { session.roomCommand('/forfeit'); closeModal(); });
   $('keep-playing').focus();

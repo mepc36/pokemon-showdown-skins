@@ -156,16 +156,20 @@ try {
     await page.locator('#chat').click();
     const chatTitle = async () => page.locator('#modal-title').innerText();
     const turnCount = await page.locator('#hidden-log .inner > h2').count();
-    check(await page.locator('dialog[open]').count() === 1 && await page.evaluate(() => document.querySelector('#modal').dataset.view) === 'chat' && /^Turn \d+$/.test(await chatTitle()) && await page.locator('.chat-turn').count() === 1, `Chat opens a modal on the latest turn: ${await chatTitle()}`);
+    // The fixture's last heading (Turn 16) has no lines under it, so the chat opens on the turn before it.
+    const lastWithLines = await page.evaluate(() => { const nodes = [...document.querySelectorAll('#hidden-log .inner > *')]; let title = 'Battle start'; let lines = 0; let shown = 'Battle start'; for (const node of nodes) { if (node.tagName === 'H2') { if (lines) shown = title; title = node.textContent; lines = 0; } else lines++; } return lines ? title : shown; });
+    check(await page.locator('dialog[open]').count() === 1 && await page.evaluate(() => document.querySelector('#modal').dataset.view) === 'chat' && await chatTitle() === lastWithLines && await page.locator('.chat-turn').count() === 1 && await page.locator('.chat-hint').count() === 0, `Chat opens a modal on the last turn with lines, no hint text: ${await chatTitle()}`);
     check(!await page.locator('#chat-drawer').isVisible() && await page.locator('#arena').evaluate(el => el.getBoundingClientRect().width) === fieldBefore, 'No chat drawer; the field keeps its size');
-    const latestTitle = await chatTitle(); await pad(page, 12);
-    check(turnCount < 2 || await chatTitle() !== latestTitle, `Up shows the previous turn: ${await chatTitle()}`);
+    const openedTitle = await chatTitle(); await pad(page, 12);
+    const upMoved = await chatTitle() !== openedTitle;
+    check(turnCount < 2 || openedTitle === 'Battle start' || upMoved, `Up shows the previous turn: ${await chatTitle()}`);
     const shownTitle = await chatTitle(); await pad(page, 14); await pad(page, 15);
     check(await chatTitle() === shownTitle && await page.evaluate(() => document.querySelector('#modal').dataset.view) === 'chat', 'Left and right do nothing in the chat');
     await pad(page, 13);
-    check(await chatTitle() === latestTitle, 'Down returns to the latest turn');
-    await pad(page, 13);
-    check(await chatTitle() === latestTitle, 'Down past the latest turn stays put');
+    check(!upMoved || await chatTitle() === openedTitle, 'Down returns to the opened turn');
+    const latestTitle = await page.locator('#hidden-log .inner > h2').last().innerText();
+    await pad(page, 13); await pad(page, 13);
+    check(await chatTitle() === latestTitle, 'Down past the latest turn stays put on the current turn');
     check(!(await fit(page)).length, `Chat turn fits without scrolling: ${await fit(page)}`);
     const chatBox = async () => page.evaluate(() => { const r = document.querySelector('#modal').getBoundingClientRect(); return `${Math.round(r.width)}x${Math.round(r.height)}`; });
     const sizeLatest = await chatBox(); await pad(page, 12); const sizePrevious = await chatBox(); await pad(page, 13);
@@ -305,6 +309,13 @@ try {
   const rendererResult = await renderer.locator('#results').innerText();
   check(!rendererResult.includes('FAIL'), rendererResult); await renderer.close();
 
+  const lobby = await browser.newPage(); await gamepad(lobby);
+  await lobby.goto(`${base}/test/cancel.html?lobby`); await lobby.waitForSelector('#switch-1');
+  await lobby.keyboard.press('s'); await lobby.locator('#primary').click();
+  await lobby.waitForFunction(() => document.querySelector('#arena-wrap').dataset.room.includes('12345'));
+  check((await lobby.locator('#test-commands').innerText()).match(/\/search gen9randombattle/g).length === 1 && await lobby.locator('dialog[open]').count() === 0, 'Connect to Showdown searches for a battle by itself once the login is confirmed');
+  await lobby.close();
+
   const cancel = await browser.newPage(); await gamepad(cancel);
   await cancel.goto(`${base}/test/cancel.html`); await cancel.waitForSelector('#switch-1');
   await cancel.keyboard.press('s'); await cancel.locator('#primary').click();
@@ -340,6 +351,15 @@ try {
   check(await cancel.locator('[data-info-tab]').count() === 0 && await cancel.locator('.overview-layout').count() === 1 && (await cancel.locator('#modal-title').innerText()).includes('🎯 Tera Blast user'), 'Live inference removes incompatible sibling pages, leaving one role page with the 🎯 badge');
   check(await cancel.locator('#opponent-4').getAttribute('data-cue') === 'green', 'Identified opponent gets a green roster border');
   check(!(await fit(cancel)).length, `Inferred overview fits the smallest viewport: ${await fit(cancel)}`);
+  check(await cancel.locator('.compact-move[data-revealed="true"]').count() >= 1 && await cancel.evaluate(() => getComputedStyle(document.querySelector('.compact-move[data-revealed="true"] strong'), '::after').content.includes('👀')), 'Seen moves on the role page carry the 👀 mark');
+  await cancel.keyboard.press('Escape'); await cancel.locator('#opponent-3').focus(); await cancel.locator('#opponent-4').focus();
+  const foeRow = await cancel.evaluate(() => { const b = [...document.querySelectorAll('.move-preview')]; return {total: b.length, revealed: b.filter(x => !x.dataset.candidate && !x.classList.contains('more-moves') && !x.classList.contains('unknown-move')).length, candidates: b.filter(x => x.dataset.candidate).length, more: b.filter(x => x.classList.contains('more-moves')).map(x => x.textContent), blanks: b.filter(x => x.classList.contains('unknown-move')).length}; });
+  check(foeRow.total === 4 && foeRow.revealed === 1 && foeRow.blanks === 0 && foeRow.candidates + foeRow.more.length === 3 && (!foeRow.more.length || /^\+\d+ more$/.test(foeRow.more[0])), `An identified role fills the foe move row with candidates, no blanks: ${JSON.stringify(foeRow)}`);
+  check(await cancel.evaluate(() => getComputedStyle(document.querySelector('.move-preview[data-seen="true"] strong'), '::after').content.includes('👀') && getComputedStyle(document.querySelector('.move-preview[data-candidate="true"] strong'), '::after').content.includes('❓')), 'Foe move row marks seen moves 👀 and inferred candidates ❓');
+  await cancel.keyboard.press('s'); await cancel.locator('#forfeit').click();
+  check(await cancel.evaluate(() => document.activeElement.id) === 'keep-playing' && await cancel.locator('#modal-title').innerText() === 'Forfeit battle?' && await cancel.locator('#confirm-forfeit').innerText() === 'Forfeit' && await cancel.evaluate(() => { const [left, right] = document.querySelectorAll('.modal-actions button'); return left.id === 'keep-playing' && right.id === 'confirm-forfeit' && getComputedStyle(left.parentElement).justifyContent === 'center'; }), 'The forfeit dialog is titled Forfeit battle?, opens on Keep playing (left) with Forfeit on the right, buttons centered');
+  await cancel.locator('#keep-playing').click();
+  await cancel.locator('#opponent-4').focus(); await cancel.keyboard.press('i'); await cancel.waitForSelector('.inspection-note');
   await cancel.screenshot({path: `test-results/${engineName}-inferred-set.png`});
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|move|p2a: Raichu|Spore|p1a: Grumpig\n|turn|19'}));
   await cancel.waitForFunction(() => document.querySelector('.inspection-note').textContent.includes('do not match'));
