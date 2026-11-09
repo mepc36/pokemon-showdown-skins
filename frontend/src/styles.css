@@ -395,3 +395,6 @@ dialog[data-view=chat] .chat-turn{flex:1;min-height:0;overflow:auto}
 /* Version badge, bottom left of the field in the timer's blue; timer text is left-justified. */
 #app-version{position:absolute;left:8px;bottom:8px;z-index:2;color:#1d4e89;font-size:14px;font-weight:700;line-height:1;text-align:left}
 #battle-timer{align-items:flex-start}.timer-who{text-align:left}#timer-value,#foe-timer-value{text-align:left}
+
+/* The active Pokémon on either roster carries a thick timer-blue inner border, so it never reads as fainted gray; kept while a choice is pending. */
+.team button[data-active=true],#choices[data-pending="true"] .team button[data-active=true]{box-shadow:inset 0 0 0 3px #1d4e89;border-color:#1d4e89}

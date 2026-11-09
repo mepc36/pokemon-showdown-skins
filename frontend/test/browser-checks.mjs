@@ -67,6 +67,7 @@ try {
     const rosterText = await page.locator('#roster button, #opponent-roster button').allInnerTexts();
     check(rosterText.length === 12 && rosterText.every(text => !/%|\d+\/\d+|Active/.test(text)), `Roster entries show no HP numbers and no Active text: ${rosterText.join(' | ')}`);
     check(await page.locator('#switch-1[data-active=true]').count() === 1 && await page.locator('#roster [data-active=true]').count() === 1, 'The active Pokémon is marked by attribute, not text');
+    check(await page.evaluate(() => ['#switch-1', '#opponent-1'].every(sel => getComputedStyle(document.querySelector(sel)).boxShadow.includes('rgb(29, 78, 137)') && getComputedStyle(document.querySelector(sel)).boxShadow.includes('3px'))), 'Active Pokémon on both rosters carry the thick timer-blue border');
     await page.locator('#switch-3').focus(); await stick(page, 1);
     check(await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-3', 'The right stick no longer flips the team row');
     await pad(page, 10);
@@ -92,7 +93,7 @@ try {
     check(await page.evaluate(() => { const badge = document.querySelector('#app-version'), timer = document.querySelector('#battle-timer'); const wrap = document.querySelector('#arena-wrap').getBoundingClientRect(), r = badge.getBoundingClientRect(); return /^\d+\.\d+\.\d+$/.test(badge.textContent) && getComputedStyle(badge).color === getComputedStyle(timer).color && r.left - wrap.left < 20 && wrap.bottom - r.bottom < 20; }), `Version badge shows a semver in the timer's blue at the bottom left: ${await page.locator('#app-version').innerText()}`);
     if (viewport.width === 1024 && viewport.height === 650) {
       const fresh = await browser.newPage(); await fresh.goto(`${base}/fresh.html`); await fresh.waitForSelector('#switch-1');
-      check(/\?fresh=\d{13}$/.test(fresh.url()) && await fresh.locator('#app-version').innerText() === '1.0.1', `fresh.html redirects to the app under a timestamped query string: ${fresh.url()}`);
+      check(/\?fresh=\d{13}$/.test(fresh.url()) && await fresh.locator('#app-version').innerText() === '1.1.0', `fresh.html redirects to the app under a timestamped query string: ${fresh.url()}`);
       await fresh.close();
     }
     check(await page.evaluate(() => getComputedStyle(document.querySelector('#battle-timer')).alignItems === 'flex-start' && [...document.querySelectorAll('.timer-who')].every(el => getComputedStyle(el).textAlign === 'left')), 'Timer rows are left-justified');
@@ -360,6 +361,7 @@ try {
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|switch|p2a: Raichu|Raichu, L88, M|100/100\n|turn|17'}));
   await cancel.waitForFunction(() => document.querySelector('#opponent-4')?.textContent.includes('Raichu'));
   await cancel.keyboard.press('f'); await cancel.locator('#opponent-4').focus(); await cancel.keyboard.press('i');
+  check(await cancel.evaluate(() => { const rows = [...document.querySelectorAll('.role-group')].map(g => [...g.querySelectorAll('.compact-move[data-move]')].map(li => li.dataset.move)); if (rows.length < 2) return false; const shared = rows[0].filter(id => rows.every(row => row.includes(id))); return shared.every((id, i) => rows.every(row => row[i] === id)); }), 'Moves shared by every candidate role sit in the same leftmost columns of each row');
   check(await cancel.locator('[data-info-tab]').count() === 0 && await cancel.locator('.role-group').count() >= 2 && (await cancel.locator('#modal-title').innerText()).includes('❓') && (await cancel.locator('#modal-title').innerText()).includes('possible roles'), 'Ambiguous opponent lists every matching role on one page with the ❓ badge');
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|move|p2a: Raichu|Tera Blast|p1a: Grumpig\n|turn|18'}));
   await cancel.waitForFunction(() => document.querySelector('#modal-title').textContent.includes('🎯'));
