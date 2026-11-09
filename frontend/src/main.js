@@ -220,7 +220,8 @@ function showInfo(page) {
     const current = currentRequest()?.active?.[0]?.moves?.find(m => m.id === page.id);
     const move = moveInformation(page.id, current);
     title = move.name;
-    banner = `<div class="inspection-banner move-banner">${typeBadges([move.type])}<strong>${escape(move.category)}</strong></div>`;
+    const categoryEmoji = {Physical: '⚔️', Special: '✨', Status: '🛡️'}[move.category] || '';
+    banner = `<div class="inspection-banner move-banner">${typeBadges([move.type])}<strong>${categoryEmoji} ${escape(move.category)}</strong></div>`;
     pages = movePages(move);
   } else {
     const slot = teamSlots(page.side)[page.index - 1];
