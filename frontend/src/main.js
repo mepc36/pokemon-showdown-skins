@@ -374,12 +374,7 @@ function renderMovePreview() {
     const foe = foeMoveSlots(slot);
     row.dataset.preview = 'true';
     $('tera').innerHTML = teraMarkup(foe.teraType || 'Unknown'); $('tera').dataset.type = foe.teraType || 'Unknown'; $('tera').disabled = true;
-    row.insertAdjacentHTML('afterbegin', Array.from({length: 4}, (_, i) => {
-      const move = foe.moves[i];
-      if (!move) return `<button id="preview-move-${i + 1}" class="move-preview unknown-move" data-nav data-row="moves" aria-disabled="true" aria-label="Unknown move">—</button>`;
-      const type = move.type || window.BattleMovedex[move.id]?.type || '';
-      return `<button id="preview-move-${i + 1}" class="move-preview" data-nav data-row="moves" aria-disabled="true" data-type="${escape(type)}" aria-description="Not selectable: opponent's move"><strong>${escape(move.name)}</strong><small><span class="move-type">${escape(type)}</span><span></span></small></button>`;
-    }).join(''));
+    row.insertAdjacentHTML('afterbegin', Array.from({length: 4}, (_, i) => previewMoveButton(foe.moves[i], i, "Not selectable: opponent's move")).join(''));
     return;
   }
   if (previewed) { const type = previewed.terastallized || previewed.teraType || 'Unknown'; $('tera').innerHTML = teraMarkup(type); $('tera').dataset.type = type; $('tera').disabled = teraLabel ? teraLabel.disabled || teraUsed : teraUsed; }
@@ -388,9 +383,8 @@ function renderMovePreview() {
   const moves = knownMoves('own', previewIndex);
   row.insertAdjacentHTML('afterbegin', Array.from({length: 4}, (_, i) => {
     const move = moves[i];
-    if (!move) return `<button id="preview-move-${i + 1}" class="move-preview unknown-move" data-nav data-row="moves" aria-disabled="true" aria-label="Unknown move">—</button>`;
-    const type = move.type || window.BattleMovedex[move.id]?.type || '';
-    return `<button id="preview-move-${i + 1}" class="move-preview" data-nav data-row="moves" aria-disabled="true" data-type="${escape(type)}" data-cue="${escape(move.cue || '')}" title="${escape(move.label || '')}" aria-description="Not selectable: this Pokémon is on the bench"><strong>${escape(move.name)}</strong><small><span class="move-type">${escape(type)}</span><span>${move.current ? `${escape(move.current.pp ?? '—')} / ${escape(move.current.maxpp ?? '—')} PP` : ''}</span></small></button>`;
+    const pp = move?.current ? `${escape(move.current.pp ?? '—')} / ${escape(move.current.maxpp ?? '—')} PP` : '';
+    return previewMoveButton(move, i, 'Not selectable: this Pokémon is on the bench', move ? `data-cue="${escape(move.cue || '')}" title="${escape(move.label || '')}"` : '', pp);
   }).join(''));
 }
 // Side panels: left is the shown own Pokémon attacking their active one, right is
@@ -428,13 +422,20 @@ function renderMatchup() {
     <div class="stat-pair">${box('Spe', foe.spe, true)}${data ? badge('foe') : box('Spe', null)}</div>`;
 }
 
+// Nothing can be chosen while signed out, recovering, after the battle, or without a request.
+const choicesDisabled = request => !fixture && (!state.authenticated || state.recovering || state.ended || !request);
+// One grayed preview-move button, shared by own bench previews and foe previews.
+function previewMoveButton(move, index, description, extra = '', pp = '') {
+  if (!move) return `<button id="preview-move-${index + 1}" class="move-preview unknown-move" data-nav data-row="moves" aria-disabled="true" aria-label="Unknown move">—</button>`;
+  const type = move.type || window.BattleMovedex[move.id]?.type || '';
+  return `<button id="preview-move-${index + 1}" class="move-preview" data-nav data-row="moves" aria-disabled="true" data-type="${escape(type)}" ${extra} aria-description="${description}"><strong>${escape(move.name)}</strong><small><span class="move-type">${escape(type)}</span><span>${pp}</span></small></button>`;
+}
+
 function renderRoster() {
   if (!$('roster')) return;
   const focusId = document.activeElement?.id;
   const request = currentRequest();
-  const disabled = !fixture && (!state.authenticated || state.recovering || state.ended || !request);
-  // While a choice is pending or the opponent is moving, moves stay focusable for review but cannot be chosen.
-  const waiting = !fixture && !disabled && (state.pending || !!request.wait);
+  const disabled = choicesDisabled(request);
   const choices = availableChoices(request);
   for (const rosterSide of ['own', 'opponent']) {
     const roster = $(rosterSide === 'own' ? 'roster' : 'opponent-roster');
@@ -527,7 +528,7 @@ function render() {
   const choices = availableChoices(request);
   // While the opponent picks a replacement, keep showing the active Pokémon's four moves, locked.
   if (!fixture && (request?.wait || request?.forceSwitch) && !state.ended && lastMovesRequest) choices.moves = availableChoices({...lastMovesRequest, wait: false}).moves;
-  const disabled = !fixture && (!state.authenticated || state.recovering || state.ended || !request);
+  const disabled = choicesDisabled(request);
   // While a choice is pending or the opponent is moving, moves stay focusable for review but cannot be chosen.
   const waiting = !fixture && !disabled && (state.pending || !!request.wait || !!request.forceSwitch);
   const activePokemon = request?.side?.pokemon?.find(p => p.active) || lastRequest?.side?.pokemon?.find(p => p.active);
