@@ -335,3 +335,7 @@ dialog[data-view] #modal-body:has(.inspection-footer){display:flex;flex-directio
 #choices[data-pending="true"] .moves > button,#choices[data-pending="true"] .team button[data-active=true]{background:#d3d8dd;border-color:#b3bbc3;color:#6b737c;box-shadow:none}
 #choices[data-pending="true"] .moves > button strong,#choices[data-pending="true"] .moves > button small,#choices[data-pending="true"] .team button[data-active=true] strong{color:#6b737c}
 #choices[data-pending="true"] .team button[data-active=true] .picon{filter:grayscale(1);opacity:.6}
+
+/* Chat modal: one turn of the battle log per page, large enough to read from the couch. */
+.chat-turn{font-size:18px;line-height:1.5}.chat-turn .battle-history,.chat-turn .chat{margin:6px 0}
+.chat-turn .spoiler{color:inherit;background:none}.chat-hint{font-size:13px;color:var(--muted);margin:14px 0 0}

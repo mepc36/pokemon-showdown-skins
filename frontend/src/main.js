@@ -57,15 +57,33 @@ function closeModal() {
 $('modal-close').onclick = closeModal;
 modal.addEventListener('cancel', event => { event.preventDefault(); closeModal(); });
 
-// Chat drawer: slides over the right edge of the field. Header button or C toggles it.
-function scrollChat(step) { const drawer = $('chat-drawer'); if (!drawer.hidden) drawer.scrollTop += step; }
-function showChat(open = $('chat-drawer').hidden) {
-  const drawer = $('chat-drawer');
-  drawer.hidden = !open;
-  $('chat')?.setAttribute('aria-pressed', String(open));
-  if (open) drawer.scrollTop = drawer.scrollHeight;
-  else if (drawer.contains(document.activeElement)) $('chat')?.focus({preventScroll: true});
+// Chat: a modal that shows one turn of Showdown's battle log at a time. Showdown writes the whole
+// log into #hidden-log; each turn starts with an <h2 class="battle-history">Turn N</h2> heading.
+let chatTurn = null; // index of the shown turn; null = the latest turn
+function chatTurns() {
+  const turns = [[]];
+  for (const node of $('hidden-log').querySelectorAll('.inner > *')) { if (node.tagName === 'H2') turns.push([]); turns.at(-1).push(node); }
+  return turns.filter(turn => turn.length);
 }
+function showChat(step = 0) {
+  const turns = chatTurns();
+  const latest = Math.max(0, turns.length - 1);
+  const index = Math.min(Math.max((chatTurn ?? latest) + step, 0), latest);
+  chatTurn = index;
+  const turn = turns[index] || [];
+  const title = turn[0]?.tagName === 'H2' ? turn[0].textContent : 'Battle start';
+  const lines = turn.filter(node => node.tagName !== 'H2').map(node => node.outerHTML).join('');
+  showModal(title, `<div class="chat-turn">${lines || '<p class="small">Nothing happened yet.</p>'}</div><p class="chat-hint">Up: previous turn. Down: next turn. B: back to the menu.</p>`, 'chat');
+}
+// New log lines while the chat is open re-render the shown turn but never move it. Showdown
+// appends lines as the animation plays, after the arena callback, so the log element is watched.
+let chatRefreshQueued = false;
+function refreshChat() {
+  if (!modal.open || modal.dataset.view !== 'chat' || chatRefreshQueued) return;
+  chatRefreshQueued = true;
+  requestAnimationFrame(() => { chatRefreshQueued = false; if (modal.open && modal.dataset.view === 'chat') showChat(); });
+}
+new MutationObserver(refreshChat).observe($('hidden-log'), {childList: true, subtree: true});
 // Menu: Select (or H) opens the secondary controls in a modal. There is no header row.
 function showMenu() {
   const reopen = modal.open && modal.dataset.view === 'menu';
@@ -73,8 +91,8 @@ function showMenu() {
   const primaryLabel = fixture || session?.stopped ? 'Connect to Showdown' : !state.authenticated ? 'Sign in with Showdown' : state.searching ? 'Cancel search' : 'Find Random Battle';
   const primaryDisabled = !fixture && !session?.stopped && (!state.authenticated ? !state.challenge : !!state.room && !state.ended);
   // Two rows of four so the d-pad moves between rows instead of jumping to the close button.
-  showModal('Menu', `<div class="menu-grid">${btn('primary', primaryLabel, 'menu-1', primaryDisabled, 'class="primary"')}
-    ${btn('chat', 'Chat', 'menu-1', false, `aria-pressed="${!$('chat-drawer').hidden}"`)}${btn('rating', 'Rating', 'menu-1')}${btn('forfeit', 'Forfeit…', 'menu-1', !inBattle || !fixture && !state.authenticated)}
+  showModal('Menu', `<div class="menu-grid">${btn('chat', 'Chat', 'menu-1')}${btn('primary', primaryLabel, 'menu-1', primaryDisabled, 'class="primary"')}
+    ${btn('rating', 'Rating', 'menu-1')}${btn('forfeit', 'Forfeit…', 'menu-1', !inBattle || !fixture && !state.authenticated)}
     ${btn('setup', 'Setup', 'menu-2')}${btn('diagnostics', 'Controller check', 'menu-2')}${btn('source', 'Source', 'menu-2')}${btn('open-replay', 'Open replay', 'menu-2', !state.replayUrl)}</div>`, 'menu');
   $('primary').onclick = () => safe(() => {
     localNotice = ''; closeModal();
@@ -83,13 +101,13 @@ function showMenu() {
     else if (state.searching) session.cancelSearch();
     else session.search();
   });
-  $('chat').onclick = () => { closeModal(); showChat(); };
+  $('chat').onclick = () => { chatTurn = null; showChat(); };
   $('rating').onclick = () => showRating();
   $('forfeit').onclick = forfeit;
   $('setup').onclick = setup; $('diagnostics').onclick = diagnostics;
   $('open-replay').onclick = () => { if (state.replayUrl) window.open(state.replayUrl, '_blank', 'noopener'); };
   $('source').onclick = () => { const link = document.createElement('a'); link.href = './source.zip'; link.download = ''; link.click(); };
-  if (!reopen) modal.querySelector('.menu-grid button:not(:disabled)')?.focus({preventScroll: true});
+  if (!reopen) $('chat').focus({preventScroll: true});
 }
 
 function setup() {
@@ -501,7 +519,7 @@ function render() {
   for (const move of choices.moves) $(`move-${move.index}`).onclick = () => { if (!waiting && move.enabled) choose('move', move.index); };
   if (endControls) {
     $('replay').onclick = () => arena.replay();
-    $('first-turn').onclick = () => arena.seekTurn(0);
+    $('first-turn').onclick = () => arena.seekTurn(1);
     $('prev-turn').onclick = () => arena.seekTurn(arena.turn - 1);
     $('next-turn').onclick = () => arena.seekTurn(arena.turn + 1);
     $('end-turn').onclick = () => arena.seekTurn(Infinity);
@@ -561,11 +579,13 @@ async function init() {
   }, action(action) {
     if (['up', 'down', 'left', 'right'].includes(action)) {
       if (modal.open && infoPage) { navigateInfo(action); return; }
+      if (modal.open && modal.dataset.view === 'chat') { if (action === 'up') showChat(-1); if (action === 'down') showChat(1); return; }
       navigate(action); return;
     }
     if (action === 'cancel') {
       // B never moves the cursor: it closes a modal or undoes a pending choice, nothing else.
-      if (modal.open) closeModal();
+      if (modal.open && modal.dataset.view === 'chat') showMenu();
+      else if (modal.open) closeModal();
       else $('undo')?.click();
       return;
     }
@@ -576,8 +596,7 @@ async function init() {
       return;
     }
     if (modal.open) return;
-    ({tera: () => $('tera')?.click(), menu: forfeit, info, team: () => showTeam(), tools: showMenu, chat: () => showChat(),
-      chatUp: () => scrollChat(-80), chatDown: () => scrollChat(80)})[action]?.();
+    ({tera: () => $('tera')?.click(), info, team: () => showTeam(), tools: showMenu, chat: () => { chatTurn = null; showChat(); }})[action]?.();
   }});
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { music.update(false); return; }
