@@ -356,3 +356,38 @@ dialog[data-view=chat] .chat-turn{flex:1;min-height:0;overflow:auto}
 .overview-layout .compact-moves{grid-template-columns:repeat(var(--move-columns,4),minmax(0,1fr))}
 .overview-layout .compact-moves[style*="--move-columns:5"] .compact-move strong,.overview-layout .compact-moves[style*="--move-columns:6"] .compact-move strong,.overview-layout .compact-moves[style*="--move-columns:7"] .compact-move strong,.overview-layout .compact-moves[style*="--move-columns:8"] .compact-move strong{font-size:15px}
 .overview-layout .compact-moves[style*="--move-columns:7"] .compact-move,.overview-layout .compact-moves[style*="--move-columns:8"] .compact-move{flex-direction:column;align-items:flex-start;gap:2px;padding:6px 8px}
+
+/* All candidate roles on one R3 page: the role name sits left of its one-row move list. Tighter with more roles. */
+.overview-layout .role-group{display:grid;grid-template-columns:128px minmax(0,1fr);gap:8px;align-items:center;margin-top:8px}
+.overview-layout .role-heading{margin:0;font-size:15px;line-height:1.2}.overview-layout .role-heading small{display:block;font-weight:400;color:var(--muted);font-size:11px}
+.overview-layout[data-roles="2"] .compact-move,.overview-layout[data-roles="3"] .compact-move{min-height:44px;padding:4px 8px}
+.overview-layout[data-roles="3"] .role-group{margin-top:6px}
+.overview-layout[data-roles="3"] .compact-move strong{font-size:15px}
+.overview-layout .compact-moves[style*="--move-columns:9"] .compact-move,.overview-layout .compact-moves[style*="--move-columns:10"] .compact-move{flex-direction:column;align-items:flex-start;gap:2px;padding:4px 6px}
+.overview-layout .compact-moves[style*="--move-columns:9"] .compact-move strong,.overview-layout .compact-moves[style*="--move-columns:10"] .compact-move strong{font-size:13px}
+@media(max-height:600px){
+  .overview-layout[data-roles="2"] .info-facts>div,.overview-layout[data-roles="3"] .info-facts>div{padding:4px 8px}
+  .overview-layout[data-roles="2"] .info-facts,.overview-layout[data-roles="3"] .info-facts{margin:6px 0}
+  .overview-layout[data-roles="3"] .compact-move{min-height:38px;padding:2px 7px}
+  .overview-layout[data-roles="3"] .compact-move strong{font-size:14px}.overview-layout[data-roles="3"] .compact-move .type-badge{font-size:11px;padding:1px 5px}
+  .overview-layout[data-roles="3"] .role-group{margin-top:4px}
+}
+@media(max-height:600px){
+  /* Smallest iPad height with several roles: names stay on one line (ellipsis) and list cards clamp to two lines. */
+  .overview-layout[data-roles="2"] .compact-move strong,.overview-layout[data-roles="3"] .compact-move strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal}
+  .overview-layout[data-roles="2"] .info-facts>div[data-list="true"] dd,.overview-layout[data-roles="3"] .info-facts>div[data-list="true"] dd{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .overview-layout[data-roles="2"] .compact-moves[style*="--move-columns:7"] .compact-move,.overview-layout[data-roles="2"] .compact-moves[style*="--move-columns:8"] .compact-move,.overview-layout[data-roles="3"] .compact-moves[style*="--move-columns:7"] .compact-move,.overview-layout[data-roles="3"] .compact-moves[style*="--move-columns:8"] .compact-move{flex-direction:row;align-items:center}
+  .overview-layout[data-roles="3"] .compact-moves[style*="--move-columns:6"] .compact-move .type-badge,.overview-layout[data-roles="3"] .compact-moves[style*="--move-columns:7"] .compact-move .type-badge,.overview-layout[data-roles="3"] .compact-moves[style*="--move-columns:8"] .compact-move .type-badge{display:none}
+  .overview-layout[data-roles="2"] .compact-moves[style*="--move-columns:8"] .compact-move .type-badge{display:none}
+}
+@media(max-height:600px){.overview-layout[data-roles="3"] .info-facts>div[data-list="true"] dd{-webkit-line-clamp:1}.overview-layout[data-roles="3"] .stats-layout .info-facts>div{padding:3px 8px}}
+/* Role move names never wrap: one line with an ellipsis; six or more columns stack the name over the type. */
+.overview-layout .compact-move strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;min-width:0}
+.overview-layout .compact-moves[style*="--move-columns:6"] .compact-move{flex-direction:column;align-items:flex-start;gap:2px;padding:6px 8px}
+.overview-layout .compact-moves[style*="--move-columns:6"] .compact-move strong{font-size:15px;max-width:100%}
+.overview-layout .compact-moves[style*="--move-columns:7"] .compact-move strong,.overview-layout .compact-moves[style*="--move-columns:8"] .compact-move strong,.overview-layout .compact-moves[style*="--move-columns:9"] .compact-move strong,.overview-layout .compact-moves[style*="--move-columns:10"] .compact-move strong{max-width:100%}
+/* Final word on wide rows: never stack. Six columns shrink the badge; seven or more drop it (the tint still shows the type). */
+.overview-layout .compact-moves[style*="--move-columns:"] .compact-move{flex-direction:row;align-items:center}
+.overview-layout .compact-moves[style*="--move-columns:6"] .compact-move{padding:4px 8px}
+.overview-layout .compact-moves[style*="--move-columns:6"] .compact-move .type-badge{font-size:11px;padding:1px 4px}
+.overview-layout .compact-moves[style*="--move-columns:7"] .compact-move .type-badge,.overview-layout .compact-moves[style*="--move-columns:8"] .compact-move .type-badge,.overview-layout .compact-moves[style*="--move-columns:9"] .compact-move .type-badge,.overview-layout .compact-moves[style*="--move-columns:10"] .compact-move .type-badge{display:none}

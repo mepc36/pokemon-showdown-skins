@@ -27,7 +27,6 @@ export const facts = entries => `<dl class="info-facts">${entries.map(([label, v
   return `<div${meta.type ? ` data-type="${escape(meta.type)}"` : ''}${meta.list ? ' data-list="true"' : ''}${meta.cue ? ` data-cue="${escape(meta.cue)}" title="${escape(meta.hint || {green: 'Highest stat', yellow: 'Next-highest stat', red: 'Lowest stat'}[meta.cue])}"` : ''}><dt>${escape(label)}</dt><dd>${meta.item ? itemLabel(value) : escape(value)}</dd></div>`;
 }).join('')}</dl>`;
 export const typeBadges = types => types.map(type => `<span class="type-badge" data-type="${escape(type)}">${escape(type)}</span>`).join('');
-const chunks = (values, size) => Array.from({length: Math.ceil(values.length / size)}, (_, i) => values.slice(i * size, (i + 1) * size));
 
 // These are deliberately static entries, never controls that open child menus.
 export function moveList(moves, placeholders = 0) {
@@ -52,21 +51,22 @@ export function rolePages(store, name, level, statsInfo = '', inference, {known 
   const sets = inference?.sets || possibleSets(store.snapshot, name, level);
   if (!sets.length) return [{key: 'sets-missing', label: 'Possible sets', content: '<p>No matching set data.</p>', note: 'This species or form is absent from the snapshot.'}];
   const identified = !!inference?.identified;
-  return sets.flatMap(set => set.roles.flatMap(role => {
-    // Seen moves lead, as on the battle screen's foe move row.
-    const moves = chunks(Object.keys(role.moves).map(name => { const id = moveInformation(name).id; return {id, revealed: revealed.has(id)}; }).sort((a, b) => Number(b.revealed) - Number(a.revealed)), 8);
-    const abilities = Object.keys(role.abilities), items = Object.keys(role.items || {'No item': 1}), tera = Object.keys(role.teraTypes);
-    const cards = [
-      known.ability ? ['Ability', known.ability] : ['Ability', abilities.join(' / ') || 'Unknown', {list: true}],
-      known.item ? ['Item', known.item, {item: true}] : known.previousItem ? ['Item', `Lost ${known.previousItem}`] : ['Item', items.join(' / '), {list: true}],
-      known.teraType ? ['Tera', known.teraType, known.teraType] : known.inferredTera ? ['Tera', known.inferredTera, {type: known.inferredTera, cue: 'green', hint: 'All remaining set definitions have this Tera type'}] : ['Tera', tera.join(' / ') || 'Unknown', {list: true}]];
-    const count = Math.max(1, moves.length);
-    return Array.from({length: count}, (_, i) => ({key: `${set.name}:${role.name}:${i}`, label: `${role.name}${count > 1 ? ` ${i + 1}/${count}` : ''}`,
-      title: `${name} · Lv ${level} · ${identified ? '🎯' : '❓'} ${role.name}`,
-      content: `<div class="overview-layout">${facts(cards)}<h3>Stats (before modifiers)</h3>${statsInfo}
-        <h3>Moves</h3>${moveList(moves[i] || [], 4)}</div>`,
-      note: `${inference?.status === 'unmatched' ? 'Reveals do not match this snapshot; showing all candidates' : identified ? 'Role identified; unrevealed moves and items remain candidates' : 'Candidates, not confirmed'}${set.levelMismatch ? ` · snapshot level ${set.level}` : ''} · snapshot ${store.snapshot.source.updatedAt.slice(0, 10)}${count > 1 ? ' · continued role' : ''}`}));
-  }));
+  const roles = sets.flatMap(set => set.roles.map(role => ({set, role})));
+  const union = field => [...new Set(roles.flatMap(({role}) => Object.keys(role[field] || {})))];
+  const abilities = union('abilities'), items = roles.some(({role}) => role.items) ? union('items') : ['No item'], tera = union('teraTypes');
+  const cards = [
+    known.ability ? ['Ability', known.ability] : ['Ability', abilities.join(' / ') || 'Unknown', {list: true}],
+    known.item ? ['Item', known.item, {item: true}] : known.previousItem ? ['Item', `Lost ${known.previousItem}`] : ['Item', items.join(' / '), {list: true}],
+    known.teraType ? ['Tera', known.teraType, known.teraType] : known.inferredTera ? ['Tera', known.inferredTera, {type: known.inferredTera, cue: 'green', hint: 'All remaining set definitions have this Tera type'}] : ['Tera', tera.join(' / ') || 'Unknown', {list: true}]];
+  // One page: every candidate role as a heading over its moves in one row, seen moves first.
+  const groups = roles.map(({set, role}) => {
+    const moves = Object.keys(role.moves).map(name => { const id = moveInformation(name).id; return {id, revealed: revealed.has(id)}; }).sort((a, b) => Number(b.revealed) - Number(a.revealed));
+    return `<div class="role-group"><h3 class="role-heading">${escape(role.name)}${set.levelMismatch ? `<small>snapshot level ${escape(set.level)}</small>` : ''}</h3>${moveList(moves, 4)}</div>`;
+  });
+  const title = identified ? `${name} · Lv ${level} · 🎯 ${roles[0]?.role.name || ''}` : `${name} · Lv ${level} · ❓ ${roles.length === 1 ? roles[0].role.name : `${roles.length} possible roles`}`;
+  return [{key: 'roles', label: 'Roles', title,
+    content: `<div class="overview-layout" data-roles="${roles.length}">${facts(cards)}<h3>Stats (before modifiers)</h3>${statsInfo}${groups.join('')}</div>`,
+    note: `${inference?.status === 'unmatched' ? 'Reveals do not match this snapshot; showing all candidates' : identified ? 'Role identified; unrevealed moves and items remain candidates' : 'Candidates, not confirmed'} · snapshot ${store.snapshot.source.updatedAt.slice(0, 10)}`}];
 }
 
 // Long reference descriptions are fully retained as same-level pages.

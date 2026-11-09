@@ -238,7 +238,7 @@ try {
     check(await page.evaluate(() => document.activeElement.id) === 'move-2', 'Move details close directly to the battle move');
     await page.keyboard.press('f'); await page.locator('#opponent-1').focus(); await pad(page, 11);
     check(/^Landorus · Lv 76 · [🎯❓] /u.test(await page.locator('#modal-title').innerText()) && (await page.locator('.info-facts').first().innerText()).includes('Sheer Force') && (await page.locator('.identity-hp').innerText()).includes('31%'), 'Opponent title shows level and the role badge; cards show the revealed ability and last shown HP');
-    check(await page.locator('.overview-layout').count() === 1 && await page.locator('.role-heading, .role-layout, .merged-overview, [data-identified]').count() === 0 && await page.locator('.compact-move[data-revealed="true"]').count() >= 1, 'The opponent page uses the own-Pokémon layout, with revealed moves marked and no duplicate role tags');
+    check(await page.locator('.overview-layout').count() === 1 && await page.locator('.role-layout, .merged-overview, [data-identified]').count() === 0 && await page.evaluate(() => [...document.querySelectorAll('.role-group')].every(group => group.querySelector('.role-heading') && group.querySelector('.compact-moves'))) && await page.locator('.compact-move[data-revealed="true"]').count() >= 1, 'The opponent page uses the own-Pokémon layout, with revealed moves marked and no duplicate role tags');
     const roleTitle = await page.locator('#modal-title').innerText();
     await page.locator('.compact-move').first().click(); await pad(page, 11);
     check(await page.locator('#modal-title').innerText() === roleTitle && await page.locator('.overview-layout').count() === 1, 'R3 on a role move never opens another menu');
@@ -246,7 +246,7 @@ try {
     check(!(await fit(page)).length, `Role fits without scrolling: ${await fit(page)}`);
     await page.screenshot({path: `test-results/${engineName}-possible-role-${viewport.width}-${viewport.height}.png`});
     await pad(page, 15); await pad(page, 15);
-    check(await page.locator('.info-facts > div[data-list="true"]').count() >= 1 && (await page.locator('.overview-layout h3').allInnerTexts()).join('|') === 'Stats (before modifiers)|Moves' && (await page.locator('.stats-layout dt').allInnerTexts()).join(',') === 'Attack,Defense,Sp. Atk,Sp. Def,Speed' && (await page.locator('.stats-layout dd').allInnerTexts()).every(text => text.startsWith('~')), 'Right moves to the next opponent; the page uses the own layout: Ability/Item/Tera cards, five ~estimated stat boxes, Moves');
+    check(await page.locator('.info-facts > div[data-list="true"]').count() >= 1 && (await page.locator('.overview-layout > h3').allInnerTexts()).join('|') === 'Stats (before modifiers)' && await page.locator('.role-group').count() >= 1 && (await page.locator('.stats-layout dt').allInnerTexts()).join(',') === 'Attack,Defense,Sp. Atk,Sp. Def,Speed' && (await page.locator('.stats-layout dd').allInnerTexts()).every(text => text.startsWith('~')), 'Right moves to the next opponent; the page uses the own layout: Ability/Item/Tera cards, five ~estimated stat boxes, one move row per role');
     await pad(page, 15);
     check(await page.locator('[data-info-tab]').count() === 0 && await page.locator('#modal .type-badge, #modal .compact-move').count() === 0, 'Unknown slots expose neither a guessed identity nor possible sets');
     await pad(page, 0); await page.keyboard.press('f');
@@ -353,12 +353,12 @@ try {
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|switch|p2a: Raichu|Raichu, L88, M|100/100\n|turn|17'}));
   await cancel.waitForFunction(() => document.querySelector('#opponent-4')?.textContent.includes('Raichu'));
   await cancel.keyboard.press('f'); await cancel.locator('#opponent-4').focus(); await cancel.keyboard.press('i');
-  check(await cancel.locator('[data-info-tab]').count() > 2 && (await cancel.locator('#modal-title').innerText()).includes('❓'), 'Ambiguous opponent keeps all matching roles and shows the ❓ badge');
+  check(await cancel.locator('[data-info-tab]').count() === 0 && await cancel.locator('.role-group').count() >= 2 && (await cancel.locator('#modal-title').innerText()).includes('❓') && (await cancel.locator('#modal-title').innerText()).includes('possible roles'), 'Ambiguous opponent lists every matching role on one page with the ❓ badge');
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|move|p2a: Raichu|Tera Blast|p1a: Grumpig\n|turn|18'}));
   await cancel.waitForFunction(() => document.querySelector('#modal-title').textContent.includes('🎯'));
   const inferredTera = cancel.locator('.info-facts > div').filter({has: cancel.getByText('Tera', {exact: true})});
   check(await inferredTera.locator('dd').innerText() === 'Ice' && await inferredTera.getAttribute('data-cue') === 'green', 'A unique live move infers the fixed Tera and marks it green');
-  check(await cancel.locator('[data-info-tab]').count() === 0 && await cancel.locator('.overview-layout').count() === 1 && (await cancel.locator('#modal-title').innerText()).includes('🎯 Tera Blast user'), 'Live inference removes incompatible sibling pages, leaving one role page with the 🎯 badge');
+  check(await cancel.locator('.role-group').count() === 1 && await cancel.locator('.overview-layout').count() === 1 && (await cancel.locator('#modal-title').innerText()).includes('🎯 Tera Blast user'), 'Live inference removes incompatible roles, leaving one role row with the 🎯 badge');
   check(await cancel.locator('#opponent-4').getAttribute('data-cue') === 'green', 'Identified opponent gets a green roster border');
   check(!(await fit(cancel)).length, `Inferred overview fits the smallest viewport: ${await fit(cancel)}`);
   check(await cancel.locator('.compact-move[data-revealed="true"]').count() >= 1 && await cancel.evaluate(() => getComputedStyle(document.querySelector('.compact-move[data-revealed="true"] strong'), '::after').content.includes('👀')), 'Seen moves on the role page carry the 👀 mark');
