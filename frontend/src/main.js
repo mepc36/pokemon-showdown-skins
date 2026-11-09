@@ -266,7 +266,11 @@ function info(index) {
   if (slot) { showInfo({kind: 'pokemon', side: slot[1] === 'switch' ? 'own' : 'opponent', index: Number(slot[2])}); return; }
   const moveIndex = Number(focusedId.match(/^move-(\d+)$/)?.[1]);
   const move = currentRequest()?.active?.[0]?.moves?.[moveIndex - 1];
-  if (move) showInfo({kind: 'move', id: move.id});
+  if (move) { showInfo({kind: 'move', id: move.id}); return; }
+  // A grayed preview move belongs to the previewed bench Pokémon.
+  const previewMoveIndex = Number(focusedId.match(/^preview-move-(\d+)$/)?.[1]);
+  const previewMove = previewIndex ? knownMoves('own', previewIndex)[previewMoveIndex - 1] : null;
+  if (previewMove) showInfo({kind: 'move', id: previewMove.id});
 }
 document.addEventListener('focusin', event => {
   const id = event.target.id || '';
@@ -297,11 +301,6 @@ function setPreview(index) {
   previewIndex = next;
   renderMovePreview();
   renderMatchup();
-}
-function endPreview(focusTarget) {
-  setPreview(null);
-  if (focusTarget === 'moves') document.querySelector('#choices .moves button:not(:disabled):not([hidden])')?.focus({preventScroll: true});
-  else { const active = ownTeam().findIndex(p => p.active) + 1; if (active) $(`switch-${active}`)?.focus({preventScroll: true}); }
 }
 // Bench preview: the focused Pokémon's four known moves, with effectiveness cues. The cursor can
 // land on them, but pressing one does nothing; only the active Pokémon's moves can be chosen.
@@ -565,8 +564,8 @@ async function init() {
       navigate(action); return;
     }
     if (action === 'cancel') {
+      // B never moves the cursor: it closes a modal or undoes a pending choice, nothing else.
       if (modal.open) closeModal();
-      else if (previewIndex) endPreview('active');
       else $('undo')?.click();
       return;
     }
