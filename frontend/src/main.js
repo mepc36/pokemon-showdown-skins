@@ -584,7 +584,7 @@ function render() {
   $('notice').parentElement.hidden = true; // the top strip never shows; it would resize the field
   $('action-slots').append($('tera'), $('undo'));
   // After the battle the move row holds the replay controls instead of moves.
-  const endControls = !fixture && state.ended ? [btn('replay', 'Replay battle', 'moves'), btn('first-turn', 'First turn', 'moves'), btn('prev-turn', 'Prev turn', 'moves'), btn('next-turn', 'Next turn', 'moves'), btn('end-turn', 'Last turn', 'moves')].map(html => html.replace('<button ', '<button class="end-control" ')).join('') : '';
+  const endControls = !fixture && state.ended ? [btn('replay', '🔁 Replay battle', 'moves'), btn('first-turn', '⏮️ First turn', 'moves'), btn('prev-turn', '◀️ Prev turn', 'moves'), btn('next-turn', '▶️ Next turn', 'moves'), btn('end-turn', '⏭️ Last turn', 'moves')].map(html => html.replace('<button ', '<button class="end-control" ')).join('') : '';
   if (!fixture && state.ended) previewIndex = null;
   $('choices').innerHTML = `<div class="moves${endControls ? ' end-row' : ''}" role="group" aria-label="Moves">${endControls}${choices.moves.map(move => {
     const type = window.BattleMovedex[move.id]?.type || '';
