@@ -353,3 +353,6 @@ dialog[data-view=chat]{height:min(650px,calc(100dvh - 24px))}
 dialog[data-view=chat][open]{display:flex;flex-direction:column;gap:8px}
 dialog[data-view=chat] #modal-body{display:flex;flex-direction:column;min-height:0;flex:1}
 dialog[data-view=chat] .chat-turn{flex:1;min-height:0;overflow:auto}
+
+/* Select menu is two rows of three; the Start battle menu is one row of two. */
+.menu-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.battle-grid{grid-template-columns:repeat(2,minmax(0,1fr))}

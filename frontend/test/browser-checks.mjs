@@ -130,13 +130,18 @@ try {
     await page.screenshot({path: `test-results/${engineName}-battle-${viewport.width}-${viewport.height}.png`});
     check(!(await fit(page)).length, `Battle and header controls fit ${viewport.width}×${viewport.height}: ${await fit(page)}`);
     await page.locator('#switch-1').focus(); await pad(page, 8);
-    check(await page.locator('dialog[open]').count() === 1 && await page.locator('#modal-title').innerText() === 'Menu' && await page.locator('#modal #primary, #modal #chat, #modal #rating, #modal #forfeit, #modal #setup, #modal #diagnostics, #modal #source').count() === 7, 'Select opens a menu modal with the secondary controls and Find Random Battle');
+    check(await page.locator('dialog[open]').count() === 1 && await page.locator('#modal-title').innerText() === 'Menu' && await page.locator('#modal #chat, #modal #rating, #modal #open-replay, #modal #setup, #modal #diagnostics, #modal #source').count() === 6 && await page.locator('#modal #primary, #modal #forfeit').count() === 0 && (await page.locator('.menu-grid button').allInnerTexts()).join(',') === 'Chat,Rating,Open replay,Setup,Controller check,Source', 'Select opens a menu modal with Chat, Rating, Open replay, Setup, Controller check, Source and no battle buttons');
     check(await page.locator('#source').evaluate(el => el.tagName) === 'BUTTON' && await page.locator('a#source').count() === 0, 'Source is a button, not a hyperlink');
     await page.locator('#setup').focus(); await pad(page, 12);
     check(await page.evaluate(() => document.activeElement.id) === 'chat', 'Up from the second menu row lands on the button above, not the close button');
     await pad(page, 13);
     check(await page.evaluate(() => document.activeElement.id) === 'setup', 'Down returns to the second row');
     check(await page.locator('#modal #replay').count() === 0, 'Replay is not in the menu');
+    await pad(page, 0); await pad(page, 9);
+    check(await page.locator('dialog[open]').count() === 1 && await page.locator('#modal-title').innerText() === 'Battle' && (await page.locator('.menu-grid button').allInnerTexts()).join(',') === 'Connect to Showdown,Forfeit…' && await page.evaluate(() => document.activeElement.id) === 'primary', 'Start opens the battle menu with the primary button and Forfeit, primary focused');
+    await pad(page, 0);
+    check(await page.locator('dialog[open]').count() === 0, 'B closes the battle menu');
+    await pad(page, 8);
     check(!(await fit(page)).length, `Menu has no scrolling: ${await fit(page)}`);
     await page.screenshot({path: `test-results/${engineName}-menu-${viewport.width}-${viewport.height}.png`});
     await pad(page, 0);
@@ -302,7 +307,7 @@ try {
 
   const cancel = await browser.newPage(); await gamepad(cancel);
   await cancel.goto(`${base}/test/cancel.html`); await cancel.waitForSelector('#switch-1');
-  await cancel.keyboard.press('h'); await cancel.locator('#primary').click();
+  await cancel.keyboard.press('s'); await cancel.locator('#primary').click();
   await cancel.waitForFunction(() => document.querySelector('#arena-wrap').dataset.room.includes('12345'));
   await cancel.waitForFunction(() => document.querySelector('#test-commands').textContent.includes('/timer on'));
   check((await cancel.locator('#test-commands').innerText()).match(/\/timer on/g).length === 1 && await cancel.locator('#timer-toggle').count() === 0, 'The timer starts itself once when the battle starts');
@@ -433,7 +438,7 @@ try {
   check(await earliestTurn().then(t => !t.play && t.shown === t.first), 'Prev turn never goes before the first turn');
   await cancel.locator('#next-turn').click(); await cancel.locator('#end-turn').click();
   check(await cancel.locator('.moves #first-turn').count() === 1, 'Next turn and Last turn seek without error');
-  await cancel.keyboard.press('h');
+  await cancel.keyboard.press('s');
   const fieldBefore = await cancel.locator('#arena-wrap').boundingBox();
   await cancel.locator('#primary').click();
   await cancel.waitForFunction(() => !document.querySelector('#search-overlay').hidden);
