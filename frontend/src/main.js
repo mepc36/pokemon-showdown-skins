@@ -631,6 +631,8 @@ document.addEventListener('pointerdown', () => music.unlock(), {passive: true});
 document.addEventListener('keydown', event => { if (!event.repeat && event.isTrusted) music.unlock(); });
 
 async function init() {
+  // The version badge tells a fresh deploy from an iPad cache hit. Bump package.json on every release.
+  $('app-version').textContent = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '';
   config = await fetch('./config.json', {cache: 'no-store'}).then(response => response.json());
   rating = new PlayerRating(config.username);
   auth = new ShowdownAuth(localStorage.getItem('ps-mve-client-id') || config.clientId);

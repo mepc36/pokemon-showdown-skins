@@ -1,4 +1,6 @@
 import { defineConfig } from 'vite';
+import {readFileSync} from 'node:fs';
+const {version} = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 // Upstream builds these circular modules together. ESM needs aliases evaluated
 // lazily; keep the pinned vendor files untouched and adapt only at build time.
 const upstreamEsm = {
@@ -21,4 +23,4 @@ const upstreamEsm = {
     return source;
   },
 };
-export default defineConfig({base: './', plugins: [upstreamEsm], server: {allowedHosts: ['terminal.local']}, build: {target: 'es2020'}});
+export default defineConfig({base: './', define: {__APP_VERSION__: JSON.stringify(version)}, plugins: [upstreamEsm], server: {allowedHosts: ['terminal.local']}, build: {target: 'es2020'}});
