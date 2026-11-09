@@ -1,5 +1,5 @@
-// L3 (10) is unmapped. Select (8) opens the menu modal.
-export const BUTTONS = {0: 'cancel', 1: 'confirm', 3: 'tera', 8: 'tools', 9: 'menu', 11: 'info', 12: 'up', 13: 'down', 14: 'left', 15: 'right'};
+// L3 (10) flips the shown team row (iPad Chrome reports every bumper as 10). Select (8) opens the menu modal.
+export const BUTTONS = {0: 'cancel', 1: 'confirm', 3: 'tera', 8: 'tools', 9: 'menu', 10: 'team', 11: 'info', 12: 'up', 13: 'down', 14: 'left', 15: 'right'};
 export const risingEdges = (current, previous) => current.flatMap((pressed, index) => pressed && !previous[index] ? [index] : []);
 
 export function startController({action, diagnostic, ignored = () => new Set()}) {
