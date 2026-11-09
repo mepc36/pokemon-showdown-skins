@@ -479,7 +479,11 @@ function showTeam(side = shownTeam === 'own' ? 'opponent' : 'own') {
   shownTeam = side;
   const focused = document.activeElement?.id.match(/^(switch|opponent)-(\d+)$/);
   for (const row of document.querySelectorAll('.team-row')) row.hidden = row.dataset.side !== side;
-  (document.querySelector(`.team-row[data-side="${side}"] [data-active="true"]`) || $(`${side === 'own' ? 'switch' : 'opponent'}-${focused?.[2] || 1}`))?.focus({preventScroll: true});
+  const active = document.querySelector(`.team-row[data-side="${side}"] [data-active="true"]`) || $(`${side === 'own' ? 'switch' : 'opponent'}-${focused?.[2] || 1}`);
+  // Flipping to the opponent lands on their active Pokémon's first move, mirroring B on the own side.
+  const foeIndex = Number(active?.id.match(/^opponent-(\d+)$/)?.[1]);
+  if (foeIndex) { setFoePreview(foeIndex); setFoeMovePreview(foeIndex); }
+  ((foeIndex && document.querySelector('#choices .moves > #preview-move-1')) || active)?.focus({preventScroll: true});
   arena?.resize();
 }
 
@@ -624,7 +628,7 @@ async function init() {
       // B on the battle screen undoes a pending choice and puts the cursor on the active Pokémon's first move.
       if (modal.open && modal.dataset.view === 'chat') showMenu();
       else if (modal.open) closeModal();
-      else { $('undo')?.click(); focusFirstMove(); }
+      else { $('undo')?.click(); if (shownTeam !== 'own') showTeam('own'); focusFirstMove(); }
       return;
     }
     if (action === 'team' && modal.open) { flipInfoTeam(); return; }
