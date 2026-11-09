@@ -67,6 +67,7 @@ try {
     const rosterText = await page.locator('#roster button, #opponent-roster button').allInnerTexts();
     check(rosterText.length === 12 && rosterText.every(text => !/%|\d+\/\d+|Active/.test(text)), `Roster entries show no HP numbers and no Active text: ${rosterText.join(' | ')}`);
     check(await page.locator('#switch-1[data-active=true]').count() === 1 && await page.locator('#roster [data-active=true]').count() === 1, 'The active Pokémon is marked by attribute, not text');
+    check(await page.evaluate(() => ['#switch-1', '#opponent-1'].every(sel => getComputedStyle(document.querySelector(sel)).boxShadow.includes('rgb(29, 78, 137)') && getComputedStyle(document.querySelector(sel)).boxShadow.includes('3px'))), 'Active Pokémon on both rosters carry the thick timer-blue border');
     await page.locator('#switch-3').focus(); await stick(page, 1);
     check(await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-3', 'The right stick no longer flips the team row');
     await pad(page, 10);
