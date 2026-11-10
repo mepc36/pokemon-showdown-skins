@@ -5,9 +5,9 @@ import {ShowdownAuth} from './auth.mjs';
 import {availableChoices} from './protocol.mjs';
 import {startController, navigate} from './controller.mjs';
 import {PlayerRating} from './rating.mjs';
-import {Music, musicActive} from './music.js';
+import {Music, musicActive, timerToneDue} from './music.js';
 import {PossibleSets, possibleSets, narrowSets} from './possible-sets.mjs';
-import {escapeHtml, facts, typeBadges, moveList, rolePages, movePages, fitMoveDescription, itemIcon, regionalForm} from './info-components.mjs';
+import {escapeHtml, facts, typeBadges, moveList, rolePages, roleSplit, movePages, fitMoveDescription, itemIcon, regionalForm} from './info-components.mjs';
 import {demoLines, demoRequest} from './demo.mjs';
 import {moveInformation, effectName, knownOwnMoves, speciesInformation, stableOwnOrder} from './information.mjs';
 
@@ -31,9 +31,14 @@ const music = new Music(undefined, {storage: null});
 const sets = new PossibleSets();
 const safe = fn => { try { fn(); } catch (error) { localNotice = error.message; render(); } };
 
+// Your clock as last drawn during a live battle, so a tone sounds once as it passes 60, 30, 20, 15, 10 and 5 seconds.
+let ownClock = null;
 function updateTimer() {
   const on = fixture || state.timerOn;
   const seconds = session?.timerRemaining();
+  const counting = !fixture && state.timerOn && !state.ended && seconds != null ? seconds : null;
+  if (timerToneDue(ownClock, counting)) music.tone();
+  ownClock = counting;
   const clock = value => `${Math.floor(value / 60)}:${String(value % 60).padStart(2, '0')}`;
   $('timer-value').textContent = !on ? 'Timer off' : seconds == null ? 'Timer on' : clock(seconds);
   // The opponent's clock is only known from server warnings; it shows the last warned value, not a countdown.
@@ -218,7 +223,7 @@ function showRating(load = true, force = false) {
 }
 
 function showInfo(page) {
-  let title, banner = '', pages;
+  let title, banner = '', pages, roles = null;
   if (page.kind === 'move') {
     const current = currentRequest()?.active?.[0]?.moves?.find(m => m.id === page.id);
     const move = moveInformation(page.id, current);
@@ -265,21 +270,30 @@ function showInfo(page) {
           <h3>${own ? 'Moves' : 'Revealed moves'}</h3>${moveList(moves.slice(i * 4, i * 4 + 4), 4)}</div>`,
         note: moves.some(m => m.copied) ? '* Copied move' : own ? '' : inference?.identified ? `Role inferred: ${inference.role}. Unrevealed moves/items remain candidates.` : inference?.status === 'unmatched' ? 'Reveals do not match this snapshot; showing all candidates.' : 'Unrevealed information stays unknown.'}));
       // Opponents get one page per role: revealed facts on top, that role's possible sets below, revealed moves highlighted.
-      if (!own) pages = rolePages(sets, slot.name, slot.level, statCells ? `<div class="stats-layout">${facts(statCells)}</div>` : `<div class="stats-layout">${speedInfo}</div>`, inference, {known: {ability, item: p.item, previousItem: p.previousItem, teraType: p.teraType, inferredTera: inference?.teraType}, revealed: new Set(moves.map(m => moveInformation(m.id).id))});
+      if (!own) { roles = split => rolePages(sets, slot.name, slot.level, statCells ? `<div class="stats-layout">${facts(statCells)}</div>` : `<div class="stats-layout">${speedInfo}</div>`, inference, {known: {ability, item: p.item, previousItem: p.previousItem, teraType: p.teraType, inferredTera: inference?.teraType}, revealed: new Set(moves.map(m => moveInformation(m.id).id)), split}); pages = roles(); }
     }
   }
-  const tab = Math.max(0, Math.min(page.tab || 0, pages.length - 1));
-  const current = pages[tab];
-  const single = pages.length < 2;
-  // Own Pokémon have one page: no tab strip, no page footer. Left/right moves between Pokémon like the roster.
-  const tabs = single ? '' : `<div class="inspection-tabs" role="tablist" aria-label="Information pages">${pages.map((p, i) => `<button id="info-tab-${i}" role="tab" aria-selected="${i === tab}" aria-controls="info-content" data-info-tab="${i}">${escape(p.label)}</button>`).join('')}</div>`;
-  const pagingArrows = page.kind === 'pokemon' ? ['↑', '↓'] : ['←', '→'];
-  const nav = `<div class="inspection-footer">${single ? '' : `<div class="inspection-paging"><button id="prev-info-page" aria-label="Previous page">${pagingArrows[0]}</button><span>Page ${tab + 1} / ${pages.length}</span><button id="next-info-page" aria-label="Next page">${pagingArrows[1]}</button></div>`}
-    ${page.kind === 'pokemon' ? '<div class="inspection-paging"><button id="prev-info-mon" aria-label="Previous Pokémon">←</button><span>Pokémon</span><button id="next-info-mon" aria-label="Next Pokémon">→</button></div>' : ''}<span><kbd>B</kbd> Close</span></div>`;
-  showModal(current.title || title, `${banner}${tabs}<div id="info-content" role="tabpanel"${single ? '' : ` aria-labelledby="info-tab-${tab}"`}>${current.content}</div>${current.note ? `<p class="inspection-note">${escape(current.note)}</p>` : ''}${nav}`, page.kind);
+  let tab;
+  const draw = () => {
+    tab = Math.max(0, Math.min(page.tab || 0, pages.length - 1));
+    const current = pages[tab];
+    const single = pages.length < 2;
+    // No tab strip: the footer's page arrows and "Page 1 / 2" already show the pages. Left/right moves between Pokémon like the roster.
+    const pagingArrows = page.kind === 'pokemon' ? ['↑', '↓'] : ['←', '→'];
+    const nav = `<div class="inspection-footer">${single ? '' : `<div class="inspection-paging"><button id="prev-info-page" aria-label="Previous page">${pagingArrows[0]}</button><span>Page ${tab + 1} / ${pages.length}</span><button id="next-info-page" aria-label="Next page">${pagingArrows[1]}</button></div>`}
+      ${page.kind === 'pokemon' ? '<div class="inspection-paging"><button id="prev-info-mon" aria-label="Previous Pokémon">←</button><span>Pokémon</span><button id="next-info-mon" aria-label="Next Pokémon">→</button></div>' : ''}<span><kbd>B</kbd> Close</span></div>`;
+    showModal(current.title || title, `${banner}<div id="info-content">${current.content}</div>${current.note ? `<p class="inspection-note">${escape(current.note)}</p>` : ''}${nav}`, page.kind);
+  };
+  draw();
+  // Opponent roles that do not fit on one page move to further pages (Up/Down). The split is measured in the
+  // page as drawn with the page arrows, which a second page brings.
+  if (roles && $('info-content').scrollHeight > $('info-content').clientHeight) {
+    const requested = page.tab;
+    pages = [pages[0], pages[0]]; page = {...page, tab: 0}; draw();
+    pages = roles(roleSplit($('info-content'))); page = {...page, tab: requested}; draw();
+  }
   infoPage = {...page, tab, total: pages.length};
   if (page.kind === 'move') fitMoveDescription($('info-content'));
-  for (const button of modal.querySelectorAll('[data-info-tab]')) button.onclick = () => showInfo({...infoPage, tab: Number(button.dataset.infoTab)});
   if ($('prev-info-page')) { $('prev-info-page').onclick = () => turnPage(-1); $('next-info-page').onclick = () => turnPage(1); }
   if ($('prev-info-mon')) { $('prev-info-mon').onclick = () => navigateInfo('left'); $('next-info-mon').onclick = () => navigateInfo('right'); }
   if ($('retry-sets')) {
@@ -311,13 +325,16 @@ function navigateInfo(direction) {
 }
 function refreshInformation() { if (modal.open && infoPage) showInfo(infoPage); }
 
+// The own moves the move row shows right now, including the locked ones kept while waiting, while choosing a
+// replacement, and after the battle. R3 reads the focused move from here.
+let shownMoves = [];
 function info(index) {
   if (Number.isInteger(index)) { showInfo({kind: 'pokemon', side: 'own', index}); return; }
   const focusedId = document.activeElement?.id || '';
   const slot = focusedId.match(/^(switch|opponent)-(\d+)$/);
   if (slot) { showInfo({kind: 'pokemon', side: slot[1] === 'switch' ? 'own' : 'opponent', index: Number(slot[2])}); return; }
   const moveIndex = Number(focusedId.match(/^move-(\d+)$/)?.[1]);
-  const move = currentRequest()?.active?.[0]?.moves?.[moveIndex - 1];
+  const move = shownMoves.find(shown => shown.index === moveIndex);
   if (move) { showInfo({kind: 'move', id: move.id}); return; }
   // A grayed preview move belongs to the previewed opponent, or to the previewed bench Pokémon.
   const previewMoveIndex = Number(focusedId.match(/^preview-move-(\d+)$/)?.[1]);
@@ -560,6 +577,7 @@ function render() {
   const choices = availableChoices(request);
   // While the opponent picks a replacement, and after the battle, keep showing the active Pokémon's four moves, locked.
   if (!fixture && (request?.wait || request?.forceSwitch || state.ended) && lastMovesRequest) choices.moves = availableChoices({...lastMovesRequest, wait: false}).moves;
+  shownMoves = choices.moves;
   const disabled = choicesDisabled(request);
   // While a choice is pending or the opponent is moving, moves stay focusable for review but cannot be chosen.
   const waiting = !fixture && !disabled && (state.pending || !!request.wait || !!request.forceSwitch);

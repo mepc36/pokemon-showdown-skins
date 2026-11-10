@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {Music, TRACKS, loopPosition, musicActive} from '../src/music.js';
+import {Music, TRACKS, TIMER_TONES, timerToneDue, loopPosition, musicActive} from '../src/music.js';
 const flush = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };
 const deferred = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return {promise, resolve, reject}; };
 function setup({fetcher, suspended = false, resume, random} = {}) {
@@ -158,4 +158,28 @@ test('a tune still downloading when the next battle starts never plays', async (
   assert.equal(sources.length, 0); assert.equal(music.buffer, null);
   pending[1].wait.resolve({ok: true, arrayBuffer: async () => new ArrayBuffer(1)}); await flush();
   assert.equal(sources.length, 1); assert.equal(sources[0].loopEnd, music.track.loopEnd);
+});
+
+test('your clock sounds one tone as it passes 60, 30, 20, 15, 10 and 5 seconds, and none otherwise', () => {
+  assert.deepEqual(TIMER_TONES, [60, 30, 20, 15, 10, 5]);
+  const tones = []; let previous = null;
+  for (let seconds = 150; seconds >= 0; seconds--) { if (timerToneDue(previous, seconds)) tones.push(seconds); previous = seconds; }
+  assert.deepEqual(tones, [60, 30, 20, 15, 10, 5]);
+  assert.equal(timerToneDue(null, 30), false, 'the first reading of a clock is silent');
+  assert.equal(timerToneDue(30, null), false, 'a clock that stops is silent');
+  assert.equal(timerToneDue(25, 150), false, 'a clock that goes back up is silent');
+  assert.equal(timerToneDue(30, 30), false, 'a clock that holds still is silent');
+  assert.equal(timerToneDue(100, 25), true, 'a jump past several marks sounds once');
+});
+
+test('the tone plays only once audio is unlocked and does not touch the tune', async () => {
+  const {music, context, sources} = setup({suspended: true});
+  const oscillators = [];
+  context.createOscillator = () => { const oscillator = {frequency: {}, connect() {}, start(at) { this.startedAt = at; }, stop(at) { this.stoppedAt = at; }}; oscillators.push(oscillator); return oscillator; };
+  context.createGain = () => ({gain: {setValueAtTime() {}, exponentialRampToValueAtTime() {}}, connect() {}});
+  music.tone(); assert.equal(oscillators.length, 0);
+  music.update(true); music.unlock(); await flush();
+  music.tone();
+  assert.equal(oscillators.length, 1); assert.ok(oscillators[0].stoppedAt > oscillators[0].startedAt);
+  assert.equal(sources.length, 1); assert.equal(sources[0].stopped, undefined);
 });

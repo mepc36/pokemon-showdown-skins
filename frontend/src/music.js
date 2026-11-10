@@ -11,6 +11,12 @@ export const TRACKS = [
   track('oras-rival', 14303, 69149), track('sm-trainer', 8323, 89230), track('spl-elite4', 3962, 152509),
   track('sm-rival', 11389, 62158)];
 
+// Your clock sounds a short tone each time it counts down past one of these seconds.
+export const TIMER_TONES = [60, 30, 20, 15, 10, 5];
+export function timerToneDue(previous, current) {
+  return previous != null && current != null && current < previous && TIMER_TONES.some(mark => previous > mark && current <= mark);
+}
+
 export function musicActive(state, {fixture = false, hidden = false, stopped = false, replaying = false} = {}) {
   // Authentication drops during reconnect; the battle itself has not ended.
   // After the battle, music plays only while a replay of it plays.
@@ -110,6 +116,16 @@ export class Music {
     this.track = this.otherTrack();
     this.offset = 0; this.buffer = null; this.loading = null; this.error = '';
     this.sync();
+  }
+  // A short warning tone. It needs the same unlocked audio context as the music, and it is not part of the tune:
+  // it goes straight to the output, so it sounds whether or not music is playing.
+  tone() {
+    if (!this.unlocked) return;
+    const now = this.context.currentTime, oscillator = this.context.createOscillator(), gain = this.context.createGain();
+    oscillator.frequency.value = 880;
+    gain.gain.setValueAtTime(0.25, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+    oscillator.connect(gain); gain.connect(this.context.destination);
+    oscillator.start(now); oscillator.stop(now + 0.25);
   }
   toggle() {
     this.enabled = !this.enabled;
