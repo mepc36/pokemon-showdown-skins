@@ -76,19 +76,17 @@ export function rolePages(store, name, level, statsInfo = '', inference, {known 
 }
 
 // Long reference descriptions are fully retained as same-level pages.
-export function textPages(text, limit = 420) {
-  const pages = []; let page = '';
-  for (const word of String(text).split(/\s+/).filter(Boolean)) {
-    if (page && page.length + word.length + 1 > limit) { pages.push(page); page = ''; }
-    page += `${page ? ' ' : ''}${word}`;
-  }
-  if (page) pages.push(page);
-  return pages.length ? pages : ['No additional description.'];
-}
-
 export function movePages(move) {
-  return textPages(move.description).map((text, i, all) => ({key: `move:${i}`, label: all.length > 1 ? `Details ${i + 1}/${all.length}` : 'Details',
-    // Description first, then two rows of three fact boxes in the stat-box style, each led by its emoji.
-    content: `<div class="move-detail-layout"><p class="move-description">${escape(text)}</p>${facts([['💥 Power', move.power], ['🎯 Accuracy', move.accuracy], ['🔋 PP', move.pp], ['🏃 Priority', move.priority], ['🥊 Contact', move.contact], ['👥 Target', move.target]])}</div>`,
-    note: move.disabled ? 'Currently unavailable.' : 'Gen 9 reference values · battle effects may change power or accuracy.'}));
+  // One page per move: the whole description first, then two rows of three fact boxes in the stat-box style, each led by its emoji.
+  return [{key: 'move', label: 'Details',
+    content: `<div class="move-detail-layout"><p class="move-description">${escape(move.description)}</p>${facts([['💥 Power', move.power], ['🎯 Accuracy', move.accuracy], ['🔋 PP', move.pp], ['🏃 Priority', move.priority], ['🥊 Contact', move.contact], ['👥 Target', move.target]])}</div>`,
+    note: move.disabled ? 'Currently unavailable.' : ''}];
+}
+// The whole description stays on the one page: a long one steps its text size down until the page stops overflowing.
+export function fitMoveDescription(content) {
+  const description = content?.querySelector('.move-description');
+  if (!description) return;
+  description.style.removeProperty('font-size');
+  let size = parseFloat(getComputedStyle(description).fontSize);
+  while (size > 1 && content.scrollHeight > content.clientHeight) { size -= 1; description.style.fontSize = `${size}px`; }
 }
