@@ -126,9 +126,117 @@
     "sha256": "53b9c86d5350940ce12247f888a4135d8012a40d9e8b64716a793be2a634f581"
   },
   {
+    "url": "https://play.pokemonshowdown.com/audio/bw2-homika-dogars.mp3",
+    "output": "public/audio/bw2-homika-dogars.mp3",
+    "sha256": "2d080d42986b246296e92cacbe7613ef993e2a8515315096e96451bd0bec6b2c",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/xd-miror-b.mp3",
+    "output": "public/audio/xd-miror-b.mp3",
+    "sha256": "da8512eb3f76f713bc0b893bf0075da761b03fb6b324d615b1e19e5d4c7558f8",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/colosseum-miror-b.mp3",
+    "output": "public/audio/colosseum-miror-b.mp3",
+    "sha256": "5f344367573f11c310376175cd6e9c2de8a302c096d8d20039c24fd833847a62",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/dpp-trainer.mp3",
+    "output": "public/audio/dpp-trainer.mp3",
+    "sha256": "6b841030f4d2e7626ffad6aed2756397bbefbd25832c0587070fd6d4a757966c",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/dpp-rival.mp3",
+    "output": "public/audio/dpp-rival.mp3",
+    "sha256": "2849958d4704ca98b4e457aaa3b49d110e77a895707a05d9fb847c2e64c70eed",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/hgss-johto-trainer.mp3",
+    "output": "public/audio/hgss-johto-trainer.mp3",
+    "sha256": "6d41e7d1cf71a6accd55031ca4c5c9a7f914811c1597196df579a0c67f1c3aaa",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/hgss-kanto-trainer.mp3",
+    "output": "public/audio/hgss-kanto-trainer.mp3",
+    "sha256": "5457e7d461a084109165494ed5e56e42104346cf62378655e3f65a7282ce85c3",
+    "binary": true
+  },
+  {
     "url": "https://play.pokemonshowdown.com/audio/bw-trainer.mp3",
     "output": "public/audio/bw-trainer.mp3",
     "sha256": "0308dc15e1e40084bc77c90dd304cdab7d17ecd06de7753ba8b3af45116137dc",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/bw-rival.mp3",
+    "output": "public/audio/bw-rival.mp3",
+    "sha256": "981a7af2d7d710d8685568b0f063621532e5b60e29ebe8aac3a3087a977d30f8",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/bw-subway-trainer.mp3",
+    "output": "public/audio/bw-subway-trainer.mp3",
+    "sha256": "fd5f04a4a24bf8a2c7854feb05d0101034bd3dc008b5ae09f1dd25b36a342899",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/bw2-kanto-gym-leader.mp3",
+    "output": "public/audio/bw2-kanto-gym-leader.mp3",
+    "sha256": "1445e8c33de402d7024762044b3d8cdb310b995d5447d149aad83d2580c79fde",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/bw2-rival.mp3",
+    "output": "public/audio/bw2-rival.mp3",
+    "sha256": "90cf7d8d6a9d53e9ff337d76be9368c2c8fa60b4af26f73d3020d73c2dd3d155",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/xy-trainer.mp3",
+    "output": "public/audio/xy-trainer.mp3",
+    "sha256": "fceb464b7a7d2b7d307817e3f8511c19c99cde3771294632512e844345cf4c0e",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/xy-rival.mp3",
+    "output": "public/audio/xy-rival.mp3",
+    "sha256": "11d0d9778d9bd8565bcbefdbe3fbdfcb4cf11ec641534b06e73d35e80ff3e8a6",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/oras-trainer.mp3",
+    "output": "public/audio/oras-trainer.mp3",
+    "sha256": "359be2fda9ce16f147341f832009f86ab35973340db0b7181bb3ab889f7d368a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/oras-rival.mp3",
+    "output": "public/audio/oras-rival.mp3",
+    "sha256": "267305712393846b6b22e8e31f4510a5c751b243b00d0720f1f00756bf8a10ef",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/sm-trainer.mp3",
+    "output": "public/audio/sm-trainer.mp3",
+    "sha256": "eb948d46eb1bf548d3936aed47f0b0e5fcddae0408a35e099137722de293d285",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/spl-elite4.mp3",
+    "output": "public/audio/spl-elite4.mp3",
+    "sha256": "eccf79438acf3b767416f9465c4632ed5dcc248f9b44c6f9fcc37f02d5342616",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/sm-rival.mp3",
+    "output": "public/audio/sm-rival.mp3",
+    "sha256": "1ee94e5ba07da0cd6a04e5ae191165adec4fe35b5626620ba0aac752f5a6d548",
     "binary": true
   }
 ]

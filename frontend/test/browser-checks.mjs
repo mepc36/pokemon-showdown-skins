@@ -350,6 +350,8 @@ try {
   await lobby.close();
 
   const cancel = await browser.newPage(); await gamepad(cancel);
+  // Every tune the page asks for, in order. A battle asks for one; the next battle must ask for a different one.
+  const tunes = []; cancel.on('request', request => { const tune = request.url().match(/\/audio\/([a-z0-9-]+)\.mp3/); if (tune) tunes.push(tune[1]); });
   await cancel.goto(`${base}/test/cancel.html`); await cancel.waitForSelector('#switch-1');
   await cancel.keyboard.press('s'); await cancel.locator('#primary').click();
   await cancel.waitForFunction(() => document.querySelector('#arena-wrap').dataset.room.includes('12345'));
@@ -521,6 +523,16 @@ try {
   const fieldAfter = await cancel.locator('#arena-wrap').boundingBox();
   // Searching leaves the finished battle, so the replay row goes and the field returns to its size during a battle.
   check(await cancel.locator('#search-overlay').isVisible() && await cancel.locator('.replay-row').count() === 0 && fieldAfter.height === fieldBattle.height && fieldAfter.width === fieldBefore.width, `Searching after a battle shows an overlay on the field, which returns to its battle size: ${fieldBattle.height}, ${fieldBefore.height}, ${fieldAfter.height}`);
+  // Audio unlock from Playwright key presses is only known to work in Chromium.
+  if (engineName === 'chromium') {
+    const battleTunes = tunes.length, firstTune = tunes.at(-1);
+    await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-67890\n|init|battle\n|title|mepc36363636 vs. Opponent'}));
+    await cancel.waitForFunction(() => document.querySelector('#arena-wrap').dataset.room.includes('67890'));
+    for (let wait = 0; wait < 50 && tunes.length === battleTunes; wait++) await cancel.waitForTimeout(100);
+    // A missing file is asked for again on each key press, so count distinct tunes, not requests.
+    const distinct = [...new Set(tunes.slice(0, battleTunes))];
+    check(distinct.length === 1 && tunes.length > battleTunes && tunes.at(-1) !== firstTune, `One tune per battle, and the next battle loads a different one: ${distinct} then ${tunes.slice(battleTunes)}`);
+  }
   await cancel.close();
 
   // Audio implementation is unchanged; keep its existing Chromium regression.
@@ -528,30 +540,33 @@ try {
   const audio = await browser.newPage();
   await audio.goto(base); await audio.waitForSelector('#switch-1');
   const loop = await audio.evaluate(async () => {
-    const {Music, TRACK} = await import('/src/music.js');
+    const {Music, VOLUME} = await import('/src/music.js');
     const rate = 8000, offline = new OfflineAudioContext(1, rate * 2, rate);
     const context = {state: 'running', currentTime: 0, destination: offline.destination,
       createGain: () => offline.createGain(), createBufferSource: () => offline.createBufferSource(), addEventListener() {}};
     const music = new Music(() => {}, {storage: null, createContext: () => context});
-    music.buffer = offline.createBuffer(1, rate * 150, rate);
+    const TRACK = music.track;
+    music.buffer = offline.createBuffer(1, rate * 160, rate);
     const data = music.buffer.getChannelData(0); data.fill(0.25);
     data.fill(0.5, Math.round(TRACK.loopStart * rate), Math.round((TRACK.loopStart + 2) * rate));
     music.offset = TRACK.loopEnd - 0.5;
     music.update(true); music.unlock();
     const output = (await offline.startRendering()).getChannelData(0);
-    return {before: output[rate / 4], after: output[rate], nonzero: output.every(v => v > 0)};
+    return {before: output[rate / 4], after: output[rate], nonzero: output.every(v => v > 0), volume: VOLUME};
   });
-  check(Math.abs(loop.before - 0.25 * 0.22) < 1e-6 && Math.abs(loop.after - 0.5 * 0.22) < 1e-6 && loop.nonzero,
+  check(loop.volume === 0.22 && Math.abs(loop.before - 0.25 * 0.22) < 1e-6 && Math.abs(loop.after - 0.5 * 0.22) < 1e-6 && loop.nonzero,
     'Native Web Audio crosses the pinned loop boundary without silence or replaying the intro');
   const actualAudio = await audio.evaluate(async () => {
-    const {TRACK} = await import('/src/music.js');
-    const response = await fetch(TRACK.url, {mode: 'cors', credentials: 'omit', signal: AbortSignal.timeout(30000)});
-    if (!response.ok) throw new Error(`Audio HTTP ${response.status}`);
-    const context = new OfflineAudioContext(2, 1, 44100);
-    const buffer = await context.decodeAudioData(await response.arrayBuffer());
-    return {duration: buffer.duration, usable: buffer.duration > TRACK.loopEnd};
+    const {TRACKS} = await import('/src/music.js'); const unusable = [];
+    for (const track of TRACKS) {
+      const response = await fetch(track.url, {mode: 'cors', credentials: 'omit', signal: AbortSignal.timeout(30000)});
+      if (!response.ok) { unusable.push(`${track.url}: HTTP ${response.status}`); continue; }
+      const buffer = await new OfflineAudioContext(2, 1, 44100).decodeAudioData(await response.arrayBuffer());
+      if (buffer.duration <= track.loopEnd) unusable.push(`${track.url}: ${buffer.duration.toFixed(2)} seconds, loop ends at ${track.loopEnd}`);
+    }
+    return {count: TRACKS.length, unusable};
   });
-  check(actualAudio.usable, `Packaged official MP3 fetches from the app origin and decodes (${actualAudio.duration.toFixed(2)} seconds)`);
+  check(actualAudio.count === 19 && !actualAudio.unusable.length, `All ${actualAudio.count} packaged official MP3s fetch from the app origin, decode, and run past their loop end: ${actualAudio.unusable.join('; ')}`);
   // Live third-party call. pokemonshowdown.com throttles shared CI runner IPs now and then, so this
   // warns with the real HTTP status instead of failing the build; parseRating is covered by unit tests.
   const publicRating = await audio.evaluate(async () => {
