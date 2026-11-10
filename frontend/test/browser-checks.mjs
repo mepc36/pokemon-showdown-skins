@@ -73,9 +73,9 @@ try {
     await page.locator('#switch-3').focus(); await stick(page, 1);
     check(await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-3', 'The right stick no longer flips the team row');
     await pad(page, 10);
-    check(await page.locator('#opponent-roster').isVisible() && !await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'preview-move-1', 'A bumper flips to the opponent row and focuses their active Pokémon\'s first move');
+    check(await page.locator('#opponent-roster').isVisible() && !await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id === 'opponent-1' && document.activeElement.dataset.active === 'true') && await page.locator('.move-preview').count() === 4, 'A bumper flips to the opponent row and focuses their active Pokémon, with its moves in the move row');
     const foeFirstMove = await page.locator('#preview-move-1 strong').innerText();
-    await pad(page, 11); await page.waitForSelector('#info-content');
+    await page.locator('#preview-move-1').focus(); await pad(page, 11); await page.waitForSelector('#info-content');
     check((await page.locator('#modal-title').innerText()).startsWith(foeFirstMove.replace(/ 👀$/, '')), `R3 on the foe's first move opens that move, not an own move: ${await page.locator('#modal-title').innerText()}`);
     await pad(page, 0);
     await page.locator('#opponent-3').focus();
@@ -167,7 +167,7 @@ try {
     await pad(page, 0);
     check(await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'switch-1', 'B closes the menu and returns to the battle choices');
     await page.locator('#move-1').focus(); await pad(page, 10);
-    check(await page.locator('dialog[open]').count() === 0 && await page.locator('#opponent-roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'preview-move-1' && await page.locator('.move-preview').count() === 4, 'Button 10 (bumper) from the move row flips to the opponent row, shows their active Pokémon\'s moves and focuses the first one');
+    check(await page.locator('dialog[open]').count() === 0 && await page.locator('#opponent-roster').isVisible() && await page.evaluate(() => document.activeElement.id === 'opponent-1' && document.activeElement.dataset.active === 'true') && await page.locator('.move-preview').count() === 4, 'Button 10 (bumper) from the move row flips to the opponent row, shows their active Pokémon\'s moves and focuses that Pokémon');
     await pad(page, 10); await page.keyboard.press('t');
     check(await page.locator('dialog[open]').count() === 0 && await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'move-1', 'Button 10 flips back to the own side on the active Pokémon\'s first move; T does nothing');
     const fieldBefore = await page.locator('#arena').evaluate(el => el.getBoundingClientRect().width);

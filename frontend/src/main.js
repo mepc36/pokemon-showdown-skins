@@ -518,12 +518,12 @@ function showTeam(side = shownTeam === 'own' ? 'opponent' : 'own') {
   const focused = document.activeElement?.id.match(/^(switch|opponent)-(\d+)$/);
   for (const row of document.querySelectorAll('.team-row')) row.hidden = row.dataset.side !== side;
   const active = document.querySelector(`.team-row[data-side="${side}"] [data-active="true"]`) || $(`${side === 'own' ? 'switch' : 'opponent'}-${focused?.[2] || 1}`);
-  // Flipping to the opponent lands on their active Pokémon's first move, mirroring B on the own side.
+  // Flipping to the opponent lands on their active Pokémon's roster button; the move row shows that Pokémon's moves.
   const foeIndex = Number(active?.id.match(/^opponent-(\d+)$/)?.[1]);
   if (foeIndex) { setFoePreview(foeIndex); setFoeMovePreview(foeIndex); }
   // Flipping back to the own side lands on the active Pokémon's first move, like B does.
   if (side === 'own' && !modal.open && document.querySelector('#choices .moves > button[id^="move-"]')) focusFirstMove();
-  else ((foeIndex && document.querySelector('#choices .moves > #preview-move-1')) || active)?.focus({preventScroll: true});
+  else active?.focus({preventScroll: true});
   arena?.resize();
 }
 
