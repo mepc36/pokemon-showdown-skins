@@ -412,7 +412,8 @@ try {
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|inactive|mepc36363636 has 31 seconds left.'}));
   check(JSON.stringify(await clockColors()) === JSON.stringify(['rgb(29, 78, 137)', 'rgb(197, 30, 38)']), `At 31 seconds your clock stays blue while the Them clock at 20 seconds is red: ${await clockColors()}`);
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|inactive|mepc36363636 has 30 seconds left.'}));
-  check((await cancel.locator('#timer-warning').innerText()).includes('30s') && await cancel.locator('#foe-timer-value').innerText() === '0:20', 'Server countdown warning appears in the prominent timer; your warning leaves the Them timer alone');
+  const timerRows = await cancel.evaluate(() => [...document.querySelector('#battle-timer').children].map(child => child.textContent.trim()));
+  check(await cancel.locator('#timer-warning').count() === 0 && timerRows.length === 2 && await cancel.locator('#foe-timer-value').innerText() === '0:20' && !(await cancel.locator('#battle-timer').innerText()).includes('left'), `A server warning adds no text line to the timer box, and your warning leaves the Them timer alone: ${timerRows}`);
   check(JSON.stringify(await clockColors()) === JSON.stringify(['rgb(197, 30, 38)', 'rgb(197, 30, 38)']) && await cancel.locator('#timer-value').innerText() === '0:30', `At 30 seconds your clock turns red: ${await clockColors()}`);
   await cancel.screenshot({path: `test-results/${engineName}-timer-warning.png`});
   await cancel.setViewportSize({width: 1024, height: 540});
