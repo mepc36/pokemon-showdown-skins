@@ -21,6 +21,8 @@ let diagnosticLines = [];
 let ownOrder = [];
 let shownTeam = 'own';
 let previewIndex = null;
+// Set when a battle room opens; the first render that has moves puts the cursor on the first move.
+let landOnFirstMove = false;
 let foePreviewIndex = null; // opponent roster slot under the cursor; the panels compare against it instead of their active Pokémon
 let teraLabel = null; // Tera button text for the active Pokémon, restored after a bench preview
 let modalReturnFocus = '';
@@ -647,7 +649,12 @@ function render() {
   if (modal.open && infoPage) showInfo(infoPage);
   if (modal.open && modal.dataset.view === 'menu') showMenu();
   if (modal.open && modal.dataset.view === 'battle') showBattleMenu();
-  if (focusId && !modal.open) { const target = $(focusId); if (target && !target.disabled) target.focus({preventScroll: true}); }
+  if (landOnFirstMove && !modal.open && document.querySelector('#choices .moves > button[id^="move-"]')) {
+    landOnFirstMove = false;
+    if (shownTeam !== 'own') showTeam('own'); else focusFirstMove();
+  // Redrawing drops the cursor; put it back where it was. A redraw nested inside this one (the automatic timer
+  // request answers at once) may already have placed the cursor, and that placement stands.
+  } else if (focusId && !modal.open && (!document.activeElement || document.activeElement === document.body)) { const target = $(focusId); if (target && !target.disabled) target.focus({preventScroll: true}); }
 }
 
 function startLive() {
@@ -690,6 +697,9 @@ async function init() {
     onState(next) {
       if (state.room && !next.room) { lastRequest = null; lastMovesRequest = null; ownOrder = []; }
       if (next.room && next.room !== musicRoom) { musicRoom = next.room; music.newBattle(); }
+      // A new battle starts on your active Pokémon: nothing from the last battle stays previewed, and the cursor
+      // lands on the first move instead of on the roster slot it was left on.
+      if (next.room !== state.room) { previewIndex = null; foePreviewIndex = null; foeMoveIndex = null; landOnFirstMove = !!next.room; }
       state = next; updateMusic(); render();
     },
     onBattle(packet) { try {
