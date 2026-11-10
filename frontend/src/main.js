@@ -48,8 +48,6 @@ function updateTimer() {
   // A clock at or under 30 seconds turns red. Both rows follow the same rule; only the color changes, so nothing resizes.
   $('timer-value').parentElement.dataset.low = String(!!on && seconds != null && seconds <= 30);
   $('foe-timer-value').parentElement.dataset.low = String(!!on && state.foeTimerSeconds != null && state.foeTimerSeconds <= 30);
-  const warning = !fixture && Date.now() < state.timerWarningUntil ? state.timerWarning : '';
-  if ($('timer-warning').textContent !== warning) $('timer-warning').textContent = warning;
 }
 
 function showModal(title, content, view = '') {

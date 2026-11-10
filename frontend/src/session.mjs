@@ -10,7 +10,7 @@ export class ShowdownSession {
     this.state = {status: 'Offline', authenticated: false, challenge: '', room: '', request: null,
       pending: false, recovering: false, searching: false, ended: false, notice: '', timer: '',
       timerOn: false, timerPending: false, timerSeconds: null, timerAt: 0, timerRunning: false,
-      timerWarning: '', timerWarningUntil: 0, foeTimerSeconds: null};
+      foeTimerSeconds: null};
     const room = storage.getItem('ps-mve-room');
     if (isBattleRoom(room)) this.state.room = room;
   }
@@ -97,7 +97,7 @@ export class ShowdownSession {
       // A snapshot for another room is ignored only while the remembered room is still a live game on the server.
       if (this.state.room && this.state.room !== room && !this.state.ended && this.games.includes(this.state.room)) return;
       Object.assign(this.state, {room, ended: false, request: null, pending: false, recovering: true, searching: false, timer: '',
-        timerOn: false, timerPending: false, timerSeconds: null, timerRunning: false, timerWarning: '', timerWarningUntil: 0, foeTimerSeconds: null});
+        timerOn: false, timerPending: false, timerSeconds: null, timerRunning: false, foeTimerSeconds: null});
       this.storage.setItem('ps-mve-room', room); this.turn = 0;
     }
     for (const line of lines) {
@@ -173,7 +173,7 @@ export class ShowdownSession {
           this.state.timer = type === 'inactiveoff' ? 'Timer off' : value;
           this.state.timerOn = type === 'inactive'; this.state.timerPending = false;
           if (type === 'inactiveoff') {
-            this.state.timerSeconds = null; this.state.timerWarning = ''; this.state.timerWarningUntil = 0; this.state.foeTimerSeconds = null;
+            this.state.timerSeconds = null; this.state.foeTimerSeconds = null;
           } else {
             const ownTime = value.match(/^(?:Time left: |You have )(\d+)/);
             const playerTime = value.match(/^(.+?) has (\d+) seconds left(?: this turn)?\./);
@@ -186,11 +186,6 @@ export class ShowdownSession {
             // At the start of a battle both players have the same total, so their clock starts on ours until their first warning.
             const total = value.match(/^Time left: \d+ sec this turn \| (\d+) sec total/);
             if (total && this.state.foeTimerSeconds == null && !(this.turn > 1)) this.state.foeTimerSeconds = Number(total[1]);
-            const warningSeconds = playerTime ? Number(playerTime[2]) : /^You have /.test(value) ? Number(ownTime?.[1]) : null;
-            if (warningSeconds != null && warningSeconds <= 60) {
-              this.state.timerWarning = `${playerTime && !ownPlayer ? 'Opponent' : 'You'}: ${warningSeconds}s left`;
-              this.state.timerWarningUntil = Date.now() + 5000;
-            }
           }
         }
         battleLines.push(line);
@@ -205,7 +200,7 @@ export class ShowdownSession {
     if (this.state.ended) { this.send('/leave', this.state.room); this.state.room = ''; }
     this.state.replayUrl = '';
     this.state.ended = false; this.state.request = null; this.state.pending = false;
-    Object.assign(this.state, {timer: '', timerOn: false, timerPending: false, timerSeconds: null, timerRunning: false, timerWarning: '', timerWarningUntil: 0, foeTimerSeconds: null});
+    Object.assign(this.state, {timer: '', timerOn: false, timerPending: false, timerSeconds: null, timerRunning: false, foeTimerSeconds: null});
     this.send('/noreply /blockbots'); this.send('/utm null'); this.send('/search gen9randombattle');
     this.state.searching = true; this.state.notice = ''; this.emit();
   }

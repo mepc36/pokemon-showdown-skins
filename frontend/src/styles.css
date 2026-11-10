@@ -126,7 +126,7 @@ dialog[data-view] #modal-body:has(.inspection-footer){display:flex;flex-directio
 
 /* Keep the battle large: compact choices, both teams, one expandable tool row. */
 #battle-timer{margin-left:auto;display:flex;align-items:center;justify-content:flex-end;gap:8px;color:#111;font-size:23px;font-weight:700;line-height:1.2;white-space:nowrap}
-.timer-icon{font-size:24px}#timer-warning{color:#c51e26;font-size:17px}#timer-warning:empty{display:none}
+.timer-icon{font-size:24px}
 .arena-top{min-height:0;padding:3px 10px;justify-content:center}#notice{text-align:center;font-size:12px}
 .command-panel{padding:4px 10px}.command-heading{min-height:28px;margin-bottom:4px;gap:10px}.command-heading h2{font-size:14px}
 .command-heading #tera,.command-heading #undo{min-height:28px;padding:4px 9px;font-size:12px}
@@ -263,7 +263,7 @@ footer{display:none}
 .panel-form-tag{margin-left:3px;vertical-align:middle}
 .roster-ability.inferred,.roster-item.inferred,.roster-tera.inferred{opacity:.7;font-style:italic}
 /* Timer clock sits in the bottom-right corner of the right panel. */
-#battle-timer{right:8px;bottom:8px;max-width:calc(16% - 16px);font-size:17px;padding:2px 8px;gap:5px}#battle-timer .timer-icon{width:14px;height:17px}#timer-warning{font-size:12px}
+#battle-timer{right:8px;bottom:8px;max-width:calc(16% - 16px);font-size:17px;padding:2px 8px;gap:5px}#battle-timer .timer-icon{width:14px;height:17px}
 
 /* Own-side cue colors must outrank the white own-column background above. */
 #matchup-own .stat-pair>.stat-box[data-stat=high],#matchup-foe .stat-pair>.stat-box[data-stat=high]{background:#238c4f;border-color:#238c4f}
