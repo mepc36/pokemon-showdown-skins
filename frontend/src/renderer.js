@@ -31,7 +31,7 @@ export class Arena {
   setFit(fit) { this.fit = fit === 'original' ? 'original' : 'wide'; this.resize(); }
   reset(room) {
     this.battle?.destroy();
-    this.room = room;
+    this.room = room; this.finished = false;
     this.battle = new Battle({id: room, $frame: window.$(this.frame), $logFrame: window.$(this.log), paused: false, autoresize: false});
     this.battle.subscribe(() => this.scheduleUpdate());
     this.battle.messageShownTime = 700;
@@ -55,6 +55,8 @@ export class Arena {
   receive({room, lines, snapshot, request}) {
     if (snapshot || !this.battle || this.room !== room) this.reset(room);
     const events = lines.filter(isBattleEvent);
+    // Once the battle has a result, everything the renderer shows is a replay of it.
+    if (events.some(line => /^\|(win|tie)(\||$)/.test(line))) this.finished = true;
     for (const line of events) this.battle.add(line);
     if (snapshot) this.battle.seekTurn(Infinity);
     if (request?.side) {
@@ -88,8 +90,15 @@ export class Arena {
     }, 250);
   }
   opponents() { return opponentSlots(this.battle?.farSide); }
-  // Replaying = the battle ended and the renderer is behind its queue end.
-  get replaying() { return !!this.battle?.ended && !this.battle.atQueueEnd; }
+  // Replaying = the battle ended and the renderer is behind its queue end. The renderer's own `ended`
+  // flag is cleared whenever a replay seeks backwards, so the result seen in the log decides.
+  get replaying() { return !!this.battle && this.finished && !this.battle.atQueueEnd; }
+  // After the battle the roster marks whoever is on the field at the replay's current point.
+  ownActive(pokemon) {
+    if (!this.finished) return !!pokemon?.active;
+    const client = this.battle?.mySide?.pokemon?.find(p => p.ident === pokemon?.ident);
+    return !!client && this.battle.mySide.active.includes(client);
+  }
   ownHealth(pokemon) { return ownDisplayedHealth(this.battle, pokemon, this.replaying); }
   speed(side, index) { return pokemonSpeed(this.battle, side, index); }
   stats(index) { return ownPokemonStats(this.battle, index); }
@@ -180,6 +189,8 @@ export class Arena {
   replay() { if (this.battle) { this.battle.seekTurn(0); this.battle.play(); this.followAnimations(); } }
   // True while the renderer is stepping through the log: not paused by a turn button and not caught up to the end.
   get playing() { return !!this.battle && !this.battle.paused && !this.battle.atQueueEnd; }
+  // Play on from wherever the replay is paused.
+  play() { if (this.battle) { this.battle.play(); this.followAnimations(); } }
   // End-of-battle controls: jump to a turn and hold there.
   get turn() { return this.battle?.turn ?? 0; }
   // Turn 0 is the pre-battle state; paused there, Showdown shows its own Play overlay. Paused seeks stop at turn 1.
