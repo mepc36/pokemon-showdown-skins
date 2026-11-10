@@ -1,12 +1,14 @@
 // Run against the Vite dev server. All battle traffic is simulated.
 import {chromium, webkit} from 'playwright';
 import assert from 'node:assert/strict';
-import {mkdir} from 'node:fs/promises';
+import {mkdir, readFile} from 'node:fs/promises';
 const base = process.env.TEST_BASE_URL || 'http://127.0.0.1:4173';
 const engineName = process.env.TEST_BROWSER === 'webkit' ? 'webkit' : 'chromium';
 const browser = await (engineName === 'webkit' ? webkit : chromium).launch({headless: true,
   ...(engineName === 'chromium' && process.env.CHROMIUM_PATH ? {executablePath: process.env.CHROMIUM_PATH} : {})});
 await mkdir('test-results', {recursive: true});
+// The badge must show the version in package.json, whatever it is, so a version bump never breaks this file.
+const appVersion = `v${JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')).version}`;
 let passed = 0; const failures = [];
 const check = (condition, message) => { if (condition) { console.log(`PASS: ${message}`); passed++; } else { failures.push(message); console.error(`FAIL: ${message}`); } };
 const fit = async page => page.evaluate(() => {
@@ -93,7 +95,7 @@ try {
     check(await page.evaluate(() => { const badge = document.querySelector('#app-version'), timer = document.querySelector('#battle-timer'); const wrap = document.querySelector('#arena-wrap').getBoundingClientRect(), r = badge.getBoundingClientRect(); return /^v\d+\.\d+\.\d+$/.test(badge.textContent) && getComputedStyle(badge).color === getComputedStyle(timer).color && r.left - wrap.left < 20 && wrap.bottom - r.bottom < 20; }), `Version badge shows a semver in the timer's blue at the bottom left: ${await page.locator('#app-version').innerText()}`);
     if (viewport.width === 1024 && viewport.height === 650) {
       const fresh = await browser.newPage(); await fresh.goto(`${base}/fresh.html`); await fresh.waitForSelector('#switch-1');
-      check(/\?fresh=\d{13}$/.test(fresh.url()) && await fresh.locator('#app-version').innerText() === 'v1.2.0', `fresh.html redirects to the app under a timestamped query string: ${fresh.url()}`);
+      check(/\?fresh=\d{13}$/.test(fresh.url()) && await fresh.locator('#app-version').innerText() === appVersion, `fresh.html redirects to the app under a timestamped query string: ${fresh.url()}`);
       await fresh.close();
     }
     check(await page.evaluate(() => getComputedStyle(document.querySelector('#battle-timer')).alignItems === 'flex-start' && [...document.querySelectorAll('.timer-who')].every(el => getComputedStyle(el).textAlign === 'left')), 'Timer rows are left-justified');
@@ -295,16 +297,28 @@ try {
     document.querySelector('#info-content').innerHTML = rolePages({snapshot}, 'Raichu', snapshot.pokemon.Raichu.level, document.querySelector('.identity-speed')?.outerHTML || '')[0].content;
   });
   await pools.screenshot({path: `test-results/${engineName}-largest-pool.png`});
-  await pools.keyboard.press('Escape'); await pools.locator('#move-1').focus(); await pools.keyboard.press('i');
-  const longRules = await pools.evaluate(async () => {
-    const {movePages} = await import('/src/info-components.mjs'); const {moveInformation} = await import('/src/information.mjs');
-    const {Dex} = await import('/node_modules/@pkmn/dex/build/index.mjs');
-    const longest = Dex.moves.all().toSorted((a,b) => b.desc.length - a.desc.length)[0];
-    const pages = movePages(moveInformation(longest.id)); let fits = true;
-    for (const page of pages) { const el = document.querySelector('#info-content'); el.innerHTML = page.content; fits &&= el.scrollHeight <= el.clientHeight + 2; }
-    return {name: longest.name, count: pages.length, fits};
-  });
-  check(longRules.fits, `Long move rules stay on ${longRules.count} flat pages: ${longRules.name}`);
+  // Every move in the game, in a real move page, at the short test screen and at Martin's iPad Chrome size.
+  await pools.keyboard.press('Escape'); await pools.keyboard.press('f');
+  for (const viewport of [{width: 1024, height: 540}, {width: 1000, height: 622}]) {
+    await pools.setViewportSize(viewport);
+    await pools.locator('#move-1').focus(); await pools.keyboard.press('i'); await pools.waitForSelector('dialog[data-view=move] .move-detail-layout');
+    const onePage = await pools.evaluate(async () => {
+      const {movePages, fitMoveDescription} = await import('/src/info-components.mjs'); const {moveInformation} = await import('/src/information.mjs');
+      const {Dex} = await import('/node_modules/@pkmn/dex/build/index.mjs');
+      const el = document.querySelector('#info-content'), chrome = document.querySelectorAll('[data-info-tab], #prev-info-page, .inspection-note').length;
+      const opened = el.scrollHeight <= el.clientHeight;
+      const overflowing = []; let count = 0, smallest = Infinity, pages = 0;
+      for (const move of Dex.moves.all()) {
+        const information = moveInformation(move.id), cards = movePages(information); count++; pages = Math.max(pages, cards.length);
+        el.innerHTML = cards[0].content; fitMoveDescription(el);
+        if (el.scrollHeight > el.clientHeight || !el.textContent.includes(information.description)) overflowing.push(move.name);
+        smallest = Math.min(smallest, parseFloat(getComputedStyle(el.querySelector('.move-description')).fontSize));
+      }
+      return {count, pages, chrome, opened, overflowing, smallest};
+    });
+    check(onePage.opened && onePage.chrome === 0 && onePage.pages === 1 && !onePage.overflowing.length, `All ${onePage.count} moves show their whole description on one page at ${viewport.width}×${viewport.height}, with no tabs, paging or footnote (smallest text ${onePage.smallest}px): ${onePage.overflowing.slice(0, 10)}`);
+    await pools.keyboard.press('Escape');
+  }
   await pools.close();
 
   const failed = await browser.newPage();
@@ -355,8 +369,12 @@ try {
   check(await cancel.locator('#foe-timer-value').innerText() === '—' && (await cancel.locator('#battle-timer .timer-who').allInnerTexts()).join(' ') === 'You: Them:', 'The opponent timer shows a dash until the server warns about them');
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|inactive|Offline preview has 20 seconds left.'}));
   check(await cancel.locator('#foe-timer-value').innerText() === '0:20', 'An opponent warning fills the Them timer');
+  const clockColors = () => cancel.evaluate(() => ['#timer-value', '#foe-timer-value'].map(id => getComputedStyle(document.querySelector(id)).color));
+  await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|inactive|mepc36363636 has 31 seconds left.'}));
+  check(JSON.stringify(await clockColors()) === JSON.stringify(['rgb(29, 78, 137)', 'rgb(197, 30, 38)']), `At 31 seconds your clock stays blue while the Them clock at 20 seconds is red: ${await clockColors()}`);
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|inactive|mepc36363636 has 30 seconds left.'}));
   check((await cancel.locator('#timer-warning').innerText()).includes('30s') && await cancel.locator('#foe-timer-value').innerText() === '0:20', 'Server countdown warning appears in the prominent timer; your warning leaves the Them timer alone');
+  check(JSON.stringify(await clockColors()) === JSON.stringify(['rgb(197, 30, 38)', 'rgb(197, 30, 38)']) && await cancel.locator('#timer-value').innerText() === '0:30', `At 30 seconds your clock turns red: ${await clockColors()}`);
   await cancel.screenshot({path: `test-results/${engineName}-timer-warning.png`});
   await cancel.setViewportSize({width: 1024, height: 540});
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|switch|p2a: Raichu|Raichu, L88, M|100/100\n|turn|17'}));
@@ -458,6 +476,7 @@ try {
   await cancel.keyboard.press('h');
   await cancel.keyboard.press('Escape');
   check(await cancel.locator('#tera').isVisible(), 'Tera shows during the battle');
+  const fieldBattle = await cancel.locator('#arena-wrap').boundingBox();
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|win|Opponent'}));
   await cancel.waitForSelector('.replay-row #replay');
   check(await cancel.locator('#tera').isVisible() && await cancel.locator('#tera').isDisabled(), 'Tera keeps its move-row cell after the battle, disabled');
@@ -474,7 +493,8 @@ try {
   await cancel.keyboard.press('f'); await cancel.waitForTimeout(150);
   const fieldOwn = await cancel.locator('#arena-wrap').boundingBox();
   check(foeSlots === 4 && fieldFoe.height === fieldEnded.height && fieldOwn.height === fieldEnded.height, `After the battle flipping teams shows the foe's four move slots and keeps the field size: ${fieldEnded.height}, ${fieldFoe.height}, ${fieldOwn.height}`);
-  await cancel.locator('#switch-2').focus(); await cancel.waitForTimeout(100);
+  // Palossand in slot 2 is the active Pokémon by now, so pick a slot that is on the bench.
+  await cancel.locator('#roster button[data-active="false"]').first().focus(); await cancel.waitForTimeout(100);
   check(await cancel.locator('.move-preview').count() === 4 && await cancel.locator('.replay-row > button').count() === 5, 'After the battle the cursor on a benched Pokémon previews its moves below the replay row');
   await cancel.keyboard.press('h');
   check(await cancel.locator('#open-replay').isDisabled(), 'Open replay in the menu is disabled until the upload finishes');
@@ -499,7 +519,8 @@ try {
   await cancel.waitForFunction(() => !document.querySelector('#search-overlay').hidden);
   await cancel.waitForTimeout(400); // let the renderer's resize settle before measuring
   const fieldAfter = await cancel.locator('#arena-wrap').boundingBox();
-  check(await cancel.locator('#search-overlay').isVisible() && fieldBefore.height === fieldAfter.height && fieldBefore.width === fieldAfter.width, 'Searching shows an overlay on the field without resizing it');
+  // Searching leaves the finished battle, so the replay row goes and the field returns to its size during a battle.
+  check(await cancel.locator('#search-overlay').isVisible() && await cancel.locator('.replay-row').count() === 0 && fieldAfter.height === fieldBattle.height && fieldAfter.width === fieldBefore.width, `Searching after a battle shows an overlay on the field, which returns to its battle size: ${fieldBattle.height}, ${fieldBefore.height}, ${fieldAfter.height}`);
   await cancel.close();
 
   // Audio implementation is unchanged; keep its existing Chromium regression.

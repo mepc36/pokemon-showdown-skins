@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {PossibleSets, possibleSets, possibleMoves, narrowSets, validateSnapshot, percent} from '../src/possible-sets.mjs';
 import setRules from '../src/set-rules.json' with {type: 'json'};
-import {moveList, rolePages, movePages, textPages} from '../src/info-components.mjs';
+import {moveList, rolePages, movePages} from '../src/info-components.mjs';
 const snapshot = JSON.parse(await readFile(new URL('../public/data/gen9randombattle.json', import.meta.url)));
 
 function inferenceFixture() {
@@ -156,12 +156,13 @@ test('every sampled Pokémon gets one page with every candidate role and move', 
   }
 });
 
-test('long move rules paginate without losing text or opening a child menu', () => {
+test('long move rules stay on one page with the whole text, no footnote and no child menu', () => {
   const description = 'This is an unusually long description of a move and its effects. '.repeat(40).trim();
-  const pages = textPages(description);
-  assert.equal(pages.join(' '), description);
-  assert.ok(pages.every(p => p.length <= 420));
-  const cards = movePages({description, power: 80, accuracy: '100%', pp: '10 base PP', priority: '0', contact: 'No', target: 'User'});
-  assert.equal(cards.length, pages.length);
-  assert.ok(cards.every(p => !p.content.includes('<button')));
+  const move = {description, power: 80, accuracy: '100%', pp: '10 base PP', priority: '0', contact: 'No', target: 'User'};
+  const cards = movePages(move);
+  assert.equal(cards.length, 1);
+  assert.ok(cards[0].content.includes(description));
+  assert.equal(cards[0].note, '');
+  assert.ok(!cards[0].content.includes('<button'));
+  assert.equal(movePages({...move, disabled: true})[0].note, 'Currently unavailable.');
 });

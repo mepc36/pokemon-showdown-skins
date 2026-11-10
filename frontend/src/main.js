@@ -7,7 +7,7 @@ import {startController, navigate} from './controller.mjs';
 import {PlayerRating} from './rating.mjs';
 import {Music, musicActive} from './music.js';
 import {PossibleSets, possibleSets, narrowSets} from './possible-sets.mjs';
-import {escapeHtml, facts, typeBadges, moveList, rolePages, movePages, itemIcon, regionalForm} from './info-components.mjs';
+import {escapeHtml, facts, typeBadges, moveList, rolePages, movePages, fitMoveDescription, itemIcon, regionalForm} from './info-components.mjs';
 import {demoLines, demoRequest} from './demo.mjs';
 import {moveInformation, effectName, knownOwnMoves, speciesInformation, stableOwnOrder} from './information.mjs';
 
@@ -38,6 +38,9 @@ function updateTimer() {
   $('timer-value').textContent = !on ? 'Timer off' : seconds == null ? 'Timer on' : clock(seconds);
   // The opponent's clock is only known from server warnings; it shows the last warned value, not a countdown.
   $('foe-timer-value').textContent = on && state.foeTimerSeconds != null ? clock(state.foeTimerSeconds) : '—';
+  // A clock at or under 30 seconds turns red. Both rows follow the same rule; only the color changes, so nothing resizes.
+  $('timer-value').parentElement.dataset.low = String(!!on && seconds != null && seconds <= 30);
+  $('foe-timer-value').parentElement.dataset.low = String(!!on && state.foeTimerSeconds != null && state.foeTimerSeconds <= 30);
   const warning = !fixture && Date.now() < state.timerWarningUntil ? state.timerWarning : '';
   if ($('timer-warning').textContent !== warning) $('timer-warning').textContent = warning;
 }
@@ -275,6 +278,7 @@ function showInfo(page) {
     ${page.kind === 'pokemon' ? '<div class="inspection-paging"><button id="prev-info-mon" aria-label="Previous Pokémon">←</button><span>Pokémon</span><button id="next-info-mon" aria-label="Next Pokémon">→</button></div>' : ''}<span><kbd>B</kbd> Close</span></div>`;
   showModal(current.title || title, `${banner}${tabs}<div id="info-content" role="tabpanel"${single ? '' : ` aria-labelledby="info-tab-${tab}"`}>${current.content}</div>${current.note ? `<p class="inspection-note">${escape(current.note)}</p>` : ''}${nav}`, page.kind);
   infoPage = {...page, tab, total: pages.length};
+  if (page.kind === 'move') fitMoveDescription($('info-content'));
   for (const button of modal.querySelectorAll('[data-info-tab]')) button.onclick = () => showInfo({...infoPage, tab: Number(button.dataset.infoTab)});
   if ($('prev-info-page')) { $('prev-info-page').onclick = () => turnPage(-1); $('next-info-page').onclick = () => turnPage(1); }
   if ($('prev-info-mon')) { $('prev-info-mon').onclick = () => navigateInfo('left'); $('next-info-mon').onclick = () => navigateInfo('right'); }
@@ -284,6 +288,8 @@ function showInfo(page) {
   }
 }
 
+// A move page fits its description to the space it has, so a new screen size fits it again.
+window.addEventListener('resize', () => { if (modal.open && infoPage?.kind === 'move') fitMoveDescription($('info-content')); });
 const turnPage = step => showInfo({...infoPage, tab: (infoPage.tab + step + infoPage.total) % infoPage.total});
 // Pokémon panels follow the roster: left/right is the next Pokémon, up/down the next page.
 // Move panels have no siblings, so left/right turns their pages.
