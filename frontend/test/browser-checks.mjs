@@ -607,6 +607,10 @@ try {
   await cancel.locator('#next-turn').click(); await cancel.locator('#end-turn').click();
   check(await cancel.locator('.replay-row #first-turn').count() === 1, 'Next turn and Last turn seek without error');
   check((await cancel.locator('.replay-row > button').allInnerTexts()).every((t, i) => t.trim().startsWith(['🔁', '⏮️', '◀️', '⏯️', '▶️', '⏭️'][i])), 'Replay controls lead with their emojis');
+  // Leave the finished battle with the cursor on a benched Pokémon (slot 3, also benched in the next battle), which previews it.
+  // The next battle must not start on that slot or its preview.
+  await cancel.locator('#switch-3').focus();
+  const previewedBefore = await cancel.evaluate(() => [document.querySelector('#choices .moves').dataset.preview, document.querySelectorAll('.move-preview').length]);
   await cancel.keyboard.press('s');
   const fieldBefore = await cancel.locator('#arena-wrap').boundingBox();
   await cancel.locator('#primary').click();
@@ -615,11 +619,18 @@ try {
   const fieldAfter = await cancel.locator('#arena-wrap').boundingBox();
   // Searching leaves the finished battle, so the replay row goes and the field returns to its size during a battle.
   check(await cancel.locator('#search-overlay').isVisible() && await cancel.locator('.replay-row').count() === 0 && fieldAfter.height === fieldBattle.height && fieldAfter.width === fieldBefore.width, `Searching after a battle shows an overlay on the field, which returns to its battle size: ${fieldBattle.height}, ${fieldBefore.height}, ${fieldAfter.height}`);
+  const battleTunes = tunes.length, firstTune = tunes.at(-1);
+  await cancel.evaluate(async () => {
+    const {demoRequest} = await import('/src/demo.mjs');
+    window.testSocket.onmessage({data: '>battle-gen9randombattle-67890\n|init|battle\n|title|mepc36363636 vs. Opponent'});
+    window.testSocket.onmessage({data: `>battle-gen9randombattle-67890\n|request|${JSON.stringify({...demoRequest, rqid: 9})}`});
+  });
+  await cancel.waitForFunction(() => document.querySelector('#arena-wrap').dataset.room.includes('67890') && document.querySelector('#move-1'));
+  const nextBattle = await cancel.evaluate(() => ({preview: document.querySelector('#choices .moves').dataset.preview, previews: document.querySelectorAll('.move-preview').length,
+    moves: [...document.querySelectorAll('#choices .moves > button[id^="move-"]')].filter(button => button.offsetParent).map(button => button.querySelector('strong').textContent), panel: document.querySelector('#matchup-own .matchup-names span')?.textContent, cursor: document.activeElement.id}));
+  check(previewedBefore[0] === 'true' && previewedBefore[1] === 4 && nextBattle.preview === 'false' && nextBattle.previews === 0 && nextBattle.moves.join(',') === 'Nasty Plot,Shadow Ball,Dazzling Gleam,Psyshock' && nextBattle.panel === 'Grumpig' && nextBattle.cursor === 'move-1', `A new battle starts with the cursor on the active Pokémon's first move, not on the slot or preview left from the last battle: ${JSON.stringify(nextBattle)}`);
   // Audio unlock from Playwright key presses is only known to work in Chromium.
   if (engineName === 'chromium') {
-    const battleTunes = tunes.length, firstTune = tunes.at(-1);
-    await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-67890\n|init|battle\n|title|mepc36363636 vs. Opponent'}));
-    await cancel.waitForFunction(() => document.querySelector('#arena-wrap').dataset.room.includes('67890'));
     for (let wait = 0; wait < 50 && tunes.length === battleTunes; wait++) await cancel.waitForTimeout(100);
     // A missing file is asked for again on each key press, so count distinct tunes, not requests.
     const distinct = [...new Set(tunes.slice(0, battleTunes))];
