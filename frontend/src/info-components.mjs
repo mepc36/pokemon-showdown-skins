@@ -36,8 +36,8 @@ export function moveList(moves, placeholders = 0) {
     return `<li class="compact-move" data-move="${escape(move.id)}" data-type="${escape(type)}" data-cue="${escape(m.cue || '')}" data-revealed="${!!m.revealed}" title="${escape(m.label || (m.revealed ? 'Revealed in battle' : ''))}"><strong>${escape(move.name)}${m.copied ? ' *' : ''}</strong>${typeBadges([type])}</li>`;
   });
   while (entries.length < placeholders) entries.push('<li class="compact-move unknown-move">Not revealed</li>');
-  // One row, like the battle screen's move row: columns match the entries, never fewer than four.
-  return `<ul class="compact-moves" style="--move-columns:${Math.max(4, entries.length)}">${entries.join('')}</ul>`;
+  // Four to a row, like the battle screen's move row. A longer list wraps onto further rows; the last row may end early.
+  return `<ul class="compact-moves">${entries.join('')}</ul>`;
 }
 
 // Pages have bounded row counts. New/expanded datasets get sibling continuation
@@ -45,7 +45,9 @@ export function moveList(moves, placeholders = 0) {
 // Opponent pages use the same layout as the own-Pokémon page: three fact cards, a stats block, a
 // move list. known: what the battle has revealed ({ability, item, previousItem, teraType, inferredTera}); a card
 // shows the revealed fact, otherwise that role's possibilities. revealed: move ids seen in battle.
-export function rolePages(store, name, level, statsInfo = '', inference, {known = {}, revealed = new Set()} = {}) {
+// split: how many roles each page holds, e.g. [2, 1]. Left out, every role sits on one page. Page 1 carries the
+// fact cards and stats; later pages hold roles only.
+export function rolePages(store, name, level, statsInfo = '', inference, {known = {}, revealed = new Set(), split} = {}) {
   if (!store.snapshot) return [{key: 'sets-status', label: 'Possible sets', content: store.status === 'error' ?
     '<p>Possible sets could not load.</p><button id="retry-sets" data-nav data-row="retry-sets">Retry set data</button>' : '<p>Loading possible sets…</p>', note: 'Known and revealed information still works.'}];
   const sets = inference?.sets || possibleSets(store.snapshot, name, level);
@@ -58,8 +60,8 @@ export function rolePages(store, name, level, statsInfo = '', inference, {known 
     known.ability ? ['Ability', known.ability] : ['Ability', abilities.join(' / ') || 'Unknown', {list: true}],
     known.item ? ['Item', known.item, {item: true}] : known.previousItem ? ['Item', `Lost ${known.previousItem}`] : ['Item', items.join(' / '), {list: true}],
     known.teraType ? ['Tera', known.teraType, known.teraType] : known.inferredTera ? ['Tera', known.inferredTera, {type: known.inferredTera, cue: 'green', hint: 'All remaining set definitions have this Tera type'}] : ['Tera', tera.join(' / ') || 'Unknown', {list: true}]];
-  // One page: every candidate role as a heading over its moves in one row, seen moves first.
-  // Rows share one column order: seen moves first, then moves common to the most roles, then the
+  // One page: every candidate role as a heading above its moves, four to a row, seen moves first.
+  // Roles share one move order: seen moves first, then moves common to the most roles, then the
   // rest, so a move that several roles share sits in the same column of every row, from the left.
   const roleCount = new Map();
   for (const {role} of roles) for (const name of Object.keys(role.moves)) { const id = moveInformation(name).id; roleCount.set(id, (roleCount.get(id) || 0) + 1); }
@@ -67,12 +69,32 @@ export function rolePages(store, name, level, statsInfo = '', inference, {known 
   const order = (a, b) => { const [ra, rb] = [rank(a), rank(b)]; return ra[0] - rb[0] || ra[1] - rb[1] || a.id.localeCompare(b.id); };
   const groups = roles.map(({set, role}) => {
     const moves = Object.keys(role.moves).map(name => { const id = moveInformation(name).id; return {id, revealed: revealed.has(id)}; }).sort(order);
-    return `<div class="role-group"><h3 class="role-heading">${escape(role.name)}${set.levelMismatch ? `<small>snapshot level ${escape(set.level)}</small>` : ''}</h3>${moveList(moves, 4)}</div>`;
+    return `<div class="role-group"><h3 class="role-heading">${escape(role.name)}${set.levelMismatch ? `<small>snapshot level ${escape(set.level)}</small>` : ''}</h3>${moveList(moves)}</div>`;
   });
   const title = identified ? `${name} · Lv ${level} · ✅ ${roles[0]?.role.name || ''}` : `${name} · Lv ${level} · ❓ ${roles.length === 1 ? roles[0].role.name : `${roles.length} possible roles`}`;
-  return [{key: 'roles', label: 'Roles', title,
-    content: `<div class="overview-layout" data-roles="${roles.length}">${facts(cards)}<h3>Stats (before modifiers)</h3>${statsInfo}${groups.join('')}</div>`,
-    note: `${inference?.status === 'unmatched' ? 'Reveals do not match this snapshot; showing all candidates' : identified ? 'Role identified; unrevealed moves and items remain candidates' : 'Candidates, not confirmed'} · snapshot ${store.snapshot.source.updatedAt.slice(0, 10)}`}];
+  const note = `${inference?.status === 'unmatched' ? 'Reveals do not match this snapshot; showing all candidates' : identified ? 'Role identified; unrevealed moves and items remain candidates' : 'Candidates, not confirmed'} · snapshot ${store.snapshot.source.updatedAt.slice(0, 10)}`;
+  const counts = split?.length ? split : [groups.length];
+  let start = 0;
+  return counts.map((count, i) => {
+    const shown = groups.slice(start, start + count); start += count;
+    return {key: `roles:${i}`, label: counts.length > 1 ? `Roles ${i + 1}/${counts.length}` : 'Roles', title,
+      content: `<div class="overview-layout" data-roles="${roles.length}">${i === 0 ? `${facts(cards)}<h3>Stats (before modifiers)</h3>${statsInfo}` : ''}${shown.join('')}</div>`, note};
+  });
+}
+// Roles that do not fit on the page move to further pages. `content` is the live page area holding the facts,
+// the stats and every role; the result says how many roles each page holds. Page 1 keeps the facts and stats.
+export function roleSplit(content) {
+  const groups = [...content.querySelectorAll('.role-group')];
+  const height = content.clientHeight, top = content.getBoundingClientRect().top;
+  const box = groups.map(group => { const rect = group.getBoundingClientRect(); return {top: rect.top - top, bottom: rect.bottom - top}; });
+  const split = []; let count = 0, pageTop = 0;
+  box.forEach((group, i) => {
+    // A role starts a new page when it would run past the bottom. Page 1 may hold the facts and stats alone.
+    if (group.bottom - pageTop > height && (count > 0 || split.length === 0)) { split.push(count); count = 0; pageTop = group.top; }
+    count++;
+  });
+  split.push(count);
+  return split;
 }
 
 // Long reference descriptions are fully retained as same-level pages.

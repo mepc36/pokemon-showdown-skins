@@ -46,9 +46,23 @@ test('timer toggle follows server acknowledgement and ignores duplicate requests
   f.socket.receive(`>${room}\n|inactiveoff|Battle timer is OFF.`);
   assert.equal(f.session.state.timerOn, false); assert.equal(f.session.timerRemaining(), null);
 });
+test('their clock starts on the shared total at the start of a battle, and stays unknown when joining later', () => {
+  const start = fixture(); start.authenticate(); start.battle();
+  assert.equal(start.session.state.foeTimerSeconds, null);
+  start.socket.receive(`>${room}\n|inactive|Time left: 150 sec this turn | 150 sec total`);
+  assert.equal(start.session.state.foeTimerSeconds, 150);
+  start.socket.receive(`>${room}\n|inactive|Opponent has 120 seconds left.`);
+  start.socket.receive(`>${room}\n|turn|4\n|inactive|Time left: 150 sec this turn | 160 sec total`);
+  assert.equal(start.session.state.foeTimerSeconds, 120, 'a later message about our clock leaves their warned value alone');
+  const late = fixture(); late.authenticate(); late.battle();
+  late.socket.receive(`>${room}\n|turn|7`);
+  late.socket.receive(`>${room}\n|inactive|Time left: 150 sec this turn | 90 sec total`);
+  assert.equal(late.session.state.foeTimerSeconds, null);
+});
 test('opponent timer warnings never replace our clock and new rooms reset it', () => {
   const f = fixture(); f.authenticate(); f.battle();
   f.socket.receive(`>${room}\n|inactive|Time left: 120 sec this turn | 150 sec total`);
+  assert.equal(f.session.state.foeTimerSeconds, 150);
   f.socket.receive(`>${room}\n|inactive|Opponent has 15 seconds left.`);
   assert.equal(f.session.state.timerSeconds, 120); assert.equal(f.session.state.timerWarning, 'Opponent: 15s left'); assert.equal(f.session.state.foeTimerSeconds, 15);
   f.socket.receive(`>${room}\n|inactive|mepc36363636 has 30 seconds left.`);

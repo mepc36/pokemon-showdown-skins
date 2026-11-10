@@ -98,7 +98,7 @@ export class ShowdownSession {
       if (this.state.room && this.state.room !== room && !this.state.ended && this.games.includes(this.state.room)) return;
       Object.assign(this.state, {room, ended: false, request: null, pending: false, recovering: true, searching: false, timer: '',
         timerOn: false, timerPending: false, timerSeconds: null, timerRunning: false, timerWarning: '', timerWarningUntil: 0, foeTimerSeconds: null});
-      this.storage.setItem('ps-mve-room', room);
+      this.storage.setItem('ps-mve-room', room); this.turn = 0;
     }
     for (const line of lines) {
       const [type, value] = splitLine(line);
@@ -156,6 +156,8 @@ export class ShowdownSession {
           this.cancel(this.timerReply);
           this.state.timerPending = false;
           if (/\[(Invalid|Unavailable) choice\]/i.test(value)) this.state.pending = false;
+        } else if (type === 'turn') {
+          this.turn = Number(value) || 0;
         } else if (type === 'win' || type === 'tie') {
           this.state.ended = true; this.state.pending = false; this.state.request = null;
           this.state.recovering = false; this.state.notice = type === 'win' ? `${value} won the battle.` : 'The battle ended in a tie.';
@@ -181,6 +183,9 @@ export class ShowdownSession {
             }
             // The server only reports the opponent's clock in its warnings; that value is shown until the next one.
             if (playerTime && !ownPlayer) this.state.foeTimerSeconds = Number(playerTime[2]);
+            // At the start of a battle both players have the same total, so their clock starts on ours until their first warning.
+            const total = value.match(/^Time left: \d+ sec this turn \| (\d+) sec total/);
+            if (total && this.state.foeTimerSeconds == null && !(this.turn > 1)) this.state.foeTimerSeconds = Number(total[1]);
             const warningSeconds = playerTime ? Number(playerTime[2]) : /^You have /.test(value) ? Number(ownTime?.[1]) : null;
             if (warningSeconds != null && warningSeconds <= 60) {
               this.state.timerWarning = `${playerTime && !ownPlayer ? 'Opponent' : 'You'}: ${warningSeconds}s left`;

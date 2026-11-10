@@ -278,20 +278,44 @@ try {
   await pools.goto(base); await pools.waitForSelector('#switch-1');
   await pools.keyboard.press('f'); await pools.locator('#opponent-1').focus(); await pools.keyboard.press('i');
   await pools.waitForSelector('.overview-layout');
-  const coverage = await pools.evaluate(async () => {
-    const {rolePages} = await import('/src/info-components.mjs');
-    const {narrowSets} = await import('/src/possible-sets.mjs');
-    const snapshot = await fetch('/data/gen9randombattle.json').then(r => r.json());
-    const failures = []; let count = 0;
-    const speedInfo = '<div class="identity-speed"><small>Speed (estimated)</small><strong>312 or 376</strong><small>before modifiers</small></div>';
-    for (const [name, pokemon] of Object.entries(snapshot.pokemon)) for (const page of rolePages({snapshot}, name, pokemon.level, speedInfo, narrowSets(snapshot, name, pokemon.level))) {
-      const el = document.querySelector('#info-content'); el.innerHTML = page.content;
-      if (el.scrollHeight > el.clientHeight + 2 || el.scrollWidth > el.clientWidth + 2) failures.push(`${name}/${page.label}: ${el.scrollHeight}/${el.clientHeight}`);
-      count++;
-    }
-    return {count, failures};
-  });
-  check(!coverage.failures.length, `All ${coverage.count} candidate role pages fit without clipping: ${coverage.failures.slice(0, 10)}`);
+  // Every Pokémon in the snapshot with all of its candidate roles, at the short test screen and at Martin's iPad Chrome size.
+  for (const viewport of [{width: 1024, height: 540}, {width: 1000, height: 622}]) {
+    await pools.setViewportSize(viewport);
+    const coverage = await pools.evaluate(async () => {
+      const {rolePages, roleSplit} = await import('/src/info-components.mjs');
+      const {narrowSets} = await import('/src/possible-sets.mjs');
+      const snapshot = await fetch('/data/gen9randombattle.json').then(r => r.json());
+      const el = document.querySelector('#info-content');
+      // The page arrows exist only on a panel with several pages; a stand-in lets both layouts be measured.
+      let paging = document.querySelector('#prev-info-page')?.parentElement;
+      if (!paging) { paging = document.createElement('div'); paging.className = 'inspection-paging'; paging.innerHTML = '<button>↑</button><span>Page 1 / 2</span><button>↓</button>'; document.querySelector('.inspection-footer').prepend(paging); }
+      const several = on => { paging.style.display = on ? '' : 'none'; };
+      const failures = [], lonely = []; let count = 0, split = 0, mostPages = 1;
+      const speedInfo = '<div class="identity-speed"><small>Speed (estimated)</small><strong>312 or 376</strong><small>before modifiers</small></div>';
+      for (const [name, pokemon] of Object.entries(snapshot.pokemon)) {
+        const build = counts => rolePages({snapshot}, name, pokemon.level, speedInfo, narrowSets(snapshot, name, pokemon.level), {split: counts});
+        let pages = build(); several(false); el.innerHTML = pages[0].content;
+        const roles = el.querySelectorAll('.role-heading').length;
+        const wide = [...el.querySelectorAll('.compact-moves')].some(list => getComputedStyle(list).gridTemplateColumns.split(' ').length !== 4);
+        const labelled = [...el.querySelectorAll('.role-group')].every(group => group.firstElementChild.matches('.role-heading') && group.firstElementChild.getBoundingClientRect().bottom <= group.querySelector('.compact-moves').getBoundingClientRect().top);
+        if (wide || !labelled) failures.push(`${name}: role name above, four moves to a row`);
+        let emptyFirst = false;
+        if (el.scrollHeight > el.clientHeight) { several(true); const counts = roleSplit(el); emptyFirst = counts[0] === 0; pages = build(counts); split++; mostPages = Math.max(mostPages, pages.length); }
+        if (emptyFirst) lonely.push(name);
+        let shown = 0;
+        for (const page of pages) {
+          el.innerHTML = page.content; shown += el.querySelectorAll('.role-heading').length;
+          if (el.scrollHeight > el.clientHeight + 2 || el.scrollWidth > el.clientWidth + 2) failures.push(`${name}/${page.label}: ${el.scrollHeight}/${el.clientHeight}`);
+        }
+        if (shown !== roles) failures.push(`${name}: ${shown} of ${roles} roles shown`);
+        count++;
+      }
+      several(false);
+      return {count, split, mostPages, failures, lonely};
+    });
+    check(!coverage.failures.length, `All ${coverage.count} Pokémon show every candidate role without clipping at ${viewport.width}×${viewport.height}, role name above rows of four moves (${coverage.split} need more than one page, at most ${coverage.mostPages}; first page without a role: ${coverage.lonely}): ${coverage.failures.slice(0, 10)}`);
+  }
+  await pools.setViewportSize({width: 1024, height: 540});
   await pools.evaluate(async () => {
     const {rolePages} = await import('/src/info-components.mjs'); const snapshot = await fetch('/data/gen9randombattle.json').then(r => r.json());
     document.querySelector('#info-content').innerHTML = rolePages({snapshot}, 'Raichu', snapshot.pokemon.Raichu.level, document.querySelector('.identity-speed')?.outerHTML || '')[0].content;
@@ -350,6 +374,19 @@ try {
   await lobby.close();
 
   const cancel = await browser.newPage(); await gamepad(cancel);
+  // Sound checks: every tune is answered with 200 seconds of silence (a WAV file), so music can start without the real MP3s,
+  // and the page records each time a tune starts or stops and from which second it starts.
+  const silence = Buffer.alloc(44 + 200 * 8000, 128);
+  silence.write('RIFF', 0); silence.writeUInt32LE(silence.length - 8, 4); silence.write('WAVEfmt ', 8); silence.writeUInt32LE(16, 16); silence.writeUInt16LE(1, 20); silence.writeUInt16LE(1, 22);
+  silence.writeUInt32LE(8000, 24); silence.writeUInt32LE(8000, 28); silence.writeUInt16LE(1, 32); silence.writeUInt16LE(8, 34); silence.write('data', 36); silence.writeUInt32LE(silence.length - 44, 40);
+  await cancel.route('**/audio/*.mp3', route => route.fulfill({status: 200, contentType: 'audio/wav', body: silence}));
+  await cancel.addInitScript(() => {
+    window.tuneLog = {playing: false, starts: []};
+    const start = AudioBufferSourceNode.prototype.start, stop = AudioBufferSourceNode.prototype.stop;
+    AudioBufferSourceNode.prototype.start = function (when, offset) { window.tuneLog.playing = true; window.tuneLog.starts.push(offset || 0); return start.apply(this, arguments); };
+    AudioBufferSourceNode.prototype.stop = function () { window.tuneLog.playing = false; return stop.apply(this, arguments); };
+  });
+  const tune = () => cancel.evaluate(() => ({...window.tuneLog, starts: [...window.tuneLog.starts]}));
   // Every tune the page asks for, in order. A battle asks for one; the next battle must ask for a different one.
   const tunes = []; cancel.on('request', request => { const tune = request.url().match(/\/audio\/([a-z0-9-]+)\.mp3/); if (tune) tunes.push(tune[1]); });
   await cancel.goto(`${base}/test/cancel.html`); await cancel.waitForSelector('#switch-1');
@@ -382,8 +419,17 @@ try {
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|switch|p2a: Raichu|Raichu, L88, M|100/100\n|turn|17'}));
   await cancel.waitForFunction(() => document.querySelector('#opponent-4')?.textContent.includes('Raichu'));
   await cancel.keyboard.press('f'); await cancel.locator('#opponent-4').focus(); await cancel.keyboard.press('i');
-  check(await cancel.evaluate(() => { const rows = [...document.querySelectorAll('.role-group')].map(g => [...g.querySelectorAll('.compact-move[data-move]')].map(li => li.dataset.move)); if (rows.length < 2) return false; const shared = rows[0].filter(id => rows.every(row => row.includes(id))); return shared.every((id, i) => rows.every(row => row[i] === id)); }), 'Moves shared by every candidate role sit in the same leftmost columns of each row');
-  check(await cancel.locator('[data-info-tab]').count() === 0 && await cancel.locator('.role-group').count() >= 2 && (await cancel.locator('#modal-title').innerText()).includes('❓') && (await cancel.locator('#modal-title').innerText()).includes('possible roles'), 'Ambiguous opponent lists every matching role on one page with the ❓ badge');
+  // Roles that do not fit under the facts and stats continue on further pages; Down turns the page and wraps back to page 1.
+  const rolePageCount = Number((await cancel.locator('#prev-info-page + span').count() ? await cancel.locator('#prev-info-page + span').innerText() : 'Page 1 / 1').match(/\/ (\d+)/)[1]);
+  const roleRows = [], facts = [];
+  for (let shown = 0; shown < rolePageCount; shown++) {
+    roleRows.push(...await cancel.evaluate(() => [...document.querySelectorAll('.role-group')].map(group => [...group.querySelectorAll('.compact-move[data-move]')].map(li => li.dataset.move))));
+    facts.push(await cancel.locator('#info-content .info-facts').count());
+    check(await cancel.evaluate(() => { const el = document.querySelector('#info-content'); return el.scrollHeight <= el.clientHeight + 2; }), `Role page ${shown + 1} of ${rolePageCount} fits without clipping`);
+    await cancel.keyboard.press('ArrowDown');
+  }
+  check(roleRows.length >= 2 && roleRows[0].filter(id => roleRows.every(row => row.includes(id))).every((id, i) => roleRows.every(row => row[i] === id)), 'Moves shared by every candidate role come first, in the same order, in each role');
+  check(await cancel.locator('[data-info-tab], .inspection-tabs').count() === 0 && rolePageCount >= 2 && facts[0] > 0 && facts.slice(1).every(count => count === 0) && (await cancel.locator('#modal-title').innerText()).includes('❓') && (await cancel.locator('#modal-title').innerText()).includes('possible roles'), `Ambiguous opponent lists every matching role with the ❓ badge; the facts and stats sit on page 1 only: ${roleRows.length} roles on ${rolePageCount} pages`);
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|move|p2a: Raichu|Tera Blast|p1a: Grumpig\n|turn|18'}));
   await cancel.waitForFunction(() => document.querySelector('#modal-title').textContent.includes('✅'));
   const inferredTera = cancel.locator('.info-facts > div').filter({has: cancel.getByText('Tera', {exact: true})});
@@ -479,9 +525,11 @@ try {
   await cancel.keyboard.press('Escape');
   check(await cancel.locator('#tera').isVisible(), 'Tera shows during the battle');
   const fieldBattle = await cancel.locator('#arena-wrap').boundingBox();
+  const duringBattle = engineName === 'chromium' ? await tune() : null;
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|win|Opponent'}));
   await cancel.waitForSelector('.replay-row #replay');
   check(await cancel.locator('#tera').isVisible() && await cancel.locator('#tera').isDisabled(), 'Tera keeps its move-row cell after the battle, disabled');
+  if (engineName === 'chromium') check(duringBattle.playing && duringBattle.starts[0] === 0 && !(await tune()).playing, `Music plays during the battle from its beginning and stops when the battle ends: ${JSON.stringify(duringBattle)}`);
   check(await cancel.locator('.replay-row #replay, .replay-row #first-turn, .replay-row #prev-turn, .replay-row #play, .replay-row #next-turn, .replay-row #end-turn').count() === 6 && await cancel.locator('#upload-replay, #download-replay, #rematch, #main-menu').count() === 0 && await cancel.locator('#replay').innerText() === '🔁 Replay battle', 'After the battle a replay row holds Replay battle, First turn, Prev turn, Play, Next turn and Last turn');
   check(await cancel.evaluate(() => {
     const replay = document.querySelector('.replay-row').getBoundingClientRect(), moves = document.querySelector('#choices .moves').getBoundingClientRect();
@@ -489,6 +537,16 @@ try {
     return replay.bottom <= moves.top && own.length === 4 && own.every(button => !button.disabled && button.dataset.locked === 'true');
   }), 'After the battle the replay row sits above the move slots, which keep the four own moves, locked');
   check((await cancel.locator('#test-commands').innerText()).includes('|/savereplay'), 'The replay is saved automatically when the battle ends');
+  // R3 opens a move's page whenever the move is on screen: a locked own move, and a fainted Pokémon's move.
+  const lockedMove = await cancel.locator('#move-2 strong').innerText();
+  await cancel.locator('#move-2').focus(); await cancel.keyboard.press('i');
+  check(await cancel.locator('dialog[data-view=move][open]').count() === 1 && await cancel.locator('#modal-title').innerText() === lockedMove, `R3 on a locked own move opens that move: ${lockedMove}`);
+  await cancel.keyboard.press('Escape');
+  await cancel.locator('#roster button[data-fainted="true"]').first().focus(); await cancel.keyboard.press('ArrowUp');
+  const faintedMove = await cancel.evaluate(() => document.activeElement.querySelector('strong')?.textContent || '');
+  await cancel.keyboard.press('i');
+  check(/^preview-move-\d$/.test(await cancel.evaluate(() => document.querySelector('#choices .move-preview:focus, #choices .move-preview')?.id || '')) && faintedMove !== '' && await cancel.locator('dialog[data-view=move][open]').count() === 1 && await cancel.locator('#modal-title').innerText() === faintedMove, `R3 on a fainted Pokémon's move opens that move: ${faintedMove}`);
+  await cancel.keyboard.press('Escape'); await cancel.locator('#move-1').focus();
   const fieldEnded = await cancel.locator('#arena-wrap').boundingBox();
   await cancel.keyboard.press('f'); await cancel.waitForTimeout(150);
   const fieldFoe = await cancel.locator('#arena-wrap').boundingBox(), foeSlots = await cancel.locator('.move-preview').count();
@@ -520,10 +578,30 @@ try {
   check(paused.own[0] === 'Grumpig:A:100' && paused.own[1] === 'Palossand::36', `Paused at the first turn, your roster shows who was on the field then, at the HP it had then: ${paused.own}`);
   check(paused.foe[0] === 'Landorus:A:31' && paused.foe[2] === 'Rotom-Wash::34' && paused.foe[3] === 'Unknown::0', `Paused at the first turn, the foe roster shows that turn too: ${paused.foe}`);
   const pausedTurn = (await earliestTurn()).shown;
+  const beforePlay = engineName === 'chromium' ? await tune() : null;
   await cancel.locator('#play').click();
   await cancel.waitForFunction(turn => { const shown = document.querySelector('#arena .turn')?.innerText; return shown && shown !== turn; }, pausedTurn, {timeout: 60000});
   check((await earliestTurn()).shown !== pausedTurn, `Play continues the replay from the paused turn: ${pausedTurn} then ${(await earliestTurn()).shown}`);
+  if (engineName === 'chromium') {
+    const played = await tune();
+    check(!beforePlay.playing && played.playing && played.starts.length === beforePlay.starts.length + 1 && played.starts.at(-1) === 0, `Turn buttons alone start no music; Play begins the replay with the tune from its beginning: ${JSON.stringify(played)}`);
+    await cancel.locator('#prev-turn').click(); await cancel.waitForTimeout(400);
+    await cancel.locator('#next-turn').click(); await cancel.waitForTimeout(400);
+    const stepped = await tune();
+    check(stepped.playing && stepped.starts.length === played.starts.length, `Prev turn and Next turn leave the replay music playing, untouched: ${JSON.stringify(stepped)}`);
+    await cancel.locator('#play').click(); await cancel.waitForTimeout(200);
+    check((await tune()).starts.length === played.starts.length, 'Play during a running replay does not restart the tune');
+  }
   await cancel.locator('#end-turn').click();
+  if (engineName === 'chromium') {
+    await cancel.waitForFunction(() => !window.tuneLog.playing, null, {timeout: 15000});
+    check(!(await tune()).playing, 'The replay music stops when the replay reaches the last turn');
+    const before = await tune();
+    await cancel.locator('#replay').click(); await cancel.waitForFunction(count => window.tuneLog.starts.length > count, before.starts.length, {timeout: 15000});
+    const replayed = await tune();
+    check(replayed.playing && replayed.starts.at(-1) === 0, `Replay battle starts the same tune from its beginning: ${JSON.stringify(replayed)}`);
+    await cancel.locator('#end-turn').click(); await cancel.waitForFunction(() => !window.tuneLog.playing, null, {timeout: 15000});
+  }
   const finished = await rosters();
   check(finished.own[0] === 'Grumpig::51' && finished.own[1] === 'Palossand:A:36' && finished.foe[2] === 'Rotom-Wash:F:0' && finished.foe[4] === 'Ninetales:A:100', `At the last turn both rosters show the final result again: ${finished.own} / ${finished.foe}`);
   await cancel.locator('#next-turn').click(); await cancel.locator('#end-turn').click();
