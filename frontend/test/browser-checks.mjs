@@ -482,7 +482,7 @@ try {
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|win|Opponent'}));
   await cancel.waitForSelector('.replay-row #replay');
   check(await cancel.locator('#tera').isVisible() && await cancel.locator('#tera').isDisabled(), 'Tera keeps its move-row cell after the battle, disabled');
-  check(await cancel.locator('.replay-row #replay, .replay-row #first-turn, .replay-row #prev-turn, .replay-row #next-turn, .replay-row #end-turn').count() === 5 && await cancel.locator('#upload-replay, #download-replay, #rematch, #main-menu').count() === 0 && await cancel.locator('#replay').innerText() === '🔁 Replay battle', 'After the battle a replay row holds Replay battle, First turn, Prev turn, Next turn and Last turn');
+  check(await cancel.locator('.replay-row #replay, .replay-row #first-turn, .replay-row #prev-turn, .replay-row #play, .replay-row #next-turn, .replay-row #end-turn').count() === 6 && await cancel.locator('#upload-replay, #download-replay, #rematch, #main-menu').count() === 0 && await cancel.locator('#replay').innerText() === '🔁 Replay battle', 'After the battle a replay row holds Replay battle, First turn, Prev turn, Play, Next turn and Last turn');
   check(await cancel.evaluate(() => {
     const replay = document.querySelector('.replay-row').getBoundingClientRect(), moves = document.querySelector('#choices .moves').getBoundingClientRect();
     const own = [...document.querySelectorAll('#choices .moves > button[id^="move-"]')];
@@ -497,7 +497,7 @@ try {
   check(foeSlots === 4 && fieldFoe.height === fieldEnded.height && fieldOwn.height === fieldEnded.height, `After the battle flipping teams shows the foe's four move slots and keeps the field size: ${fieldEnded.height}, ${fieldFoe.height}, ${fieldOwn.height}`);
   // Palossand in slot 2 is the active Pokémon by now, so pick a slot that is on the bench.
   await cancel.locator('#roster button[data-active="false"]').first().focus(); await cancel.waitForTimeout(100);
-  check(await cancel.locator('.move-preview').count() === 4 && await cancel.locator('.replay-row > button').count() === 5, 'After the battle the cursor on a benched Pokémon previews its moves below the replay row');
+  check(await cancel.locator('.move-preview').count() === 4 && await cancel.locator('.replay-row > button').count() === 6, 'After the battle the cursor on a benched Pokémon previews its moves below the replay row');
   await cancel.keyboard.press('h');
   check(await cancel.locator('#open-replay').isDisabled(), 'Open replay in the menu is disabled until the upload finishes');
   await cancel.keyboard.press('Escape');
@@ -512,9 +512,23 @@ try {
   check(await earliestTurn().then(t => !t.play && t.shown === t.first), `First turn shows the earliest turn, not the pre-battle Play overlay: ${JSON.stringify(await earliestTurn())}`);
   await cancel.locator('#prev-turn').click();
   check(await earliestTurn().then(t => !t.play && t.shown === t.first), 'Prev turn never goes before the first turn');
+  // Both rosters show the replay's current point, not the final result. One string per slot: name, A for on the field, F for fainted, HP bar percent.
+  const rosters = () => cancel.evaluate(() => Object.fromEntries([['own', '#roster'], ['foe', '#opponent-roster']].map(([side, id]) => [side, [...document.querySelectorAll(`${id} button`)].map(button =>
+    `${button.querySelector('.mon-name')?.textContent || ''}:${button.dataset.active === 'true' ? 'A' : ''}${button.dataset.fainted === 'true' ? 'F' : ''}:${Math.round(parseFloat(button.querySelector('.team-hp span')?.style.width)) || 0}`)])));
+  await cancel.waitForTimeout(600); // the rosters refresh every 250 ms after a seek
+  const paused = await rosters();
+  check(paused.own[0] === 'Grumpig:A:100' && paused.own[1] === 'Palossand::36', `Paused at the first turn, your roster shows who was on the field then, at the HP it had then: ${paused.own}`);
+  check(paused.foe[0] === 'Landorus:A:31' && paused.foe[2] === 'Rotom-Wash::34' && paused.foe[3] === 'Unknown::0', `Paused at the first turn, the foe roster shows that turn too: ${paused.foe}`);
+  const pausedTurn = (await earliestTurn()).shown;
+  await cancel.locator('#play').click();
+  await cancel.waitForFunction(turn => { const shown = document.querySelector('#arena .turn')?.innerText; return shown && shown !== turn; }, pausedTurn, {timeout: 60000});
+  check((await earliestTurn()).shown !== pausedTurn, `Play continues the replay from the paused turn: ${pausedTurn} then ${(await earliestTurn()).shown}`);
+  await cancel.locator('#end-turn').click();
+  const finished = await rosters();
+  check(finished.own[0] === 'Grumpig::51' && finished.own[1] === 'Palossand:A:36' && finished.foe[2] === 'Rotom-Wash:F:0' && finished.foe[4] === 'Ninetales:A:100', `At the last turn both rosters show the final result again: ${finished.own} / ${finished.foe}`);
   await cancel.locator('#next-turn').click(); await cancel.locator('#end-turn').click();
   check(await cancel.locator('.replay-row #first-turn').count() === 1, 'Next turn and Last turn seek without error');
-  check((await cancel.locator('.replay-row #replay, .replay-row #first-turn, .replay-row #prev-turn, .replay-row #next-turn, .replay-row #end-turn').allInnerTexts()).every((t, i) => t.trim().startsWith(['🔁', '⏮️', '◀️', '▶️', '⏭️'][i])), 'Replay controls lead with their emojis');
+  check((await cancel.locator('.replay-row > button').allInnerTexts()).every((t, i) => t.trim().startsWith(['🔁', '⏮️', '◀️', '⏯️', '▶️', '⏭️'][i])), 'Replay controls lead with their emojis');
   await cancel.keyboard.press('s');
   const fieldBefore = await cancel.locator('#arena-wrap').boundingBox();
   await cancel.locator('#primary').click();

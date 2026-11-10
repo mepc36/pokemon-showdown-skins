@@ -471,7 +471,7 @@ function renderRoster() {
     const roster = $(rosterSide === 'own' ? 'roster' : 'opponent-roster');
     const team = rosterSide === 'own' ? ownTeam().map((p, i) => {
       const shown = arena.ownHealth(p);
-      return {index: i + 1, serverIndex: p.serverIndex, name: p.details.split(',')[0], revealed: true, fainted: shown.fainted, active: p.active, item: p.item || '',
+      return {index: i + 1, serverIndex: p.serverIndex, name: p.details.split(',')[0], revealed: true, fainted: shown.fainted, active: arena.ownActive(p), item: p.item || '',
         ability: effectName('abilities', p.ability || p.baseAbility) || '', teraType: p.terastallized || p.teraType || '',
         percent: shown.percent, health: shown.fainted ? 'Fainted' : shown.condition, status: shown.condition.match(/ (\w{3})$/)?.[1] || '',
         canSwitch: !disabled && choices.switches.some(choice => choice.index === p.serverIndex && choice.enabled)};
@@ -590,7 +590,7 @@ function render() {
   $('action-slots').append($('tera'), $('undo'));
   // After the battle the replay controls get their own row above the move slots. The panel grows once,
   // when the battle ends; both team sides keep their move slots, so flipping teams never resizes it.
-  const endControls = !fixture && state.ended ? `<div class="replay-row" role="group" aria-label="Replay">${[btn('replay', '🔁 Replay battle', 'replay'), btn('first-turn', '⏮️ First turn', 'replay'), btn('prev-turn', '◀️ Prev turn', 'replay'), btn('next-turn', '▶️ Next turn', 'replay'), btn('end-turn', '⏭️ Last turn', 'replay')].map(html => html.replace('<button ', '<button class="end-control" ')).join('')}</div>` : '';
+  const endControls = !fixture && state.ended ? `<div class="replay-row" role="group" aria-label="Replay">${[btn('replay', '🔁 Replay battle', 'replay'), btn('first-turn', '⏮️ First turn', 'replay'), btn('prev-turn', '◀️ Prev turn', 'replay'), btn('play', '⏯️ Play', 'replay'), btn('next-turn', '▶️ Next turn', 'replay'), btn('end-turn', '⏭️ Last turn', 'replay')].map(html => html.replace('<button ', '<button class="end-control" ')).join('')}</div>` : '';
   // After the battle the own moves stay as locked slots: the cursor can land on them, nothing can be chosen.
   const reviewOnly = !fixture && state.ended;
   $('choices').innerHTML = `${endControls}<div class="moves" role="group" aria-label="Moves">${choices.moves.map(move => {
@@ -609,6 +609,7 @@ function render() {
     $('replay').onclick = () => { arena.replay(); replayMusic = true; music.rewind(); updateMusic(); };
     $('first-turn').onclick = () => arena.seekTurn(1);
     $('prev-turn').onclick = () => arena.seekTurn(arena.turn - 1);
+    $('play').onclick = () => arena.play();
     $('next-turn').onclick = () => arena.seekTurn(arena.turn + 1);
     $('end-turn').onclick = () => arena.seekTurn(Infinity);
   }
