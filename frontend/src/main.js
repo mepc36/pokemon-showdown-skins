@@ -5,7 +5,7 @@ import {ShowdownAuth} from './auth.mjs';
 import {availableChoices} from './protocol.mjs';
 import {startController, navigate} from './controller.mjs';
 import {PlayerRating} from './rating.mjs';
-import {Music, musicActive, timerToneDue} from './music.js';
+import {Music, musicActive, replayMusicOver, timerToneDue} from './music.js';
 import {PossibleSets, possibleSets, narrowSets} from './possible-sets.mjs';
 import {escapeHtml, facts, typeBadges, moveList, rolePages, roleSplit, movePages, fitMoveDescription, itemIcon, regionalForm} from './info-components.mjs';
 import {demoLines, demoRequest} from './demo.mjs';
@@ -627,7 +627,8 @@ function render() {
     $('replay').onclick = () => { arena.replay(); replayMusic = true; music.rewind(); updateMusic(); };
     $('first-turn').onclick = () => arena.seekTurn(1);
     $('prev-turn').onclick = () => arena.seekTurn(arena.turn - 1);
-    $('play').onclick = () => arena.play();
+    // Play begins a replay when none is running, so the tune starts from its beginning; a running replay keeps its music as it is.
+    $('play').onclick = () => { arena.play(); if (!replayMusic && !arena.atEnd) { replayMusic = true; music.rewind(); } updateMusic(); };
     $('next-turn').onclick = () => arena.seekTurn(arena.turn + 1);
     $('end-turn').onclick = () => arena.seekTurn(Infinity);
   }
@@ -657,12 +658,13 @@ function startLive() {
 // Audio may only start inside an event the browser counts as a user gesture. A finger's pointerdown is not one
 // (HTML spec); WebKit lifts its audio restriction on touchend. A mouse click counts on pointerdown.
 for (const type of ['pointerdown', 'touchend']) document.addEventListener(type, () => music.unlock(), {passive: true});
-// Music follows the live battle, and after it ends, a replay started with 🔁 until the replay stops or reaches the end.
+// Music follows the live battle. After it ends, music plays from the moment a replay begins (🔁, or ⏯️ with no replay
+// running) until the replay reaches its last step. Pausing on a turn does not stop it.
 let replayMusic = false;
 // The battle room whose tune is playing. A different room is a new battle, which gets a new tune.
 let musicRoom = '';
 function updateMusic() {
-  if (replayMusic && !(state.ended && arena.playing)) replayMusic = false;
+  if (replayMusic && replayMusicOver(state, arena.atEnd)) replayMusic = false;
   music.update(musicActive(state, {fixture, hidden: document.hidden, stopped: session.stopped, replaying: replayMusic}));
 }
 document.addEventListener('keydown', event => { if (!event.repeat && event.isTrusted) music.unlock(); });
@@ -679,7 +681,7 @@ async function init() {
     renderRoster();
     refreshMoveHints();
     refreshInformation();
-    // A replay ends when it reaches the last step or a turn button pauses it; both land here.
+    // A replay ends when it reaches the last step; that lands here.
     if (replayMusic) updateMusic();
   });
   arena.setFit('wide');

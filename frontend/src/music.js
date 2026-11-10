@@ -23,6 +23,10 @@ export function musicActive(state, {fixture = false, hidden = false, stopped = f
   return !fixture && !hidden && !stopped && !!state.room && (!state.ended || replaying);
 }
 
+// Replay music runs from the moment a replay begins until the replay reaches its last step or the finished
+// battle is left. Pausing on a turn (First, Prev, Next) does not end it.
+export function replayMusicOver(state, atEnd) { return !state.ended || atEnd; }
+
 export function loopPosition(seconds, {loopStart, loopEnd}) {
   return seconds < loopEnd ? Math.max(0, seconds) : loopStart + (seconds - loopStart) % (loopEnd - loopStart);
 }

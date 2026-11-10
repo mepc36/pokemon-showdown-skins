@@ -374,6 +374,19 @@ try {
   await lobby.close();
 
   const cancel = await browser.newPage(); await gamepad(cancel);
+  // Sound checks: every tune is answered with 200 seconds of silence (a WAV file), so music can start without the real MP3s,
+  // and the page records each time a tune starts or stops and from which second it starts.
+  const silence = Buffer.alloc(44 + 200 * 8000, 128);
+  silence.write('RIFF', 0); silence.writeUInt32LE(silence.length - 8, 4); silence.write('WAVEfmt ', 8); silence.writeUInt32LE(16, 16); silence.writeUInt16LE(1, 20); silence.writeUInt16LE(1, 22);
+  silence.writeUInt32LE(8000, 24); silence.writeUInt32LE(8000, 28); silence.writeUInt16LE(1, 32); silence.writeUInt16LE(8, 34); silence.write('data', 36); silence.writeUInt32LE(silence.length - 44, 40);
+  await cancel.route('**/audio/*.mp3', route => route.fulfill({status: 200, contentType: 'audio/wav', body: silence}));
+  await cancel.addInitScript(() => {
+    window.tuneLog = {playing: false, starts: []};
+    const start = AudioBufferSourceNode.prototype.start, stop = AudioBufferSourceNode.prototype.stop;
+    AudioBufferSourceNode.prototype.start = function (when, offset) { window.tuneLog.playing = true; window.tuneLog.starts.push(offset || 0); return start.apply(this, arguments); };
+    AudioBufferSourceNode.prototype.stop = function () { window.tuneLog.playing = false; return stop.apply(this, arguments); };
+  });
+  const tune = () => cancel.evaluate(() => ({...window.tuneLog, starts: [...window.tuneLog.starts]}));
   // Every tune the page asks for, in order. A battle asks for one; the next battle must ask for a different one.
   const tunes = []; cancel.on('request', request => { const tune = request.url().match(/\/audio\/([a-z0-9-]+)\.mp3/); if (tune) tunes.push(tune[1]); });
   await cancel.goto(`${base}/test/cancel.html`); await cancel.waitForSelector('#switch-1');
@@ -512,9 +525,11 @@ try {
   await cancel.keyboard.press('Escape');
   check(await cancel.locator('#tera').isVisible(), 'Tera shows during the battle');
   const fieldBattle = await cancel.locator('#arena-wrap').boundingBox();
+  const duringBattle = engineName === 'chromium' ? await tune() : null;
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|win|Opponent'}));
   await cancel.waitForSelector('.replay-row #replay');
   check(await cancel.locator('#tera').isVisible() && await cancel.locator('#tera').isDisabled(), 'Tera keeps its move-row cell after the battle, disabled');
+  if (engineName === 'chromium') check(duringBattle.playing && duringBattle.starts[0] === 0 && !(await tune()).playing, `Music plays during the battle from its beginning and stops when the battle ends: ${JSON.stringify(duringBattle)}`);
   check(await cancel.locator('.replay-row #replay, .replay-row #first-turn, .replay-row #prev-turn, .replay-row #play, .replay-row #next-turn, .replay-row #end-turn').count() === 6 && await cancel.locator('#upload-replay, #download-replay, #rematch, #main-menu').count() === 0 && await cancel.locator('#replay').innerText() === '🔁 Replay battle', 'After the battle a replay row holds Replay battle, First turn, Prev turn, Play, Next turn and Last turn');
   check(await cancel.evaluate(() => {
     const replay = document.querySelector('.replay-row').getBoundingClientRect(), moves = document.querySelector('#choices .moves').getBoundingClientRect();
@@ -563,10 +578,30 @@ try {
   check(paused.own[0] === 'Grumpig:A:100' && paused.own[1] === 'Palossand::36', `Paused at the first turn, your roster shows who was on the field then, at the HP it had then: ${paused.own}`);
   check(paused.foe[0] === 'Landorus:A:31' && paused.foe[2] === 'Rotom-Wash::34' && paused.foe[3] === 'Unknown::0', `Paused at the first turn, the foe roster shows that turn too: ${paused.foe}`);
   const pausedTurn = (await earliestTurn()).shown;
+  const beforePlay = engineName === 'chromium' ? await tune() : null;
   await cancel.locator('#play').click();
   await cancel.waitForFunction(turn => { const shown = document.querySelector('#arena .turn')?.innerText; return shown && shown !== turn; }, pausedTurn, {timeout: 60000});
   check((await earliestTurn()).shown !== pausedTurn, `Play continues the replay from the paused turn: ${pausedTurn} then ${(await earliestTurn()).shown}`);
+  if (engineName === 'chromium') {
+    const played = await tune();
+    check(!beforePlay.playing && played.playing && played.starts.length === beforePlay.starts.length + 1 && played.starts.at(-1) === 0, `Turn buttons alone start no music; Play begins the replay with the tune from its beginning: ${JSON.stringify(played)}`);
+    await cancel.locator('#prev-turn').click(); await cancel.waitForTimeout(400);
+    await cancel.locator('#next-turn').click(); await cancel.waitForTimeout(400);
+    const stepped = await tune();
+    check(stepped.playing && stepped.starts.length === played.starts.length, `Prev turn and Next turn leave the replay music playing, untouched: ${JSON.stringify(stepped)}`);
+    await cancel.locator('#play').click(); await cancel.waitForTimeout(200);
+    check((await tune()).starts.length === played.starts.length, 'Play during a running replay does not restart the tune');
+  }
   await cancel.locator('#end-turn').click();
+  if (engineName === 'chromium') {
+    await cancel.waitForFunction(() => !window.tuneLog.playing, null, {timeout: 15000});
+    check(!(await tune()).playing, 'The replay music stops when the replay reaches the last turn');
+    const before = await tune();
+    await cancel.locator('#replay').click(); await cancel.waitForFunction(count => window.tuneLog.starts.length > count, before.starts.length, {timeout: 15000});
+    const replayed = await tune();
+    check(replayed.playing && replayed.starts.at(-1) === 0, `Replay battle starts the same tune from its beginning: ${JSON.stringify(replayed)}`);
+    await cancel.locator('#end-turn').click(); await cancel.waitForFunction(() => !window.tuneLog.playing, null, {timeout: 15000});
+  }
   const finished = await rosters();
   check(finished.own[0] === 'Grumpig::51' && finished.own[1] === 'Palossand:A:36' && finished.foe[2] === 'Rotom-Wash:F:0' && finished.foe[4] === 'Ninetales:A:100', `At the last turn both rosters show the final result again: ${finished.own} / ${finished.foe}`);
   await cancel.locator('#next-turn').click(); await cancel.locator('#end-turn').click();

@@ -187,8 +187,8 @@ export class Arena {
   }
   ownStats(index) { const server = this.battle?.myPokemon?.[index - 1]; return server?.stats ? {...server.stats} : null; }
   replay() { if (this.battle) { this.battle.seekTurn(0); this.battle.play(); this.followAnimations(); } }
-  // True while the renderer is stepping through the log: not paused by a turn button and not caught up to the end.
-  get playing() { return !!this.battle && !this.battle.paused && !this.battle.atQueueEnd; }
+  // True once the renderer has shown everything in the log: the live battle is caught up, or a replay has reached its last step.
+  get atEnd() { return !this.battle || this.battle.atQueueEnd; }
   // Play on from wherever the replay is paused.
   play() { if (this.battle) { this.battle.play(); this.followAnimations(); } }
   // End-of-battle controls: jump to a turn and hold there.

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {Music, TRACKS, TIMER_TONES, timerToneDue, loopPosition, musicActive} from '../src/music.js';
+import {Music, TRACKS, TIMER_TONES, timerToneDue, loopPosition, musicActive, replayMusicOver} from '../src/music.js';
 const flush = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };
 const deferred = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return {promise, resolve, reject}; };
 function setup({fetcher, suspended = false, resume, random} = {}) {
@@ -182,4 +182,10 @@ test('the tone plays only once audio is unlocked and does not touch the tune', a
   music.tone();
   assert.equal(oscillators.length, 1); assert.ok(oscillators[0].stoppedAt > oscillators[0].startedAt);
   assert.equal(sources.length, 1); assert.equal(sources[0].stopped, undefined);
+});
+
+test('replay music lasts until the replay reaches its last step or the finished battle is left', () => {
+  assert.equal(replayMusicOver({ended: true}, false), false, 'a replay paused on a turn, or still playing, keeps its music');
+  assert.equal(replayMusicOver({ended: true}, true), true, 'the last step ends it');
+  assert.equal(replayMusicOver({ended: false}, false), true, 'a new search or battle ends it');
 });
