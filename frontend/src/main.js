@@ -640,6 +640,8 @@ function startLive() {
 for (const type of ['pointerdown', 'touchend']) document.addEventListener(type, () => music.unlock(), {passive: true});
 // Music follows the live battle, and after it ends, a replay started with 🔁 until the replay stops or reaches the end.
 let replayMusic = false;
+// The battle room whose tune is playing. A different room is a new battle, which gets a new tune.
+let musicRoom = '';
 function updateMusic() {
   if (replayMusic && !(state.ended && arena.playing)) replayMusic = false;
   music.update(musicActive(state, {fixture, hidden: document.hidden, stopped: session.stopped, replaying: replayMusic}));
@@ -664,7 +666,11 @@ async function init() {
   arena.setFit('wide');
   arena.receive({room: 'battle-gen9randombattle-0', lines: demoLines, snapshot: true, request: demoRequest});
   session = new ShowdownSession({url: config.server, username: config.username, auth, storage: localStorage,
-    onState(next) { if (state.room && !next.room) { lastRequest = null; lastMovesRequest = null; ownOrder = []; } state = next; updateMusic(); render(); },
+    onState(next) {
+      if (state.room && !next.room) { lastRequest = null; lastMovesRequest = null; ownOrder = []; }
+      if (next.room && next.room !== musicRoom) { musicRoom = next.room; music.newBattle(); }
+      state = next; updateMusic(); render();
+    },
     onBattle(packet) { try {
       if (arena.room !== packet.room) { lastRequest = null; lastMovesRequest = null; ownOrder = []; if (modal.open && infoPage) closeModal(); }
       arena.receive(packet);

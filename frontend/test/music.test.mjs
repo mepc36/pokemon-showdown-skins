@@ -1,20 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {Music, TRACK, loopPosition, musicActive} from '../src/music.js';
+import {Music, TRACKS, loopPosition, musicActive} from '../src/music.js';
 const flush = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };
 const deferred = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return {promise, resolve, reject}; };
-function setup({fetcher, suspended = false, resume} = {}) {
+function setup({fetcher, suspended = false, resume, random} = {}) {
   const sources = [], saved = new Map();
   const context = {state: suspended ? 'suspended' : 'running', currentTime: 0,
     createGain: () => ({gain: {}, connect() {}}), addEventListener(_, callback) { this.change = callback; },
     resume: resume || (() => { context.state = 'running'; return Promise.resolve(); }),
-    decodeAudioData: async () => ({duration: 150}),
+    decodeAudioData: async () => ({duration: 200}),
     createBufferSource: () => {
       const source = {connect() {}, disconnect() {}, stop() { this.stopped = true; }, start(_, offset) { this.offset = offset; }};
       sources.push(source); return source;
     }};
   const storage = {getItem: key => saved.get(key), setItem: (key, value) => saved.set(key, value)};
-  const music = new Music(() => {}, {createContext: () => context, storage,
+  const music = new Music(() => {}, {createContext: () => context, storage, ...(random ? {random} : {}),
     fetcher: fetcher || (async (_, options) => { assert.equal(options.credentials, 'omit'); return {ok: true, arrayBuffer: async () => new ArrayBuffer(1)}; })});
   return {music, context, sources, saved};
 }
@@ -26,8 +26,8 @@ test('one native loop source survives turn updates and preserves loop points', a
   for (let i = 0; i < 100; i++) music.update(true);
   assert.equal(sources.length, 1);
   assert.equal(sources[0].loop, true);
-  assert.equal(sources[0].loopStart, TRACK.loopStart);
-  assert.equal(sources[0].loopEnd, TRACK.loopEnd);
+  assert.equal(sources[0].loopStart, music.track.loopStart);
+  assert.equal(sources[0].loopEnd, music.track.loopEnd);
   assert.equal(sources[0].offset, 0);
 });
 
@@ -38,8 +38,8 @@ test('toggle stops sound immediately and resumes position after multiple loops',
   music.toggle();
   assert.equal(saved.get('ps-mve-music'), 'off');
   assert.ok(sources[0].stopped);
-  const offset = loopPosition(310);
-  assert.ok(offset >= TRACK.loopStart && offset < TRACK.loopEnd);
+  const offset = loopPosition(310, music.track);
+  assert.ok(offset >= music.track.loopStart && offset < music.track.loopEnd);
   context.currentTime = 400;
   music.toggle();
   assert.equal(sources[1].offset, offset);
@@ -116,7 +116,46 @@ test('rewind restarts the song from its very beginning, intro included', async (
 });
 
 test('loop boundary wraps to upstream intro-free start', () => {
-  assert.equal(loopPosition(0), 0);
-  assert.equal(loopPosition(TRACK.loopEnd), TRACK.loopStart);
-  assert.ok(Math.abs(loopPosition(TRACK.loopEnd + 0.5) - TRACK.loopStart - 0.5) < 1e-6);
+  for (const track of TRACKS) {
+    assert.equal(loopPosition(0, track), 0);
+    assert.equal(loopPosition(track.loopEnd, track), track.loopStart);
+    assert.ok(Math.abs(loopPosition(track.loopEnd + 0.5, track) - track.loopStart - 0.5) < 1e-6);
+  }
+});
+
+test('all 19 battle themes are listed once with a loop inside the file', () => {
+  assert.equal(TRACKS.length, 19);
+  assert.equal(new Set(TRACKS.map(track => track.url)).size, 19);
+  assert.ok(TRACKS.every(track => /^\.\/audio\/[a-z0-9-]+\.mp3$/.test(track.url) && track.loopStart > 0 && track.loopEnd > track.loopStart));
+});
+
+test('a new battle starts a different tune from its very beginning', async () => {
+  const urls = [];
+  const {music, context, sources} = setup({fetcher: async url => { urls.push(url); return {ok: true, arrayBuffer: async () => new ArrayBuffer(1)}; }});
+  music.newBattle(); const first = music.track;
+  music.update(true); music.unlock(); await flush();
+  assert.equal(urls.at(-1), first.url); assert.equal(sources.at(-1).offset, 0);
+  context.currentTime = 40;
+  for (let battle = 0; battle < 50; battle++) {
+    const previous = music.track, started = sources.length;
+    music.update(false); music.newBattle(); music.update(true); await flush();
+    assert.notEqual(music.track, previous);
+    assert.equal(urls.at(-1), music.track.url);
+    assert.equal(sources.length, started + 1);
+    assert.equal(sources.at(-1).offset, 0);
+    assert.equal(sources.at(-1).loopStart, music.track.loopStart);
+    assert.equal(sources.at(-1).loopEnd, music.track.loopEnd);
+  }
+});
+
+test('a tune still downloading when the next battle starts never plays', async () => {
+  const pending = [];
+  const {music, sources} = setup({fetcher: url => { const wait = deferred(); pending.push({url, wait}); return wait.promise; }});
+  music.newBattle(); music.update(true); music.unlock(); await flush();
+  music.newBattle(); await flush();
+  assert.equal(pending.length, 2); assert.equal(pending[1].url, music.track.url); assert.notEqual(pending[0].url, pending[1].url);
+  pending[0].wait.resolve({ok: true, arrayBuffer: async () => new ArrayBuffer(1)}); await flush();
+  assert.equal(sources.length, 0); assert.equal(music.buffer, null);
+  pending[1].wait.resolve({ok: true, arrayBuffer: async () => new ArrayBuffer(1)}); await flush();
+  assert.equal(sources.length, 1); assert.equal(sources[0].loopEnd, music.track.loopEnd);
 });
