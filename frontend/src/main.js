@@ -312,19 +312,22 @@ const turnPage = step => showInfo({...infoPage, tab: (infoPage.tab + step + info
 // Move panels have no siblings, so left/right turns their pages.
 // Inside a Pokémon panel the right stick means the same as on the main screen:
 // the other team, same slot number. The roster row follows so B lands there.
-function flipInfoTeam() {
-  if (infoPage?.kind !== 'pokemon') return;
-  const side = infoPage.side === 'own' ? 'opponent' : 'own';
-  showTeam(side);
-  // Keep the slot that opened the panel; only the team changes.
-  modalReturnFocus = modalReturnFocus.replace(/^(switch|opponent)-/, `${side === 'own' ? 'switch' : 'opponent'}-`);
-  showInfo({...infoPage, side, tab: 0});
-}
 function navigateInfo(direction) {
   const step = direction === 'left' || direction === 'up' ? -1 : 1;
   if (infoPage.kind !== 'pokemon') { if (direction === 'left' || direction === 'right') turnPage(step); return; }
   if (direction === 'up' || direction === 'down') turnPage(step);
-  else showInfo({...infoPage, index: (infoPage.index - 1 + step + 6) % 6 + 1, tab: 0});
+  else {
+    // Left and Right run through all twelve Pokémon: the own six, then the opponent's six, and around again.
+    const index = (infoPage.index - 1 + step + 6) % 6 + 1;
+    const crossed = step > 0 ? infoPage.index === 6 : infoPage.index === 1;
+    const side = crossed ? (infoPage.side === 'own' ? 'opponent' : 'own') : infoPage.side;
+    if (crossed) {
+      // The roster behind the page follows the team on the page; closing lands on the opening slot's number there.
+      showTeam(side);
+      modalReturnFocus = modalReturnFocus.replace(/^(switch|opponent)-/, `${side === 'own' ? 'switch' : 'opponent'}-`);
+    }
+    showInfo({...infoPage, side, index, tab: 0});
+  }
 }
 function refreshInformation() { if (modal.open && infoPage) showInfo(infoPage); }
 
@@ -729,7 +732,6 @@ async function init() {
       else $('undo')?.click();
       return;
     }
-    if (action === 'team' && modal.open) { flipInfoTeam(); return; }
     if (action === 'confirm') {
       if (document.activeElement?.matches('[data-nav], [data-info-tab], .inspection-footer button')) document.activeElement.click();
       else navigate('right');
@@ -740,7 +742,8 @@ async function init() {
     if (action === 'battle' && modal.open && modal.dataset.view === 'battle') { closeModal(); return; }
     if (modal.open) return;
     // Y puts the cursor on the own active Pokémon's first move, flipping back to the own row first.
-    ({home: () => { if (shownTeam !== 'own') showTeam('own'); focusFirstMove(); }, info, team: () => showTeam(), tools: showMenu, battle: showBattleMenu, chat: () => { chatTurn = null; showChat(); }})[action]?.();
+    // X puts the cursor on the opponent's active Pokémon's roster button, flipping to the opponent row first.
+    ({home: () => { if (shownTeam !== 'own') showTeam('own'); focusFirstMove(); }, foe: () => showTeam('opponent'), info, team: () => showTeam(), tools: showMenu, battle: showBattleMenu, chat: () => { chatTurn = null; showChat(); }})[action]?.();
   }});
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { music.update(false); return; }

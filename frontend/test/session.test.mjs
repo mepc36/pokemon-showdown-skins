@@ -46,23 +46,27 @@ test('timer toggle follows server acknowledgement and ignores duplicate requests
   f.socket.receive(`>${room}\n|inactiveoff|Battle timer is OFF.`);
   assert.equal(f.session.state.timerOn, false); assert.equal(f.session.timerRemaining(), null);
 });
-test('their clock starts on the shared total at the start of a battle, and stays unknown when joining later', () => {
+test('their clock shows only what the server announced this turn', () => {
   const start = fixture(); start.authenticate(); start.battle();
   assert.equal(start.session.state.foeTimerSeconds, null);
   start.socket.receive(`>${room}\n|inactive|Time left: 150 sec this turn | 150 sec total`);
-  assert.equal(start.session.state.foeTimerSeconds, 150);
+  assert.equal(start.session.state.foeTimerSeconds, null, 'our own clock says nothing about theirs');
   start.socket.receive(`>${room}\n|inactive|Opponent has 120 seconds left.`);
-  start.socket.receive(`>${room}\n|turn|4\n|inactive|Time left: 150 sec this turn | 160 sec total`);
-  assert.equal(start.session.state.foeTimerSeconds, 120, 'a later message about our clock leaves their warned value alone');
-  const late = fixture(); late.authenticate(); late.battle();
-  late.socket.receive(`>${room}\n|turn|7`);
-  late.socket.receive(`>${room}\n|inactive|Time left: 150 sec this turn | 90 sec total`);
-  assert.equal(late.session.state.foeTimerSeconds, null);
+  start.socket.receive(`>${room}\n|inactive|Time left: 150 sec this turn | 160 sec total`);
+  assert.equal(start.session.state.foeTimerSeconds, 120, 'a later message about our clock leaves their announced value alone');
+  start.socket.receive(`>${room}\n|turn|4`);
+  assert.equal(start.session.state.foeTimerSeconds, null, 'a new turn drops last turn\'s value');
+  start.socket.receive(`>${room}\n|turn|5\n|inactive|Opponent has 25 seconds left this turn.`);
+  assert.equal(start.session.state.foeTimerSeconds, 25, 'a low clock is announced again right after the turn line');
+  start.socket.receive(`>${room}\n|-message|mepc36363636 lost due to inactivity.`);
+  assert.equal(start.session.state.foeTimerSeconds, 25, 'our own timeout leaves their clock alone');
+  start.socket.receive(`>${room}\n|-message|Opponent lost due to inactivity.`);
+  assert.equal(start.session.state.foeTimerSeconds, 0, 'their timeout shows 0');
 });
 test('opponent timer warnings never replace our clock and new rooms reset it', () => {
   const f = fixture(); f.authenticate(); f.battle();
   f.socket.receive(`>${room}\n|inactive|Time left: 120 sec this turn | 150 sec total`);
-  assert.equal(f.session.state.foeTimerSeconds, 150);
+  assert.equal(f.session.state.foeTimerSeconds, null);
   f.socket.receive(`>${room}\n|inactive|Opponent has 15 seconds left.`);
   assert.equal(f.session.state.timerSeconds, 120); assert.equal(f.session.state.foeTimerSeconds, 15);
   f.socket.receive(`>${room}\n|inactive|mepc36363636 has 30 seconds left.`);
