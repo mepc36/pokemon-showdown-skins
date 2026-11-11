@@ -158,6 +158,12 @@ export class ShowdownSession {
           if (/\[(Invalid|Unavailable) choice\]/i.test(value)) this.state.pending = false;
         } else if (type === 'turn') {
           this.turn = Number(value) || 0;
+          // Their clock gains time each turn and the server does not say how much is left, so last turn's value is dropped.
+          // A clock at or under 30 seconds is announced again right after this line.
+          this.state.foeTimerSeconds = null;
+        } else if (type === '-message' && / lost due to inactivity\.$/.test(value)) {
+          // The server never announces 0 seconds; running out of time ends with this line instead.
+          if (toID(value.replace(/ lost due to inactivity\.$/, '')) !== toID(this.expectedUser)) this.state.foeTimerSeconds = 0;
         } else if (type === 'win' || type === 'tie') {
           this.state.ended = true; this.state.pending = false; this.state.request = null;
           this.state.recovering = false; this.state.notice = type === 'win' ? `${value} won the battle.` : 'The battle ended in a tie.';
@@ -181,11 +187,8 @@ export class ShowdownSession {
             if (ownTime || ownPlayer) {
               this.state.timerSeconds = Number(ownTime?.[1] ?? playerTime[2]); this.state.timerAt = Date.now();
             }
-            // The server only reports the opponent's clock in its warnings; that value is shown until the next one.
+            // The server only reports the opponent's clock in its warnings; that value is shown until the next one or the next turn.
             if (playerTime && !ownPlayer) this.state.foeTimerSeconds = Number(playerTime[2]);
-            // At the start of a battle both players have the same total, so their clock starts on ours until their first warning.
-            const total = value.match(/^Time left: \d+ sec this turn \| (\d+) sec total/);
-            if (total && this.state.foeTimerSeconds == null && !(this.turn > 1)) this.state.foeTimerSeconds = Number(total[1]);
           }
         }
         battleLines.push(line);
