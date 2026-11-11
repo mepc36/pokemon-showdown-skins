@@ -178,6 +178,15 @@ try {
     check(await page.locator('dialog[open]').count() === 0 && await page.locator('#opponent-roster').isVisible() && await page.evaluate(() => document.activeElement.id === 'opponent-1' && document.activeElement.dataset.active === 'true') && await page.locator('.move-preview').count() === 4, 'X from the move row flips to the opponent row, shows their active Pokémon\'s moves and focuses that Pokémon');
     await page.locator('#opponent-3').focus(); await pad(page, 3);
     check(await page.evaluate(() => document.activeElement.id) === 'opponent-1', 'X on an opponent bench Pokémon moves the cursor to their active Pokémon');
+    await pad(page, 1);
+    check(await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'opponent-1', 'A on an opponent roster button does nothing; only R3 opens the page');
+    await page.keyboard.press('f'); await page.locator('#switch-1').focus(); await pad(page, 1);
+    check(await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'switch-1', 'A on your active Pokémon\'s roster button does nothing');
+    await page.locator('#switch-4').focus(); await pad(page, 1);
+    check(await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'switch-4', 'A on a fainted Pokémon\'s roster button does nothing');
+    await pad(page, 11);
+    check(await page.locator('dialog[open]').count() === 1 && (await page.locator('#modal-title').innerText()).includes('Breloom'), 'R3 still opens that Pokémon\'s page');
+    await pad(page, 0);
     await pad(page, 2); await page.keyboard.press('t');
     check(await page.locator('dialog[open]').count() === 0 && await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'move-1', 'Y flips back to the own side on the active Pokémon\'s first move; T does nothing');
     const fieldBefore = await page.locator('#arena').evaluate(el => el.getBoundingClientRect().width);

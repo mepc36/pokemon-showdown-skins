@@ -523,12 +523,12 @@ function renderRoster() {
       const teraBadge = teraType ? `<span class="type-badge roster-tera${!p.teraType && inference?.teraType ? ' inferred' : ''}" data-type="${escape(teraType)}" title="Tera ${escape(teraType)}">${escape(teraType)}</span>` : '';
       const details = ability || held || teraBadge ? `<span class="roster-details" aria-hidden="true"><small class="roster-ability${abilityInferred ? ' inferred' : ''}">${escape(ability)}</small><span class="roster-held">${held}${teraBadge}</span></span>` : '';
       return btn(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`, `${icon}<strong>${p.revealed ? nameTag(p.name) : '<span class="mon-name">Unknown</span>'}${status ? `<small class="status-tag">${escape(status)}</small>` : ''}</strong>${details}${p.percent != null ? `<span class="team-hp" aria-hidden="true" data-health="${p.percent <= 20 ? 'critical' : p.percent <= 50 ? 'low' : 'healthy'}"><span style="width:${p.percent}%"></span></span>` : ''}`, `team-${rosterSide}`, false,
-        `data-unavailable="${!p.canSwitch}" data-fainted="${!!p.fainted}" data-active="${!!p.active}" data-cue="${speed.cue || ''}" title="${escape(speed.label || '')}" aria-label="${rosterSide === 'opponent' ? `Opponent slot ${p.index}, ` : ''}${escape(p.name)}, ${escape(spoken)}.${ability ? ` ${abilityInferred ? 'Likely ' : ''}${escape(ability)}.` : ''}${itemName ? ` ${itemInferred ? 'Likely ' : ''}${escape(itemName)}.` : ''}${teraType ? ` Tera ${escape(teraType)}.` : ''} ${escape(speed.label || '')} ${p.canSwitch ? 'Switch Pokémon' : 'View details'}"`);
+        `data-unavailable="${!p.canSwitch}" data-fainted="${!!p.fainted}" data-active="${!!p.active}" data-cue="${speed.cue || ''}" title="${escape(speed.label || '')}" aria-label="${rosterSide === 'opponent' ? `Opponent slot ${p.index}, ` : ''}${escape(p.name)}, ${escape(spoken)}.${ability ? ` ${abilityInferred ? 'Likely ' : ''}${escape(ability)}.` : ''}${itemName ? ` ${itemInferred ? 'Likely ' : ''}${escape(itemName)}.` : ''}${teraType ? ` Tera ${escape(teraType)}.` : ''} ${escape(speed.label || '')} ${p.canSwitch ? 'Switch Pokémon' : ''}"`);
     }).join('');
+    // A on a roster button only switches. The Pokémon's page opens with R3 alone, so A does nothing on the active
+    // Pokémon, a fainted one, or an opponent.
     for (const p of team) $(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`).onclick = () => {
-      if (rosterSide === 'opponent') showInfo({kind: 'pokemon', side: 'opponent', index: p.index});
-      else if (p.canSwitch) choose('switch', p.serverIndex);
-      else if (p.revealed) info(p.index);
+      if (rosterSide === 'own' && p.canSwitch) choose('switch', p.serverIndex);
     };
   }
   if (!modal.open && focusId) $(focusId)?.focus({preventScroll: true});
