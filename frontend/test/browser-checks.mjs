@@ -119,7 +119,7 @@ try {
     check((await panelNames('#matchup-own'))[0] === 'Palossand' && await page.locator('.move-preview').count() === 4 && !await page.locator('#move-1').isVisible() && (await page.locator('.move-preview strong').allInnerTexts()).includes('Earth Power'), 'Cursor on a bench Pokémon previews its moves and matchup');
     check(await page.locator('#tera .tera-type').innerText() === 'Water' && (await page.locator('#tera .tera-gem').getAttribute('src')).endsWith('TeraWater.png'), 'The Tera button follows the previewed Pokémon, name plus gem');
     check(await page.locator('.form-tag').count() === 0 && await page.evaluate(() => { const name = document.querySelector('#switch-1 .mon-name'); return name.scrollWidth <= name.clientWidth + 1; }), 'Roster names fit; no region tags on the demo team');
-    await pad(page, 0);
+    await pad(page, 2);
     await page.locator('#switch-2').focus(); await pad(page, 13);
     check(/^preview-move-\d$/.test(await page.evaluate(() => document.activeElement.id)) && await page.locator('.move-preview').count() === 4, 'The cursor can move onto a previewed move without ending the preview');
     check(await page.evaluate(() => getComputedStyle(document.querySelector('#preview-move-1')).opacity) === '1', 'Previewed moves are not grayed out');
@@ -133,10 +133,16 @@ try {
     await pad(page, 0);
     check(await page.locator('.move-preview').count() === 4 && /^preview-move-\d$/.test(await page.evaluate(() => document.activeElement.id)), 'Closing the info returns to the preview move; the preview stays');
     await page.locator('#switch-2').focus(); await pad(page, 0);
-    check(await page.locator('.move-preview').count() === 0 && await page.locator('#move-1').isVisible() && await page.evaluate(() => document.activeElement.id === 'move-1'), 'B on a bench Pokémon puts the cursor on the active Pokémon\'s first move and ends the preview');
+    check(await page.locator('.move-preview').count() === 4 && await page.evaluate(() => document.activeElement.id === 'switch-2'), 'B on a bench Pokémon leaves the cursor and the preview where they are');
+    await pad(page, 3);
+    check(await page.locator('#tera').getAttribute('aria-pressed') === 'false', 'Button 3 (X) does not toggle Tera');
+    await pad(page, 2);
+    check(await page.locator('.move-preview').count() === 0 && await page.locator('#move-1').isVisible() && await page.evaluate(() => document.activeElement.id === 'move-1'), 'Y on a bench Pokémon puts the cursor on the active Pokémon\'s first move and ends the preview');
     await page.keyboard.press('f'); await page.locator('#opponent-3').focus(); await pad(page, 0);
-    check(await page.locator('.move-preview').count() === 0 && await page.evaluate(() => document.activeElement.id === 'move-1'), 'B on an opponent also returns to the first move');
-    check(await page.locator('#roster').isVisible() && !await page.locator('#opponent-roster').isVisible(), 'B on an opponent flips the team row back to the own side');
+    check(await page.evaluate(() => document.activeElement.id === 'opponent-3'), 'B on an opponent leaves the cursor there');
+    await pad(page, 2);
+    check(await page.locator('.move-preview').count() === 0 && await page.evaluate(() => document.activeElement.id === 'move-1'), 'Y on an opponent also returns to the first move');
+    check(await page.locator('#roster').isVisible() && !await page.locator('#opponent-roster').isVisible(), 'Y on an opponent flips the team row back to the own side');
     await page.locator('#switch-1').focus();
     check(await page.locator('#tera .tera-type').innerText() === 'Psychic', 'Leaving the preview restores the active Pokémon\'s Tera type');
     check(await page.locator('.info-facts > div[data-cue]:not([data-cue=""])').count() === 0, 'No stale cue borders remain outside the panels');
@@ -264,6 +270,15 @@ try {
     for (const id of ['setup', 'diagnostics']) {
       await page.keyboard.press('h'); await page.locator(`#${id}`).click();
       check(!(await fit(page)).length, `${id} has no scrolling: ${await fit(page)}`);
+      if (id === 'diagnostics') {
+        await pad(page, 0);
+        check(await page.locator('dialog[open]').count() === 1 && (await page.locator('#input-log').innerText()).includes('Button 0'), 'B on the controller check shows its number and does not close the screen');
+        await pad(page, 1);
+        check(await page.locator('dialog[open]').count() === 1 && (await page.locator('#input-log').innerText()).includes('Button 1') && await page.evaluate(() => document.activeElement.id) === 'modal-close', 'The first A on the controller check shows its number and moves the cursor to a button');
+        await pad(page, 1);
+        check(await page.locator('dialog[open]').count() === 0, 'A on the close button closes the controller check');
+        await page.keyboard.press('h'); await page.locator(`#${id}`).click();
+      }
       await page.locator('#modal-close').click();
     }
     await page.route('**/users/mepc36363636.json', route => route.fulfill({json: {userid: 'mepc36363636', ratings: {gen9randombattle: {elo: 1375.16, gxe: 54.5, w: 228, l: 244}}}}));
@@ -403,8 +418,9 @@ try {
   check(await cancel.evaluate(() => { const el = document.querySelector('#move-2'); return !el.disabled && el.dataset.locked === 'true' && document.activeElement === el; }) && !(await cancel.locator('#test-commands').innerText()).includes('/choose move 2'), 'Moves stay focusable for review while a choice is pending but cannot be chosen');
   check(await cancel.evaluate(() => document.querySelector('#choices').dataset.pending === 'true' && getComputedStyle(document.querySelector('#switch-1')).backgroundColor === 'rgb(211, 216, 221)' && getComputedStyle(document.querySelector('#move-1')).backgroundColor === 'rgb(211, 216, 221)'), 'A sent choice grays the move row and the active Pokémon');
   await cancel.keyboard.press('f'); await cancel.locator('#opponent-2').focus(); await cancel.keyboard.press('Escape');
-  check(await cancel.evaluate(() => !document.querySelector('.team-row[data-side="own"]').hidden && document.querySelector('.team-row[data-side="opponent"]').hidden), 'B from the foe roster flips the team row back to the own side');
-  check((await cancel.locator('#test-commands').innerText()).includes('/undo |1') && await cancel.evaluate(() => document.activeElement.id) === 'move-1', 'B / Escape invokes Showdown undo and lands on the first move');
+  check((await cancel.locator('#test-commands').innerText()).includes('/undo |1') && await cancel.evaluate(() => document.querySelector('.team-row[data-side="own"]').hidden && !document.querySelector('.team-row[data-side="opponent"]').hidden && document.activeElement.id === 'opponent-2'), 'B / Escape from the foe roster invokes Showdown undo and leaves the cursor and the team row where they are');
+  await cancel.keyboard.press('f');
+  check(await cancel.evaluate(() => !document.querySelector('.team-row[data-side="own"]').hidden && document.activeElement.id === 'move-1'), 'Flipping back after the undo lands on the first move');
   check(await cancel.locator('#foe-timer-value').innerText() === '—' && (await cancel.locator('#battle-timer .timer-who').allInnerTexts()).join(' ') === 'You: Them:', 'The opponent timer shows a dash until the server warns about them');
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|inactive|Offline preview has 20 seconds left.'}));
   check(await cancel.locator('#foe-timer-value').innerText() === '0:20', 'An opponent warning fills the Them timer');
@@ -540,7 +556,9 @@ try {
   check((await cancel.locator('#test-commands').innerText()).includes('|/savereplay'), 'The replay is saved automatically when the battle ends');
   // R3 opens a move's page whenever the move is on screen: a locked own move, and a fainted Pokémon's move.
   const lockedMove = await cancel.locator('#move-2 strong').innerText();
-  await cancel.locator('#move-2').focus(); await cancel.keyboard.press('i');
+  // The cursor may sit on a bench Pokémon here, whose preview hides the own moves; Y returns to them.
+  await pad(cancel, 2);
+  await cancel.locator('#move-2').focus();await cancel.keyboard.press('i');
   check(await cancel.locator('dialog[data-view=move][open]').count() === 1 && await cancel.locator('#modal-title').innerText() === lockedMove, `R3 on a locked own move opens that move: ${lockedMove}`);
   await cancel.keyboard.press('Escape');
   await cancel.locator('#roster button[data-fainted="true"]').first().focus(); await cancel.keyboard.press('ArrowUp');

@@ -1,5 +1,6 @@
 // L3 (10) flips the shown team row (iPad Chrome reports every bumper as 10). Select (8) opens the menu modal. Start (9) opens the battle menu.
-export const BUTTONS = {0: 'cancel', 1: 'confirm', 3: 'tera', 8: 'tools', 9: 'battle', 10: 'team', 11: 'info', 12: 'up', 13: 'down', 14: 'left', 15: 'right'};
+// Y (2) puts the cursor on the own active Pokémon's first move. X (3) is kept free.
+export const BUTTONS = {0: 'cancel', 1: 'confirm', 2: 'home', 8: 'tools', 9: 'battle', 10: 'team', 11: 'info', 12: 'up', 13: 'down', 14: 'left', 15: 'right'};
 export const risingEdges = (current, previous) => current.flatMap((pressed, index) => pressed && !previous[index] ? [index] : []);
 
 export function startController({action, diagnostic, ignored = () => new Set()}) {
