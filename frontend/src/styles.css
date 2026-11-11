@@ -302,7 +302,7 @@ footer{display:none}
 .moves{grid-template-columns:repeat(5,minmax(0,1fr))}
 .moves #tera{min-height:0;padding:9px 12px 7px;font-size:clamp(14px,1.6vw,19px);font-weight:500;flex-direction:row;justify-content:center;align-items:center;gap:8px;white-space:nowrap}
 .moves #tera .tera-gem{width:20px;height:20px;image-rendering:auto}
-.moves #tera .tera-active{width:10px;height:10px;border-radius:50%;background:#27303b;box-shadow:0 0 0 3px #27303b44}
+
 @media(min-width:900px) and (max-height:620px){.moves #tera{padding:4px 8px;font-size:15px;gap:6px}.moves #tera .tera-gem{width:16px;height:16px}}
 
 /* The strip above the field never renders. */
@@ -393,3 +393,8 @@ dialog[data-view=chat] .chat-turn{flex:1;min-height:0;overflow:auto}
 
 /* v1.11.0: role names on the opponent R3 page are centered above their moves. */
 .overview-layout .role-heading{justify-content:center;text-align:center}
+
+/* v1.12.0: Tera already used: flat gray button, type name struck through, gray gem. Available and selected keep their type tint. */
+.moves #tera[data-used="true"]{background:#e3e6ea;border-color:#b9c0c8;color:#7b8794;box-shadow:none;font-weight:500}
+.moves #tera[data-used="true"] .tera-type{text-decoration:line-through}
+.moves #tera[data-used="true"] .tera-gem{filter:grayscale(1);opacity:.55}

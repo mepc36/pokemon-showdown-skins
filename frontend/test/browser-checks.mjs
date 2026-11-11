@@ -498,6 +498,29 @@ try {
   await cancel.waitForFunction(() => parseFloat(document.querySelector('#switch-1 .team-hp > span').style.width) < 100, null, {timeout: 15000});
   check(Math.abs(await barWidth('#switch-1') - 150 / 297 * 100) < 0.01, 'After the hit lands the roster bar drains to the renderer HP');
 
+  // Tera has three looks: available (type tint), selected (deeper tint), used (gray, struck through, no dot).
+  const teraLook = () => cancel.evaluate(() => { const el = document.querySelector('#tera'), css = getComputedStyle(el); return {used: el.dataset.used, pressed: el.getAttribute('aria-pressed'), image: css.backgroundImage, color: css.backgroundColor, strike: getComputedStyle(el.querySelector('.tera-type')).textDecorationLine, gem: getComputedStyle(el.querySelector('.tera-gem')).filter, dot: el.querySelectorAll('.tera-active').length}; });
+  const teraFree = await teraLook();
+  check(teraFree.used === 'false' && teraFree.image.includes('gradient') && teraFree.strike === 'none' && teraFree.gem === 'none' && teraFree.dot === 0, `Tera available: type tint, no strike, no dot: ${JSON.stringify(teraFree)}`);
+  await cancel.evaluate(async () => {
+    const {demoRequest} = await import('/src/demo.mjs');
+    const active = {...demoRequest.active[0]}; delete active.canTerastallize;
+    const spent = {...demoRequest, rqid: 2, active: [active], side: {...demoRequest.side, pokemon: demoRequest.side.pokemon.map(p => p.ident === 'p1: Grumpig' ? {...p, condition: '150/297', terastallized: 'Psychic'} : p)}};
+    window.testSocket.onmessage({data: `>battle-gen9randombattle-12345\n|request|${JSON.stringify(spent)}`});
+  });
+  await cancel.waitForFunction(() => document.querySelector('#tera').dataset.used === 'true');
+  const teraSpent = await teraLook();
+  check(teraSpent.image === 'none' && teraSpent.color === 'rgb(227, 230, 234)' && teraSpent.strike === 'line-through' && teraSpent.gem.includes('grayscale') && teraSpent.dot === 0 && await cancel.locator('#tera').isDisabled(), `Tera already used: gray button, type struck through, gray gem, no dot: ${JSON.stringify(teraSpent)}`);
+  await cancel.locator('#switch-3').focus();
+  check((await teraLook()).used === 'true', 'A bench preview keeps the used look');
+  await pad(cancel, 2);
+  await cancel.evaluate(async () => {
+    const {demoRequest} = await import('/src/demo.mjs');
+    const hurt = {...demoRequest, rqid: 2, side: {...demoRequest.side, pokemon: demoRequest.side.pokemon.map(p => p.ident === 'p1: Grumpig' ? {...p, condition: '150/297'} : p)}};
+    window.testSocket.onmessage({data: `>battle-gen9randombattle-12345\n|request|${JSON.stringify(hurt)}`});
+  });
+  await cancel.waitForFunction(() => document.querySelector('#tera').dataset.used === 'false');
+
   // Switching reorders the server request (active first); the roster keeps the lead first.
   await cancel.evaluate(async () => {
     const {demoRequest} = await import('/src/demo.mjs');

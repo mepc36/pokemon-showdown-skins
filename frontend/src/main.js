@@ -406,10 +406,11 @@ function setPreview(index) {
 }
 // Bench preview: the focused Pokémon's four known moves, with effectiveness cues. The cursor can
 // land on them, but pressing one does nothing; only the active Pokémon's moves can be chosen.
-// Tera button: the type name plus Showdown's Tera gem for that type. Selection and active state are drawn, not written.
-function teraMarkup(type, active = false) {
+// Tera button: the type name plus Showdown's Tera gem for that type. Selected and used states are drawn, not written:
+// selected deepens the tint, and used (data-used) turns the button gray with the type struck through.
+function teraMarkup(type) {
   const gem = type && type !== 'Unknown' ? `<img class="tera-gem" src="https://play.pokemonshowdown.com/sprites/types/Tera${encodeURIComponent(type)}.png" alt="" width="20" height="20">` : '';
-  return `<span class="tera-type">${escape(type)}</span>${gem}${active ? '<span class="tera-active" aria-label="Terastallized"></span>' : ''}`;
+  return `<span class="tera-type">${escape(type)}</span>${gem}`;
 }
 
 function renderMovePreview() {
@@ -425,12 +426,12 @@ function renderMovePreview() {
     const slot = arena?.opponents()[foeMoveIndex - 1];
     const foe = foeMoveSlots(slot);
     row.dataset.preview = 'true';
-    $('tera').innerHTML = teraMarkup(foe.teraType || 'Unknown'); $('tera').dataset.type = foe.teraType || 'Unknown'; $('tera').disabled = true;
+    $('tera').innerHTML = teraMarkup(foe.teraType || 'Unknown'); $('tera').dataset.type = foe.teraType || 'Unknown'; $('tera').disabled = true; $('tera').dataset.used = 'false';
     row.insertAdjacentHTML('afterbegin', Array.from({length: 4}, (_, i) => previewMoveButton(foe.moves[i], i, foe.moves[i]?.candidate ? "Not selectable: candidate move from the identified role" : "Not selectable: opponent's move", foe.moves[i]?.candidate ? 'data-candidate="true"' : foe.moves[i] && !foe.moves[i].more ? 'data-seen="true"' : '')).join(''));
     return;
   }
-  if (previewed) { const type = previewed.terastallized || previewed.teraType || 'Unknown'; $('tera').innerHTML = teraMarkup(type); $('tera').dataset.type = type; $('tera').disabled = teraLabel ? teraLabel.disabled || teraUsed : teraUsed; }
-  else if (teraLabel) { $('tera').innerHTML = teraLabel.html; $('tera').dataset.type = teraLabel.type; $('tera').disabled = teraLabel.disabled; }
+  if (previewed) { const type = previewed.terastallized || previewed.teraType || 'Unknown'; $('tera').innerHTML = teraMarkup(type); $('tera').dataset.type = type; $('tera').disabled = teraLabel ? teraLabel.disabled || teraUsed : teraUsed; $('tera').dataset.used = String(teraUsed); }
+  else if (teraLabel) { $('tera').innerHTML = teraLabel.html; $('tera').dataset.type = teraLabel.type; $('tera').disabled = teraLabel.disabled; $('tera').dataset.used = teraLabel.used; }
   if (!previewIndex) return;
   const moves = knownMoves('own', previewIndex);
   row.insertAdjacentHTML('afterbegin', Array.from({length: 4}, (_, i) => {
@@ -591,10 +592,11 @@ function render() {
   const teraType = request?.active?.[0]?.canTerastallize || activePokemon?.teraType || 'Unknown';
   $('tera').hidden = !activePokemon;
   $('tera').disabled = disabled || waiting || !choices.tera;
-  $('tera').innerHTML = teraMarkup(teraType, !!activePokemon?.terastallized);
-  $('tera').dataset.active = String(!!activePokemon?.terastallized);
+  $('tera').innerHTML = teraMarkup(teraType);
+  // Tera is used up once anyone on the own team has Terastallized; the server keeps that flag on the Pokémon.
+  $('tera').dataset.used = String(!!(request || lastRequest)?.side?.pokemon?.some(p => p.terastallized));
   $('tera').dataset.type = teraType;
-  teraLabel = {html: $('tera').innerHTML, type: teraType, disabled: $('tera').disabled};
+  teraLabel = {html: $('tera').innerHTML, type: teraType, disabled: $('tera').disabled, used: $('tera').dataset.used};
   $('tera').setAttribute('aria-pressed', String(tera));
   $('tera').title = choices.tera ? 'Toggle Terastallize for your next move (X)' : 'This Pokémon’s Tera type; Terastallize is unavailable right now.';
   const canCancel = !fixture && state.pending && request && !request.noCancel && state.authenticated && !state.recovering && !state.ended;
