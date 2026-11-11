@@ -149,7 +149,10 @@ function setup() {
 function diagnostics() {
   showModal('Controller check', `<p>Press a button to check its mapping.</p>
     <pre id="input-log"></pre><label for="ignored-buttons">Ignore button numbers (comma separated)</label><input id="ignored-buttons" type="text" inputmode="numeric" value="${[...ignoreButtons].join(', ')}" placeholder="For example: 4, 5, 6, 7">
-    <p class="small">Ignored buttons do nothing here. iPadOS shortcuts may still run.</p>${btn('save-ignored', 'Save ignored buttons', 'modal-actions')}`);
+    <p class="small">Ignored buttons do nothing here. iPadOS shortcuts may still run.</p>${btn('save-ignored', 'Save ignored buttons', 'modal-actions')}`, 'diagnostics');
+  // The cursor starts on no button, so A and B can be pressed to read their numbers. B does not close this screen;
+  // it closes with A on × or on Save.
+  $('input-log').tabIndex = -1; $('input-log').focus({preventScroll: true});
   $('input-log').textContent = diagnosticLines.join('\n') || 'Tap the page, then press a controller button.';
   $('save-ignored').onclick = () => {
     ignoreButtons = new Set($('ignored-buttons').value.split(',').filter(x => x.trim()).map(Number).filter(x => Number.isInteger(x) && x >= 0 && x < 64));
@@ -719,10 +722,11 @@ async function init() {
       navigate(action); return;
     }
     if (action === 'cancel') {
-      // B on the battle screen undoes a pending choice and puts the cursor on the active Pokémon's first move.
+      // B on the battle screen only undoes a pending choice. On the controller check it only shows its number.
       if (modal.open && modal.dataset.view === 'chat') showMenu();
+      else if (modal.open && modal.dataset.view === 'diagnostics') return;
       else if (modal.open) closeModal();
-      else { $('undo')?.click(); if (shownTeam !== 'own') showTeam('own'); focusFirstMove(); }
+      else $('undo')?.click();
       return;
     }
     if (action === 'team' && modal.open) { flipInfoTeam(); return; }
@@ -735,7 +739,8 @@ async function init() {
     if (action === 'tools' && modal.open && modal.dataset.view === 'menu') { closeModal(); return; }
     if (action === 'battle' && modal.open && modal.dataset.view === 'battle') { closeModal(); return; }
     if (modal.open) return;
-    ({tera: () => $('tera')?.click(), info, team: () => showTeam(), tools: showMenu, battle: showBattleMenu, chat: () => { chatTurn = null; showChat(); }})[action]?.();
+    // Y puts the cursor on the own active Pokémon's first move, flipping back to the own row first.
+    ({home: () => { if (shownTeam !== 'own') showTeam('own'); focusFirstMove(); }, info, team: () => showTeam(), tools: showMenu, battle: showBattleMenu, chat: () => { chatTurn = null; showChat(); }})[action]?.();
   }});
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { music.update(false); return; }
