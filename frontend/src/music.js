@@ -18,8 +18,9 @@ export function timerToneDue(previous, current) {
 }
 
 // The cry file of a species, by the rule in pinned battle-dex.ts (getSpriteData): the base species' cry, except
-// for the formes that have their own.
-const CRY_FORMES = ['-bloodmoon', '-crowned', '-eternal', '-eternamax', '-four', '-hangry', '-hero', '-lowkey', '-noice', '-primal',
+// for the formes that have their own. Showdown's list also names '-bloodmoon', but its host has no
+// ursaluna-bloodmoon.mp3 (404 on 2026-11-11), so Ursaluna-Bloodmoon uses Ursaluna's cry.
+const CRY_FORMES = ['-crowned', '-eternal', '-eternamax', '-four', '-hangry', '-hero', '-lowkey', '-noice', '-primal',
   '-rapidstrike', '-roaming', '-school', '-sky', '-starter', '-super', '-therian', '-unbound'];
 const CRY_SPECIES = ['calyrex', 'kyurem', 'cramorant', 'indeedee', 'lycanroc', 'necrozma', 'oinkologne', 'oricorio', 'slowpoke', 'tatsugiri', 'zygarde'];
 export function cryFile({baseSpecies, formeid, isMega}) {

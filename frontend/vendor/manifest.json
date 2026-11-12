@@ -238,5 +238,2717 @@
     "output": "public/audio/sm-rival.mp3",
     "sha256": "1ee94e5ba07da0cd6a04e5ae191165adec4fe35b5626620ba0aac752f5a6d548",
     "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/abomasnow.mp3",
+    "output": "public/audio/cries/abomasnow.mp3",
+    "sha256": "d7cd7b8b4fb91d616323e7129901a2d2b6bcb99b574de471dbeb8ff056b28f72",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/alcremie.mp3",
+    "output": "public/audio/cries/alcremie.mp3",
+    "sha256": "d8a77723f3a8b85ee5576a7367709fcc4cf44f47887ac7f55ca7b6c8d5335dea",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/alomomola.mp3",
+    "output": "public/audio/cries/alomomola.mp3",
+    "sha256": "92263611ae65ac089905bb1599f54b9e8b5ae077591ab2c7a735dc7fe714f324",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/altaria.mp3",
+    "output": "public/audio/cries/altaria.mp3",
+    "sha256": "b8d4b511d99e1ac28b527483f875fbfadbfee1cb17d0898a86b8d73f0639c346",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/ambipom.mp3",
+    "output": "public/audio/cries/ambipom.mp3",
+    "sha256": "cfac3932e6432e893cd9c58d441f2e8c5cd223b013648b14e090453d799789ab",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/amoonguss.mp3",
+    "output": "public/audio/cries/amoonguss.mp3",
+    "sha256": "c667a5e574d4c3dfca577548b9508af43dea5f9128890cab27ea0cd5272e6c4f",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/ampharos.mp3",
+    "output": "public/audio/cries/ampharos.mp3",
+    "sha256": "b54d1da35906ba99a68dd00c9184b8b8a7f5ad590a037b5d2733e8b70ccb4926",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/annihilape.mp3",
+    "output": "public/audio/cries/annihilape.mp3",
+    "sha256": "24a00d1e9e12eaf4a2dad5cbca47e7924b36a187b3716614a29e7ecc2c04ed0f",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/appletun.mp3",
+    "output": "public/audio/cries/appletun.mp3",
+    "sha256": "ef42db8fc415cf22d39603c14a52a762383cce28d63b05a25f5be5158a13382c",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/araquanid.mp3",
+    "output": "public/audio/cries/araquanid.mp3",
+    "sha256": "90876d7276ea9005b8938d349d67669340da1104fcd49a266d5cad38df5cce2e",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/arbok.mp3",
+    "output": "public/audio/cries/arbok.mp3",
+    "sha256": "7d167381631e26fdb73726b33202c598cc6243fe3f4db93f5f69844b95921f80",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/arboliva.mp3",
+    "output": "public/audio/cries/arboliva.mp3",
+    "sha256": "eb4e07e5c060107f75d2d681544deef0c82ac5fe4a128443e55f3015cdb2695c",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/arcanine.mp3",
+    "output": "public/audio/cries/arcanine.mp3",
+    "sha256": "7c9d1b93a02538f8331fa1aff814e9490bce24444487bb4f7999da49deae359f",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/arceus.mp3",
+    "output": "public/audio/cries/arceus.mp3",
+    "sha256": "79f3b0f89f4978ec2142e85b4c6985435f65df575cf4fb90f3279a2f6a2c58a3",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/archaludon.mp3",
+    "output": "public/audio/cries/archaludon.mp3",
+    "sha256": "dea9831f2bf9606398393e70a6cd8f2feb0bfb1113fe355511cbfb144f4f1c2a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/ariados.mp3",
+    "output": "public/audio/cries/ariados.mp3",
+    "sha256": "ed4294912b165e051297a6f994b190dbd8d7ac73d574ce42d47d43c1ecdb2b2c",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/armarouge.mp3",
+    "output": "public/audio/cries/armarouge.mp3",
+    "sha256": "ffa11e73f4c9eb60db199ed71e30098d759c50e6336b8dec90c4e96824339461",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/articuno.mp3",
+    "output": "public/audio/cries/articuno.mp3",
+    "sha256": "5c0b9511c75fb32a88730cd52ed35da3570a94a4e6df8a2b3158acb995388924",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/avalugg.mp3",
+    "output": "public/audio/cries/avalugg.mp3",
+    "sha256": "de1d2e17411038512563db003f72e8ffe944a360f39d62ba02dee0e16e7344ee",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/azelf.mp3",
+    "output": "public/audio/cries/azelf.mp3",
+    "sha256": "124c08acb157ba872a215d0130efbfde3a010527fb17a8c0923697e12504e187",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/azumarill.mp3",
+    "output": "public/audio/cries/azumarill.mp3",
+    "sha256": "6c9869772ece20ac265a461d94bb5f8277698a22ffbcd54d6b812502abfaa9b3",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/banette.mp3",
+    "output": "public/audio/cries/banette.mp3",
+    "sha256": "426084f289a1075b843652ee3f3ec3912a7da5ef51f1579362c5beac73877880",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/barraskewda.mp3",
+    "output": "public/audio/cries/barraskewda.mp3",
+    "sha256": "f67b6ebb502256d542902bdcf4a550e0360f75204124e5b404eeec1fbbd89fd3",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/basculegion.mp3",
+    "output": "public/audio/cries/basculegion.mp3",
+    "sha256": "ce385db430de36ac52a560e2602ed8f1c309db2fa134490694135da45f92d35a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/basculin.mp3",
+    "output": "public/audio/cries/basculin.mp3",
+    "sha256": "2b0fd90e21234f132c06bbc25d285f42b844f6d9ae720ac6a389475f5cb018e2",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/bastiodon.mp3",
+    "output": "public/audio/cries/bastiodon.mp3",
+    "sha256": "283ad3b545811f2e37ab6873b00d508fbc4c4be697f7507c5c72a2b818aca8fe",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/baxcalibur.mp3",
+    "output": "public/audio/cries/baxcalibur.mp3",
+    "sha256": "f65bf129b802b4f848c8a4724db6a55c805153b849cdbc4631869c5f33798cb3",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/beartic.mp3",
+    "output": "public/audio/cries/beartic.mp3",
+    "sha256": "59ba142013baa8373ef4bbac2ccc940b17a25cf75da754d25464036f4dae9254",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/bellibolt.mp3",
+    "output": "public/audio/cries/bellibolt.mp3",
+    "sha256": "fa12a2cad8243c42bf5bb2bd97b2efc224b99f038591a26cdce69cf3fc204e1d",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/bellossom.mp3",
+    "output": "public/audio/cries/bellossom.mp3",
+    "sha256": "702389a2997bdb4315279a410b81d302b066d47db9f402db7dcee48d0e1b46b3",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/bisharp.mp3",
+    "output": "public/audio/cries/bisharp.mp3",
+    "sha256": "28aa06cc803e9e61d007d21ad48444dc466378d8a7f920f50f6cc6a47223f1ef",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/blastoise.mp3",
+    "output": "public/audio/cries/blastoise.mp3",
+    "sha256": "9c0338e02d6264a26c73a264a6cbd4cbedd274e1d394a7e804172705c48b3a4e",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/blaziken.mp3",
+    "output": "public/audio/cries/blaziken.mp3",
+    "sha256": "76347b0f809b369ae709ffd3ad70cb4dd327271f3255292e0fa4306ff0c5a539",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/blissey.mp3",
+    "output": "public/audio/cries/blissey.mp3",
+    "sha256": "7b75139adb8d958fe528baa1390dc9f637b47d6b389c536a2371fbde918a1f57",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/bombirdier.mp3",
+    "output": "public/audio/cries/bombirdier.mp3",
+    "sha256": "67afd3c52be60d55c07cbe4477bbd8ae444b3351c0fdde164a28bad782d4e0eb",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/brambleghast.mp3",
+    "output": "public/audio/cries/brambleghast.mp3",
+    "sha256": "43515eabdbf29e8f66854ddd6555661ad0601bcd9738d3f37e0fc7231c08cfda",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/braviary.mp3",
+    "output": "public/audio/cries/braviary.mp3",
+    "sha256": "9e36b2b61621e7e9a7c715acd3d7f2b86a3ec447009eede2b7e9997c7afdf3d6",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/breloom.mp3",
+    "output": "public/audio/cries/breloom.mp3",
+    "sha256": "3fdd10d2c99dfd0d55bbee32a38a54328fd112b11b28bb025953146697ac2311",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/bronzong.mp3",
+    "output": "public/audio/cries/bronzong.mp3",
+    "sha256": "628ea513d5368bef4a7cdb493075a9c2d3f5f40a67e5e1551f7aeeab07fb67ed",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/brutebonnet.mp3",
+    "output": "public/audio/cries/brutebonnet.mp3",
+    "sha256": "4ac358a42b856ef45d5f784689ef51d76477f765a8f143ac79055d3b604cb7e8",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/bruxish.mp3",
+    "output": "public/audio/cries/bruxish.mp3",
+    "sha256": "1201462bb0c48f4b82f0fa6e54abf72de7722b67681cfc2c81a9319c9edeb6ea",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/cacturne.mp3",
+    "output": "public/audio/cries/cacturne.mp3",
+    "sha256": "57717bf68ea37d8c50720cb2c69f7c608bd529cdc07338d4f8edba1af6368796",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/calyrex.mp3",
+    "output": "public/audio/cries/calyrex.mp3",
+    "sha256": "77c43cbbc780542195788c235a7ac0bddfb286a4088d1c6aec71f4a2dbd205cb",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/calyrex-ice.mp3",
+    "output": "public/audio/cries/calyrex-ice.mp3",
+    "sha256": "0cb8ed79e711df6bbdd7f348ad53a25893ddfc2445fa098bb514cb17faad6ab7",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/calyrex-shadow.mp3",
+    "output": "public/audio/cries/calyrex-shadow.mp3",
+    "sha256": "88d5e3ad99cc5336f5963a4cb79c127d998965fb6ec0e937f3b08a39dd64ccf9",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/camerupt.mp3",
+    "output": "public/audio/cries/camerupt.mp3",
+    "sha256": "1eb8165865a65dfc32a1de997b918ded4dccf20eba8f4375e5cb5c17615d9245",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/carbink.mp3",
+    "output": "public/audio/cries/carbink.mp3",
+    "sha256": "fd4c1f8382e97f51e371ce31e3579dddf14008b3b5b5cbb76f2c2471836d1cd9",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/ceruledge.mp3",
+    "output": "public/audio/cries/ceruledge.mp3",
+    "sha256": "bcf847471f944f3bc0baf063f683c7d2aae7b6b7e6759f4cb196c273b87b264b",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/cetitan.mp3",
+    "output": "public/audio/cries/cetitan.mp3",
+    "sha256": "682fdfdeff8ee96290f63f44753af9042fc49793a30580837f6e946807b3a674",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/chandelure.mp3",
+    "output": "public/audio/cries/chandelure.mp3",
+    "sha256": "e0ff5c93e5a24a7059beb032e6765ff45858757971dea9e1d81f146b2b785fb6",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/chansey.mp3",
+    "output": "public/audio/cries/chansey.mp3",
+    "sha256": "c97debd814d35743ee54b0c7e4781abddcd9f9202b02ff276ad7788b576ecaba",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/charizard.mp3",
+    "output": "public/audio/cries/charizard.mp3",
+    "sha256": "07b41d366a2e3119cb977fb62bfc5ecb4b86cccd342158aec55b8394cbbbe411",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/chesnaught.mp3",
+    "output": "public/audio/cries/chesnaught.mp3",
+    "sha256": "af736f1d59e6692642458d5edc969e84eac712eeffc17243dca912d4265bd415",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/chienpao.mp3",
+    "output": "public/audio/cries/chienpao.mp3",
+    "sha256": "228a29b40b0bd318c07e7dc00f4152e4d8d784d7ca2dffdfa8d052757008e0af",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/chimecho.mp3",
+    "output": "public/audio/cries/chimecho.mp3",
+    "sha256": "8c17f8c8bcf60534dda818febfdb93e6f60bb8368303b260293906a9402360c0",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/chiyu.mp3",
+    "output": "public/audio/cries/chiyu.mp3",
+    "sha256": "a7ad7d6f1293277b7d7db74f4ca745857fbb5ef6d832f481942011ee1fd87f97",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/cinccino.mp3",
+    "output": "public/audio/cries/cinccino.mp3",
+    "sha256": "10b2c08182f6f0b72788430d098ff18f6122d6ef168d85e2fdd2772ea8d53f85",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/cinderace.mp3",
+    "output": "public/audio/cries/cinderace.mp3",
+    "sha256": "a3f8507cdb1e5717a889e9e7593fd2ccf82c578c2ba3c166f6c4797456f7d864",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/clawitzer.mp3",
+    "output": "public/audio/cries/clawitzer.mp3",
+    "sha256": "10ff9aed1fdc9d3e78f007485ca2f79262b09cdb4965e0d22f2c27b6b8ae9be4",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/clefable.mp3",
+    "output": "public/audio/cries/clefable.mp3",
+    "sha256": "97a135872133f9e7ee4501f0df561e5e6dffcc9d044de4779e3aa7b8f61d08eb",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/clodsire.mp3",
+    "output": "public/audio/cries/clodsire.mp3",
+    "sha256": "09700e292dda60544313c09f08129fc45f14e02db11176cd97e1f84a11fd9f1c",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/cloyster.mp3",
+    "output": "public/audio/cries/cloyster.mp3",
+    "sha256": "ac01b205626656e30da114da211c475e41c0873d0e5549911eed73f1ef31294e",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/coalossal.mp3",
+    "output": "public/audio/cries/coalossal.mp3",
+    "sha256": "5d1729f84f622e90ef071f343a2230bcb0b00a1213ee6dae0997027b1978c909",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/cobalion.mp3",
+    "output": "public/audio/cries/cobalion.mp3",
+    "sha256": "0ec067b9808d58c3b6943b5859f73b76138808b1d9f2135f8e126c92a65f87eb",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/comfey.mp3",
+    "output": "public/audio/cries/comfey.mp3",
+    "sha256": "fde84ffa418aa7df096e9ea7b0560529018b3ad5e79d58c2b1835dbecc97fe4a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/conkeldurr.mp3",
+    "output": "public/audio/cries/conkeldurr.mp3",
+    "sha256": "d56772b88c77a6bfb8f8739040d1c2df6232ee5550a06dc5235c16d11035c7be",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/copperajah.mp3",
+    "output": "public/audio/cries/copperajah.mp3",
+    "sha256": "40308bfbecee4b59fcdae47f53c8a169f7827488124498e6babed2098a256fd1",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/corviknight.mp3",
+    "output": "public/audio/cries/corviknight.mp3",
+    "sha256": "a575094f2442db3b9b32adca250855e3a2638723ffb7cf3d10910e2f1c85ea12",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/crabominable.mp3",
+    "output": "public/audio/cries/crabominable.mp3",
+    "sha256": "9ac5d229338ad5de176dcbc92a77ec077ffcd8e17f4260a72dc48e31089c90b3",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/cramorant.mp3",
+    "output": "public/audio/cries/cramorant.mp3",
+    "sha256": "5895ec6f49e48bec33f8fc0cd110b487ef2b4ee99fb3ce7ae44a4165ed14b74c",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/cramorant-gorging.mp3",
+    "output": "public/audio/cries/cramorant-gorging.mp3",
+    "sha256": "ecc519cc718c6c237ab5dfab2a0200ee8ac5bcdb697d514352f975f190164f9a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/cramorant-gulping.mp3",
+    "output": "public/audio/cries/cramorant-gulping.mp3",
+    "sha256": "ecc519cc718c6c237ab5dfab2a0200ee8ac5bcdb697d514352f975f190164f9a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/crawdaunt.mp3",
+    "output": "public/audio/cries/crawdaunt.mp3",
+    "sha256": "606dbf30762d79fb798e0ea4b48a95d246317b7e318a43b452d36a75e6bd822a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/cresselia.mp3",
+    "output": "public/audio/cries/cresselia.mp3",
+    "sha256": "b9946d46a60b0d4d3941fa8fce87d59ccbda84356e0746568a3f91692c33731c",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/cryogonal.mp3",
+    "output": "public/audio/cries/cryogonal.mp3",
+    "sha256": "aa954feeed2923be4871c2aa27548f948213ec86f1188220ddcbb0a439868009",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/cyclizar.mp3",
+    "output": "public/audio/cries/cyclizar.mp3",
+    "sha256": "b9928855448e43a006244a9ac4f0d653847c3cf5a46aa2592f6af014d36e42c6",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/dachsbun.mp3",
+    "output": "public/audio/cries/dachsbun.mp3",
+    "sha256": "3db2261d642dcb53f3a0adcf795facc7a371abfa79b4a63a98883b828a88c925",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/darkrai.mp3",
+    "output": "public/audio/cries/darkrai.mp3",
+    "sha256": "61fe1ea5d75222f4276bf4ba7c062c4e7f5c9c99c0d12ce2b23e1365dadfed12",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/decidueye.mp3",
+    "output": "public/audio/cries/decidueye.mp3",
+    "sha256": "b837c85dd601d6f5a6488a517f42ea242f6bd2e689577fea1b1d4ad0e87ff06a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/dedenne.mp3",
+    "output": "public/audio/cries/dedenne.mp3",
+    "sha256": "8846030f8af7489c2de0e08637435bf10c4be265d4b128d2eed41fa93434fc7b",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/delibird.mp3",
+    "output": "public/audio/cries/delibird.mp3",
+    "sha256": "4b84c6b963555ecf2d865b2f1936d34afbabf69a7d0b0ed1deaadd35491d3c5b",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/delphox.mp3",
+    "output": "public/audio/cries/delphox.mp3",
+    "sha256": "9f0eef1db4b5f41a7787460e26af363df47ceb902020f5acc5ff5874d436f09d",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/deoxys.mp3",
+    "output": "public/audio/cries/deoxys.mp3",
+    "sha256": "03e625cf4b2819309043831beb4dc6afb036ffe7f687b50d972edcfdf0c125b3",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/dewgong.mp3",
+    "output": "public/audio/cries/dewgong.mp3",
+    "sha256": "0590169f64b1767b86dfa73ad933a588c7ce0e5a0b0dc9c39c750ca790fc06fa",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/dialga.mp3",
+    "output": "public/audio/cries/dialga.mp3",
+    "sha256": "4b21971ccc7fd716e8bcf76fcc7065eef7df609eb2a8de6d2ce2dd25df998331",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/diancie.mp3",
+    "output": "public/audio/cries/diancie.mp3",
+    "sha256": "20141f2e844254788bda4c85318fab7582d9a73c6be5bf77294b5bf669948050",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/dipplin.mp3",
+    "output": "public/audio/cries/dipplin.mp3",
+    "sha256": "37c9f6afc5e1211dbeb084f27cf8caea8e420543d6508d2f66775e374384e1c6",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/ditto.mp3",
+    "output": "public/audio/cries/ditto.mp3",
+    "sha256": "3fa7c364826863d19881e987c3311a1ab891ad61c3a5171d611c6c5035a3fc97",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/dodrio.mp3",
+    "output": "public/audio/cries/dodrio.mp3",
+    "sha256": "62a215bdf721e9422bbdcf6432cd194f350408dcc3439637a6d47feb9a468452",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/dondozo.mp3",
+    "output": "public/audio/cries/dondozo.mp3",
+    "sha256": "8a052c2c98aa150ad24319da74df4f9d373a27c837dbf2f7824b3ccde8248781",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/donphan.mp3",
+    "output": "public/audio/cries/donphan.mp3",
+    "sha256": "b254aad7856aa83964c128435a786c558366f5b49135f5efb28d1b2abd2e21e2",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/dragalge.mp3",
+    "output": "public/audio/cries/dragalge.mp3",
+    "sha256": "66053fffb7c11ae4e49ac8e371f893429cf8fdcb5ef6c345d4b79245d7ed1019",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/dragapult.mp3",
+    "output": "public/audio/cries/dragapult.mp3",
+    "sha256": "c1c3c46f7c08f1cb2905893e69c8e0128ab2b49df0af0dbe4ee70785fc600bac",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/dragonite.mp3",
+    "output": "public/audio/cries/dragonite.mp3",
+    "sha256": "bb22429582dac3618fcdb86285b873d891f547aad9a6f838683dabc72c2948f6",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/drednaw.mp3",
+    "output": "public/audio/cries/drednaw.mp3",
+    "sha256": "189739c2762b5df154f6f161c9f8e5e24f04d8725ed73f40f26217956699e332",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/drifblim.mp3",
+    "output": "public/audio/cries/drifblim.mp3",
+    "sha256": "3761fa57f1d8945d09891ab660c22c1ad967f76335416d1068428281c30e6d44",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/dudunsparce.mp3",
+    "output": "public/audio/cries/dudunsparce.mp3",
+    "sha256": "474faa241308bd6c4ad558a0be06957348bb69a1cb45faf7dd9fe194649d354e",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/dugtrio.mp3",
+    "output": "public/audio/cries/dugtrio.mp3",
+    "sha256": "2a6c6d3e36baa53cfcc2fa558732c3d64a22b79f8651ea141ee968a0abfa4eb7",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/dunsparce.mp3",
+    "output": "public/audio/cries/dunsparce.mp3",
+    "sha256": "3c9c62f348e37c53292c61e6c294ba2232084f6202940db3bc8d68fe900b9d42",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/duraludon.mp3",
+    "output": "public/audio/cries/duraludon.mp3",
+    "sha256": "d1fee81c473a6e386eb10f84ed1ecc46a66be169fff037042ef1ff14a7926978",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/dusknoir.mp3",
+    "output": "public/audio/cries/dusknoir.mp3",
+    "sha256": "e4de56ab71c6005a3b1f67f6aa129e19bc3a76c65742123d86b80e8518ba3345",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/eelektross.mp3",
+    "output": "public/audio/cries/eelektross.mp3",
+    "sha256": "8f9a86e4c43bd194d87f2fb1f8df8861f915a08c317e64889fc77368dd257583",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/eiscue.mp3",
+    "output": "public/audio/cries/eiscue.mp3",
+    "sha256": "e11ecabdae9ba2fc69d83a642bc0985e9829950fcccb95ef7bb7dbf50cccb6c4",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/eiscue-noice.mp3",
+    "output": "public/audio/cries/eiscue-noice.mp3",
+    "sha256": "110e4269f0bd7371718dfd25ce6b2f5613e59e066aa4f79eef98bee21fd73694",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/electivire.mp3",
+    "output": "public/audio/cries/electivire.mp3",
+    "sha256": "5f5741dcbe057c06175c61b1ade3ef52b773e46bfaa0d40a75840308dfe2ef8a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/electrode.mp3",
+    "output": "public/audio/cries/electrode.mp3",
+    "sha256": "5598f991c689c90573a5d9570c3138c4a497e526ee0d8bcae8fbb17a9c2b3910",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/emboar.mp3",
+    "output": "public/audio/cries/emboar.mp3",
+    "sha256": "7673b22ed681569bd49012336e1191109f48b938b58902a8d12f09b2e1ed1618",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/empoleon.mp3",
+    "output": "public/audio/cries/empoleon.mp3",
+    "sha256": "b918e0ce760cdc478797aa48d1ed4e40e03ae8e478d3be26cebffd0bd3aef6e2",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/enamorus.mp3",
+    "output": "public/audio/cries/enamorus.mp3",
+    "sha256": "83d502d6078379b7b00f8e4bacbf88398ac0028981557c6ccafb8a3e00f65039",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/enamorus-therian.mp3",
+    "output": "public/audio/cries/enamorus-therian.mp3",
+    "sha256": "30842dded6d2cf8ed09b96d9c4e68ed403dc79a58b21fb252aa5b532cd90b69f",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/entei.mp3",
+    "output": "public/audio/cries/entei.mp3",
+    "sha256": "7c810c996066bb50abac8b611a6226a09380f8fe92d0942352a464e09b61a05a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/espathra.mp3",
+    "output": "public/audio/cries/espathra.mp3",
+    "sha256": "02391965a4094809ba2b8be06c024c42c74fd7c7062431d8d6b7aca1f2f3ed5c",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/espeon.mp3",
+    "output": "public/audio/cries/espeon.mp3",
+    "sha256": "f2bd958a06b881cb7b15315f51ddd5652b246284d60091fe0b27e8a71dfbec6c",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/eternatus.mp3",
+    "output": "public/audio/cries/eternatus.mp3",
+    "sha256": "0d5aae3c6d0a8d7a078e08ce7443481975a07db3bd7e210070fde7ef12029688",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/excadrill.mp3",
+    "output": "public/audio/cries/excadrill.mp3",
+    "sha256": "349dc26b82e2ab4b7088ec9e3e06f040f5c01d46e2d5074edff8897875d86592",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/exeggutor.mp3",
+    "output": "public/audio/cries/exeggutor.mp3",
+    "sha256": "92e2cb698911031571820a06ebbda5afea0e279117a82e5c0a93d3940112d11a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/falinks.mp3",
+    "output": "public/audio/cries/falinks.mp3",
+    "sha256": "f8f4b2083769eddf8b134366c50b1975485ea449db8bf83435a639af4caf0e12",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/farigiraf.mp3",
+    "output": "public/audio/cries/farigiraf.mp3",
+    "sha256": "fdd3ce39b118ad7598ae3222d9bc2ec378d21a3b75d5fdb7477d0873d548913f",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/feraligatr.mp3",
+    "output": "public/audio/cries/feraligatr.mp3",
+    "sha256": "09708f3dda8c4d5d4b7847d05344c4b4405483fdb2ebe565e913ea8dae6e80c6",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/fezandipiti.mp3",
+    "output": "public/audio/cries/fezandipiti.mp3",
+    "sha256": "fe17e9ac6c22134eea4ecafbafc2467b34a51f7ee02b8a51c1e867fd9c670008",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/flamigo.mp3",
+    "output": "public/audio/cries/flamigo.mp3",
+    "sha256": "1f7950e4d18503b3b21c55cae3b3650f5081317b17569e5ff541867267d8990c",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/flapple.mp3",
+    "output": "public/audio/cries/flapple.mp3",
+    "sha256": "d77e366151fe79427635fcac6b4323142ea5d3ca21f3e7056887ab4664da43fc",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/flareon.mp3",
+    "output": "public/audio/cries/flareon.mp3",
+    "sha256": "8ef87e5e23ba9cd676bd34b19bc15b48f3a9e7834d026ed6e5bb238dbec60947",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/floatzel.mp3",
+    "output": "public/audio/cries/floatzel.mp3",
+    "sha256": "64303a088a28c1cd05f1229a99a1bd1df24d462f929340876bfa0c6d4e62a2a3",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/florges.mp3",
+    "output": "public/audio/cries/florges.mp3",
+    "sha256": "0c428fb1045aa02b8cc3a54f3bca9810fc64af8f279954be3b9c8da7c6947dbd",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/fluttermane.mp3",
+    "output": "public/audio/cries/fluttermane.mp3",
+    "sha256": "4bd78a9aeab97bdd6a2ca99cb21953fd1d8b2e6f5b0952914d09f1970ea0c0d7",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/flygon.mp3",
+    "output": "public/audio/cries/flygon.mp3",
+    "sha256": "8ef5d42f60943b76b98a245c4dbc071b03b0d02ff1597dba2c648940914a2013",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/forretress.mp3",
+    "output": "public/audio/cries/forretress.mp3",
+    "sha256": "46a5ccb98e103f63976baba3145a270eaf278968e0df1812fd745335da477c18",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/froslass.mp3",
+    "output": "public/audio/cries/froslass.mp3",
+    "sha256": "0137972c474dd7002bddf4050e8a927965ec0108695f03de46e87af3273aafca",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/frosmoth.mp3",
+    "output": "public/audio/cries/frosmoth.mp3",
+    "sha256": "248f97aa39431b3e50adf653eff9f8aa77a60353f67cb020a938cb13f016c8eb",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/furret.mp3",
+    "output": "public/audio/cries/furret.mp3",
+    "sha256": "919ca238837961c5ce2ce631a715a45c064575c6df19fadddabb95dea796e044",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/gallade.mp3",
+    "output": "public/audio/cries/gallade.mp3",
+    "sha256": "db187e8990e9853648b1feb96062cd0e1fdc062468ad8ab36ffd6297f1763525",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/galvantula.mp3",
+    "output": "public/audio/cries/galvantula.mp3",
+    "sha256": "116dff464eb7d149dbcceb8146100e702d96d8c89b52d16100c8be2cbccb520c",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/garchomp.mp3",
+    "output": "public/audio/cries/garchomp.mp3",
+    "sha256": "464df1e5d808bb09d5a55a09278a9d55e66d6fb6639f6977e64fda233a77c7b6",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/gardevoir.mp3",
+    "output": "public/audio/cries/gardevoir.mp3",
+    "sha256": "4e1d3d40260ac966ef8b83f1036a4ed3fe0035d4789f6efce7826e72630484c6",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/garganacl.mp3",
+    "output": "public/audio/cries/garganacl.mp3",
+    "sha256": "2ef84af772f636938019dcc392dbc90f2f3ea9ab57266cc5c6f898e6d0872974",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/gastrodon.mp3",
+    "output": "public/audio/cries/gastrodon.mp3",
+    "sha256": "f1a6859cba1c2eeca44a3d39b223acc6bb71a2f9c3c24100a14a318b4a3f6b57",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/gengar.mp3",
+    "output": "public/audio/cries/gengar.mp3",
+    "sha256": "65b648e53bb941618880d6cf1a7e90ccaa9d2009963f67cbd958652da60143e5",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/gholdengo.mp3",
+    "output": "public/audio/cries/gholdengo.mp3",
+    "sha256": "2ee5a7bd4d92d3766d3d020c98c815c75cda30ffc4034894759f057b1812e632",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/girafarig.mp3",
+    "output": "public/audio/cries/girafarig.mp3",
+    "sha256": "08995edd6ac7053ad70b771bca51cd825a901fd6fb7e2875ea05fc4e2af6a616",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/giratina.mp3",
+    "output": "public/audio/cries/giratina.mp3",
+    "sha256": "df9ce719986d8266568b5379b19075dd0b3221b0e1d2d24df42675e0fb2d374b",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/glaceon.mp3",
+    "output": "public/audio/cries/glaceon.mp3",
+    "sha256": "a02a54216a5d89d7953c295e1fb8de1fc991b4e1c84017a2e121de998dc2ea00",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/glalie.mp3",
+    "output": "public/audio/cries/glalie.mp3",
+    "sha256": "64555811964ed6304fa33840fd79b43a9d75bfedb03daf1638dd9867c953e0bf",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/glastrier.mp3",
+    "output": "public/audio/cries/glastrier.mp3",
+    "sha256": "3e11c2fe118c4fa9cac8ff24ce210dd264bf2d60b4cf397e760f7953425b881f",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/glimmora.mp3",
+    "output": "public/audio/cries/glimmora.mp3",
+    "sha256": "e83fd19af62d583aa1b934f224b1c16b0dc4b46616d8308c78a80aa48acb4e35",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/gliscor.mp3",
+    "output": "public/audio/cries/gliscor.mp3",
+    "sha256": "c10059abe183979748fd10bed854fd0169272f918abc52fd1c3f39711ade5c56",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/gogoat.mp3",
+    "output": "public/audio/cries/gogoat.mp3",
+    "sha256": "84d4b4be8208cfd71605085c8454bb9e3822a189c7b4931c8b6d962ede4d2259",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/golduck.mp3",
+    "output": "public/audio/cries/golduck.mp3",
+    "sha256": "8ba3ea3bd2ff2f88e57613056f04431d50d6ae3c2dc1d874c438d9f7c2fb9edf",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/golem.mp3",
+    "output": "public/audio/cries/golem.mp3",
+    "sha256": "e14a7a8e8753170c360253e7ca36162343263f7d5e91367d1146bd0c2b8f15c2",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/golurk.mp3",
+    "output": "public/audio/cries/golurk.mp3",
+    "sha256": "04b2812deee288a5648a2f170e7094dd8d0fc7b1628703568b695f0058d6462d",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/goodra.mp3",
+    "output": "public/audio/cries/goodra.mp3",
+    "sha256": "e8853519458ea5af27bdcbe8bc74abe7a15e0c3368256a1d4ea5fdaf8229ed26",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/gothitelle.mp3",
+    "output": "public/audio/cries/gothitelle.mp3",
+    "sha256": "e4d7457d5b23d33afbfc86bbaa571933a0f208b9705ced9b86835d73ed5654f9",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/gougingfire.mp3",
+    "output": "public/audio/cries/gougingfire.mp3",
+    "sha256": "158e164aa9f21072835651ac0fd95e88d6cf7a75c0a20d5d9b68d8586dfd1597",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/grafaiai.mp3",
+    "output": "public/audio/cries/grafaiai.mp3",
+    "sha256": "34977574398b6ba6bc9da289be5f10060d4487e21ff1d7949ef84adfd20a53e4",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/granbull.mp3",
+    "output": "public/audio/cries/granbull.mp3",
+    "sha256": "f07d2a4c65d28ab74c110aac7e4a72c28f8cc7dbe33f78093335fc0fea3a889f",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/greattusk.mp3",
+    "output": "public/audio/cries/greattusk.mp3",
+    "sha256": "fd392aea1bc7705942c474259e3399653055cd8eb5d7de1db7543feb2c0fb535",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/greedent.mp3",
+    "output": "public/audio/cries/greedent.mp3",
+    "sha256": "08d4a90b65a05d96d30e8b392c3dfab629cb410e6ed8152350e910a78054e86a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/greninja.mp3",
+    "output": "public/audio/cries/greninja.mp3",
+    "sha256": "ec0f1ced35ba2b733638bc2a72798d013cc6d13488ebf8c0f2d9755dd08da299",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/grimmsnarl.mp3",
+    "output": "public/audio/cries/grimmsnarl.mp3",
+    "sha256": "741e69508362eff17be67aefb513500f764f0b400ae3d418e838c456ac61546b",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/groudon.mp3",
+    "output": "public/audio/cries/groudon.mp3",
+    "sha256": "725bb945b03cf127680c0da63e1adf7f9f6c1a83fee5c83490130ae3fa413443",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/grumpig.mp3",
+    "output": "public/audio/cries/grumpig.mp3",
+    "sha256": "fdf505403769ad9a8d75c38896bcd09ab90752557c3ade6c427ca0c0915d8a9a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/gumshoos.mp3",
+    "output": "public/audio/cries/gumshoos.mp3",
+    "sha256": "9de4e45db44b46d860879d97bd325f1ed0863133762358da3a8ddaa9dcb431db",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/gurdurr.mp3",
+    "output": "public/audio/cries/gurdurr.mp3",
+    "sha256": "36426d0bc5a4aeac8574502013cfed1ac2f00df1e884760c5f87fbac4dee849e",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/gyarados.mp3",
+    "output": "public/audio/cries/gyarados.mp3",
+    "sha256": "e702379701f3780919b5a462b7123f23dabc7731592859f81eb25bc03cd637b4",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/hariyama.mp3",
+    "output": "public/audio/cries/hariyama.mp3",
+    "sha256": "d24624ed61221ad1b2e16f5ee9c0f947d5dcc76dc70c09c1be3a948d43f3b43c",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/hatterene.mp3",
+    "output": "public/audio/cries/hatterene.mp3",
+    "sha256": "89630ad39d61d2cdd7a2d420c59ab857e1ce5a68ced65a02cf22b388de05cef0",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/hawlucha.mp3",
+    "output": "public/audio/cries/hawlucha.mp3",
+    "sha256": "0ef1ec27902e7c73912a334380eec41d91c5cab4cd092b1010f6ca25aef6c92a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/haxorus.mp3",
+    "output": "public/audio/cries/haxorus.mp3",
+    "sha256": "1e6b175a0ae4805215e8a977a99d65ff10f7f8030e378f277dd09957240fc0ed",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/heatran.mp3",
+    "output": "public/audio/cries/heatran.mp3",
+    "sha256": "192716c33d36028e3c28294ba1562929425b00d86ad61c53fb910eab54180228",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/heracross.mp3",
+    "output": "public/audio/cries/heracross.mp3",
+    "sha256": "8ce272968dae0a1a0a2a7d07fd5c19de1c77b5edcb7fd6decf08264149389032",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/hippowdon.mp3",
+    "output": "public/audio/cries/hippowdon.mp3",
+    "sha256": "62d6db7f392590c8acfc0665fd77589361938433f675d046ed6a0876a18dd1a6",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/hitmonchan.mp3",
+    "output": "public/audio/cries/hitmonchan.mp3",
+    "sha256": "aec10113cc0ce5396d0ea8e69802830483d460e56ca3af0301def3bf7b60bdef",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/hitmonlee.mp3",
+    "output": "public/audio/cries/hitmonlee.mp3",
+    "sha256": "6fdcc98934060f901bda2a809cc3836500370b9aa1d24545e8ca7649ad9b4f24",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/hitmontop.mp3",
+    "output": "public/audio/cries/hitmontop.mp3",
+    "sha256": "cc06f206f8485d2e6ce1af029f95290bccf718920c56a05ef9321795e3f0e704",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/honchkrow.mp3",
+    "output": "public/audio/cries/honchkrow.mp3",
+    "sha256": "09707d19b963473fcde90a0fc723d89234195c0c781fccbef0413482a6b65942",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/hooh.mp3",
+    "output": "public/audio/cries/hooh.mp3",
+    "sha256": "5be603e898737e5467d82c0bf38f47395578e115ea8c07fa67fc43217d7053fa",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/hoopa.mp3",
+    "output": "public/audio/cries/hoopa.mp3",
+    "sha256": "902892ecfcc5d89af0aa163e83a59233a27805a258a1b11f439af43facb2c004",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/hoopa-unbound.mp3",
+    "output": "public/audio/cries/hoopa-unbound.mp3",
+    "sha256": "e35af4fea8e3e949a5ed777c5b655e2d16d14d7f74fed08ee0710ace7d4d0cc8",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/houndoom.mp3",
+    "output": "public/audio/cries/houndoom.mp3",
+    "sha256": "bdd8925783ed085e8731e0b8618b6943872037fa4b90c0af7f0328c3813a2a59",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/houndstone.mp3",
+    "output": "public/audio/cries/houndstone.mp3",
+    "sha256": "20c518e37771e8a6e66d212cbeb252f0ad0534a8d75a07dfffa12e43c10464df",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/hydrapple.mp3",
+    "output": "public/audio/cries/hydrapple.mp3",
+    "sha256": "d344f28cafbeec59da3bb0b2ec0800b3d4bf77523f13220d49201b2f2d98faa2",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/hydreigon.mp3",
+    "output": "public/audio/cries/hydreigon.mp3",
+    "sha256": "1743e3bc8379382ecea91c0b039f33cac16851526228c85e1d48719e432ad84e",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/hypno.mp3",
+    "output": "public/audio/cries/hypno.mp3",
+    "sha256": "c6d925e034ab2e5ed4cfbf4f1aaaa3c4ca34b6bd0041d8ee8d0434d2a423918d",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/illumise.mp3",
+    "output": "public/audio/cries/illumise.mp3",
+    "sha256": "ba9db48424616a9d6f85de90c6dacb9e08f4c5fda9eb3c2c1ec38047b1b0cfb2",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/incineroar.mp3",
+    "output": "public/audio/cries/incineroar.mp3",
+    "sha256": "5be85d749943f2caa1f7fba68bc34f7f7ba3efe4302a5c5d3c396bffd20127b1",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/indeedee.mp3",
+    "output": "public/audio/cries/indeedee.mp3",
+    "sha256": "b34616decfd17dc4b4b436616150319a71deb185390ad22f39780ea63690d9f3",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/indeedee-f.mp3",
+    "output": "public/audio/cries/indeedee-f.mp3",
+    "sha256": "82b77f4467e78c4fbf9efaf2c77b55aa1b43b1089c51fc179c879bced105ad81",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/infernape.mp3",
+    "output": "public/audio/cries/infernape.mp3",
+    "sha256": "46025e75cfa051a40fc9cc26e649a0edf47785409d11487f5ac0d61171fac94d",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/inteleon.mp3",
+    "output": "public/audio/cries/inteleon.mp3",
+    "sha256": "f439a5c37510828d65ea8a27c0f2867aec680f7a257b21d365a18d53c17619b9",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/ironboulder.mp3",
+    "output": "public/audio/cries/ironboulder.mp3",
+    "sha256": "b4485b6684896ea092f6b6841b8d6f5f2464dfb5dd14e2f1f62c06783f91e2d8",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/ironbundle.mp3",
+    "output": "public/audio/cries/ironbundle.mp3",
+    "sha256": "15aa2c3e87b1c0a2c09f9d138d292625a2196aa5ebbbaad9a5a910b1761dd243",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/ironcrown.mp3",
+    "output": "public/audio/cries/ironcrown.mp3",
+    "sha256": "27d9687d8894267aef400db4181b9ec0af6ca1426ceb8acc7c4a29bcbbbb9e0e",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/ironhands.mp3",
+    "output": "public/audio/cries/ironhands.mp3",
+    "sha256": "027dcc9e63c2b2926a09dce2b6548517b2c3b07d8890fa585982dfc7ded2d224",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/ironjugulis.mp3",
+    "output": "public/audio/cries/ironjugulis.mp3",
+    "sha256": "f1ed1d6c1f82583249c33acab9e354dc66cdab2552e17b8a9e4de1805d0a474a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/ironleaves.mp3",
+    "output": "public/audio/cries/ironleaves.mp3",
+    "sha256": "603afb4161df5ef04a5eb7bfd96c7b6063908fed2a76135cbad8e11ab3983949",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/ironmoth.mp3",
+    "output": "public/audio/cries/ironmoth.mp3",
+    "sha256": "489956819270a4ac72e37a143be679c60f6624a07cbf08281343076f65da3b67",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/ironthorns.mp3",
+    "output": "public/audio/cries/ironthorns.mp3",
+    "sha256": "cf67f9af91112657d246b8dcd282a3b093a6d3b9461829fac2e49930c43dd420",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/irontreads.mp3",
+    "output": "public/audio/cries/irontreads.mp3",
+    "sha256": "6dd309d026ec05dcce7b0d8474e99dde273f6d4e8f23ee65d9656ed711a94a5a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/ironvaliant.mp3",
+    "output": "public/audio/cries/ironvaliant.mp3",
+    "sha256": "80e41a46e27c04a7494784d152e49f7d4d765b481172cdee5ae65a672b903b3c",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/jirachi.mp3",
+    "output": "public/audio/cries/jirachi.mp3",
+    "sha256": "274c74bc1af07dd0b08f411338409b47e335ffc68cac9793c9c7c02ba1f17221",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/jolteon.mp3",
+    "output": "public/audio/cries/jolteon.mp3",
+    "sha256": "2f2ac6d1226865f0b58e98ea31d19aac0e1513d1ab86c3b21aa070dd22a91558",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/jumpluff.mp3",
+    "output": "public/audio/cries/jumpluff.mp3",
+    "sha256": "74e98cd9c92ee6cc1e44b273c35d412d46a82f8abdcf6f0b8f7f6f6f1b722113",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/keldeo.mp3",
+    "output": "public/audio/cries/keldeo.mp3",
+    "sha256": "0cc981d0a305763d625468a3a05e787936d16f5cc91ff273d1da3fc8915da60d",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/kilowattrel.mp3",
+    "output": "public/audio/cries/kilowattrel.mp3",
+    "sha256": "9aaacf7900ee223e4be699683c805fa7f00dfac78f18b715ae3bc2c06f6ce86d",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/kingambit.mp3",
+    "output": "public/audio/cries/kingambit.mp3",
+    "sha256": "901c93d1e93da8737466d023923bd707c0842c2753538a32081e54d254843574",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/kingdra.mp3",
+    "output": "public/audio/cries/kingdra.mp3",
+    "sha256": "19ded8821b45e09ea7ce7f0e73f1d6df510411d66df6ec688ed483eacc7d8407",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/klawf.mp3",
+    "output": "public/audio/cries/klawf.mp3",
+    "sha256": "14491b75f147258412dc9cc8daa3cd8fb930417f7d93da474437ea47be5f8cad",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/kleavor.mp3",
+    "output": "public/audio/cries/kleavor.mp3",
+    "sha256": "1e5e957c3ab3a51db7e1cf5ab5d0162cdc423f320828c2748aa493352fa648f6",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/klefki.mp3",
+    "output": "public/audio/cries/klefki.mp3",
+    "sha256": "7a0866fcbcd54ba2ddb35454cfa5d9652885f2f4772f21ddc8281f7e2aa02269",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/komala.mp3",
+    "output": "public/audio/cries/komala.mp3",
+    "sha256": "9a80d0cc8fe5d78da673dfc89b79321fa02e27b5cdd3491eaf0a5d977cbf36d6",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/kommoo.mp3",
+    "output": "public/audio/cries/kommoo.mp3",
+    "sha256": "793bcc018936b90d6991761f7757683f91d08a4c3ea101998ccb395fec04972e",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/koraidon.mp3",
+    "output": "public/audio/cries/koraidon.mp3",
+    "sha256": "91795e9dc08f15319034fe5908d966cbd52cbf3d144a304fe68ddd9828b63871",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/kricketune.mp3",
+    "output": "public/audio/cries/kricketune.mp3",
+    "sha256": "20ee8c441b0e1d3360eb1ed1ccc883f6d4664c3aed74fc89f3e26283a226dd56",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/krookodile.mp3",
+    "output": "public/audio/cries/krookodile.mp3",
+    "sha256": "832ce8e0a7360635481154a026321bae17a4c20251720fca47a1e73b3735c187",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/kyogre.mp3",
+    "output": "public/audio/cries/kyogre.mp3",
+    "sha256": "b93a6455e74600b98a626c9c50bc3053b66b2b26ec86d2ceadfa10e3c1cf6461",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/kyurem.mp3",
+    "output": "public/audio/cries/kyurem.mp3",
+    "sha256": "dcec3c7bc2aaf4f8f0eca2240857cef79f7ca774168342b363d04e74367b1bf3",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/kyurem-black.mp3",
+    "output": "public/audio/cries/kyurem-black.mp3",
+    "sha256": "50108e49e8f945afb3f4c9edb794be42e0f97112bbb9f67685759e67c3928be4",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/kyurem-white.mp3",
+    "output": "public/audio/cries/kyurem-white.mp3",
+    "sha256": "728881f11fb24264ffba4ca58cbd6e5e50f4c503ccd53b950e9e9ec97cdaf805",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/landorus.mp3",
+    "output": "public/audio/cries/landorus.mp3",
+    "sha256": "0e536c191794f7852344f0b27b05d48c39c4b196e3fe11ed9414d3d78a5be652",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/landorus-therian.mp3",
+    "output": "public/audio/cries/landorus-therian.mp3",
+    "sha256": "97ecf0e7e446cd17a29535f300fb4170369175d77950274ee67e8f11f37164b4",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/lanturn.mp3",
+    "output": "public/audio/cries/lanturn.mp3",
+    "sha256": "dc09073740c8478a4dea26ae07029f87123521d5098e1c80ea25b7388791e866",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/lapras.mp3",
+    "output": "public/audio/cries/lapras.mp3",
+    "sha256": "02d3cc0f0e511a5b220883cf06605149c3c97305c2cc0dba7c9bfd74c8adeb2c",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/latias.mp3",
+    "output": "public/audio/cries/latias.mp3",
+    "sha256": "923af0a782dcbbf3c337fcd04b3641771434586b30d18bf675ea9a965dca64aa",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/latios.mp3",
+    "output": "public/audio/cries/latios.mp3",
+    "sha256": "c7de218ac166010a154f5569a1632f4a006d9b2bea042639d8331670d0858597",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/leafeon.mp3",
+    "output": "public/audio/cries/leafeon.mp3",
+    "sha256": "de27b54de213ed13cc56ed904cfcbfdd0ce050ee366fc6df95ba93fcbcafbb89",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/leavanny.mp3",
+    "output": "public/audio/cries/leavanny.mp3",
+    "sha256": "b345c23f517027ab5ce0a3bc4f3a4fb18d32d28504890f62e9405f094af60fd5",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/lilligant.mp3",
+    "output": "public/audio/cries/lilligant.mp3",
+    "sha256": "730615b29f8bf57de88d0deebd9cf906f3f38728279b22a073cd5737d8974df8",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/lokix.mp3",
+    "output": "public/audio/cries/lokix.mp3",
+    "sha256": "8ecb4f447af311c78fb633316e41884473ae05060fc1afab292107f4333e4bbe",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/lucario.mp3",
+    "output": "public/audio/cries/lucario.mp3",
+    "sha256": "ccd482e3685eeb61c14f42d4137b6a9f38c3f6e18f0aeb1c9a44fa065f2e3b71",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/ludicolo.mp3",
+    "output": "public/audio/cries/ludicolo.mp3",
+    "sha256": "5b28e6cbf8214c1507ad318b1c81e0f4754570cbd033cc963a1950c304fad98c",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/lugia.mp3",
+    "output": "public/audio/cries/lugia.mp3",
+    "sha256": "f207a56766510f87003119ea33d2f0a715d68abe1ff5a9366a0a7e0514ac00ed",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/lumineon.mp3",
+    "output": "public/audio/cries/lumineon.mp3",
+    "sha256": "bda50f3e17d126a3ad58dc4c0ad6cf531f3e1e9387f2a894b84ca571540847ae",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/lunala.mp3",
+    "output": "public/audio/cries/lunala.mp3",
+    "sha256": "c777bfebf3253a835428f25540bab4df8fc0c8c4f35ec3644c7284b74349f9dd",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/lurantis.mp3",
+    "output": "public/audio/cries/lurantis.mp3",
+    "sha256": "569638ef374edd6e4d9e8713e3fec66a0d26a0df452c35b84185efa6faa54dec",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/luvdisc.mp3",
+    "output": "public/audio/cries/luvdisc.mp3",
+    "sha256": "05677defde305978954d4b71781ac314993b3666b6cddd82cc24c31be8bccad6",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/luxray.mp3",
+    "output": "public/audio/cries/luxray.mp3",
+    "sha256": "dbc0ce939fb45e34a5300a6cc80f7efac9d2f2acd7ccb7b37813cf53b69498b4",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/lycanroc.mp3",
+    "output": "public/audio/cries/lycanroc.mp3",
+    "sha256": "9219a1edd0e5d637b5a4b8192d8a09b5e3bf0bbba7c81221c4b35eb731b67671",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/lycanroc-dusk.mp3",
+    "output": "public/audio/cries/lycanroc-dusk.mp3",
+    "sha256": "c7c68ea88a7bf12e71510510d97ef15da85f7f046774e43c081fedaa369ebfa8",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/lycanroc-midnight.mp3",
+    "output": "public/audio/cries/lycanroc-midnight.mp3",
+    "sha256": "5742217e3327bfdf187126f50207321d9d3dddf934cb1ed438c261fb99038918",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/mabosstiff.mp3",
+    "output": "public/audio/cries/mabosstiff.mp3",
+    "sha256": "7b0f32d734bf580ccc3a881b7ec1fc77b6658dbf7e14f83ba3ffbdb2e13480fc",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/magcargo.mp3",
+    "output": "public/audio/cries/magcargo.mp3",
+    "sha256": "4d51ab77d9bd87cb004a979cf3c9fa10f8da27fac03e9599a3325ddd8212c02d",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/magearna.mp3",
+    "output": "public/audio/cries/magearna.mp3",
+    "sha256": "4b49a397c1b9d0a59d001fbeaffd3ad3d6dccdcfd5bad0187f4aecedf4409fbc",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/magmortar.mp3",
+    "output": "public/audio/cries/magmortar.mp3",
+    "sha256": "1cfc1b483a8cbbe64e48159e20e26603a27d55137c51c19809f5fc5dd510d4ca",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/magnezone.mp3",
+    "output": "public/audio/cries/magnezone.mp3",
+    "sha256": "8090fb781a90218b5f7fd76c64b48a13f5252ff7f6bc77aaee539985ac964358",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/malamar.mp3",
+    "output": "public/audio/cries/malamar.mp3",
+    "sha256": "15706cd2311e1b60fc29c4cbe73ff0ef10e729632ab7ac649e54f02136aa6eab",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/mamoswine.mp3",
+    "output": "public/audio/cries/mamoswine.mp3",
+    "sha256": "96333e2c1a8c35f39f1e3462eef04a18a016c783554008218eb09ee93e5875a6",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/manaphy.mp3",
+    "output": "public/audio/cries/manaphy.mp3",
+    "sha256": "1e8c761ace04d0fcb48b1fdac771d8727c0e285ce3ec98bd42da9aae58ffddbd",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/mandibuzz.mp3",
+    "output": "public/audio/cries/mandibuzz.mp3",
+    "sha256": "d7c95702fd1e945e3ff8640516cc2e9366f0d5819cd185ed384674ab83f7348b",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/masquerain.mp3",
+    "output": "public/audio/cries/masquerain.mp3",
+    "sha256": "295cccd1baa14ad63cb83d59c4f45561877b46dde6dc3342026b49f58a2cb17d",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/maushold.mp3",
+    "output": "public/audio/cries/maushold.mp3",
+    "sha256": "9cceaab9493f2c0c257dba661f994cfdb0f117bc84dd8d36843e13eeee925591",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/maushold-four.mp3",
+    "output": "public/audio/cries/maushold-four.mp3",
+    "sha256": "580e6a8619aef992f3ba04de5facfe60899871b57eb6510038d4279bbd293f87",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/medicham.mp3",
+    "output": "public/audio/cries/medicham.mp3",
+    "sha256": "37398fb62e186e2dd356411fc52d1c0236e7341c766897c8ba81fd02f1aab6b3",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/meganium.mp3",
+    "output": "public/audio/cries/meganium.mp3",
+    "sha256": "78d741d224b4efc26d493026b52b17593e46068cacb970f84c8bf98a5a06a2eb",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/meloetta.mp3",
+    "output": "public/audio/cries/meloetta.mp3",
+    "sha256": "a3f739ceaf0fd01af5ea1066f0d6367014e21606369bf1b4d9512b4c924ac77a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/meowscarada.mp3",
+    "output": "public/audio/cries/meowscarada.mp3",
+    "sha256": "6e0fa99eafbb42c73b0885c2e277402ce64ab5f9be7ade57f0af187426af4de1",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/meowstic.mp3",
+    "output": "public/audio/cries/meowstic.mp3",
+    "sha256": "4f32d5bfbb5bf615e09735a9a71e9a6cd68624488f5d289afbfd95279b84be3a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/mesprit.mp3",
+    "output": "public/audio/cries/mesprit.mp3",
+    "sha256": "9aec96b980f5db455d39222f130a2b5fe3eb22f614a3f66973b8604bb39d850e",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/metagross.mp3",
+    "output": "public/audio/cries/metagross.mp3",
+    "sha256": "d77bb86b00a5dfc73f6e3b909c79a36181cae17a3c0aac47c3d39648fda38e5d",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/mew.mp3",
+    "output": "public/audio/cries/mew.mp3",
+    "sha256": "c4d439a0667fa6fb347e8902cd9f6bb740bef47bc6b7e0468c98f442fb9def1e",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/mewtwo.mp3",
+    "output": "public/audio/cries/mewtwo.mp3",
+    "sha256": "02942f7a15b58856b212f5c05817a1b04f730e680e604ddeff5122d85e1f142a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/mienshao.mp3",
+    "output": "public/audio/cries/mienshao.mp3",
+    "sha256": "df845fb9b565582737ae4acc9e7b0428b63b22581cec7492d02fee02d8799b55",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/mightyena.mp3",
+    "output": "public/audio/cries/mightyena.mp3",
+    "sha256": "67ff06738fe24d5dfcab813a09c17e55692e16f81a1cea8844cc098e66dc4684",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/milotic.mp3",
+    "output": "public/audio/cries/milotic.mp3",
+    "sha256": "0634e704b9b8a9dcb6a9a16bc2aaf6ed61a9336e5926dbb799255242df9d79ce",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/mimikyu.mp3",
+    "output": "public/audio/cries/mimikyu.mp3",
+    "sha256": "846b2eb5f306c57f748a0d71d6c81774e3b89053c6771a380b983a895bad208b",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/minior.mp3",
+    "output": "public/audio/cries/minior.mp3",
+    "sha256": "ed675d7fd490de3325aa19f8cb59ba704e94c75209d26b2aa830fdec3f49ae64",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/minun.mp3",
+    "output": "public/audio/cries/minun.mp3",
+    "sha256": "f49503472f6e8214a4e41b9eb240cf229fd7fb3586dbc0550b96b970d0f431b2",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/miraidon.mp3",
+    "output": "public/audio/cries/miraidon.mp3",
+    "sha256": "190068b3d95ebf72b25f32cf32bb9f2df7ced975160f8c830bf5909d51697df0",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/misdreavus.mp3",
+    "output": "public/audio/cries/misdreavus.mp3",
+    "sha256": "6cc99459ee79b848336bcecee4de330b1ee1214ac8e0d5f128ae8c3beb26c601",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/mismagius.mp3",
+    "output": "public/audio/cries/mismagius.mp3",
+    "sha256": "732698803713d4bc79fee5a5c276ee1763e6fe8dd74a7e080c70d7dd29ba8c62",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/moltres.mp3",
+    "output": "public/audio/cries/moltres.mp3",
+    "sha256": "56815b5a415ddfd9469122a48c4c52911876381507a8f29b277789512b25fb68",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/morpeko.mp3",
+    "output": "public/audio/cries/morpeko.mp3",
+    "sha256": "3f5a63ffaf948da41e7a26b98e43461f1463cb252dfb5ae80fd5cd4a5137abea",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/morpeko-hangry.mp3",
+    "output": "public/audio/cries/morpeko-hangry.mp3",
+    "sha256": "00f10c5b0e1a89a95c52a6cf58dcec4a62a56ff82e0f51fa9d291bd796955c11",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/mudsdale.mp3",
+    "output": "public/audio/cries/mudsdale.mp3",
+    "sha256": "1013434238efb462c67a240ceadbf32a25bd0dfcb44ff43a1686ef3970f347e6",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/muk.mp3",
+    "output": "public/audio/cries/muk.mp3",
+    "sha256": "4c75ca53659f5cd31f382e0cce64eaf1d7988973e4f6a1c79edcaf72270c1bb7",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/munkidori.mp3",
+    "output": "public/audio/cries/munkidori.mp3",
+    "sha256": "382a9790a647eec3e6a37326f8a6ea433efefcc4fd31dcff4c36f2568f596f2e",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/necrozma.mp3",
+    "output": "public/audio/cries/necrozma.mp3",
+    "sha256": "b3980e56ddbc23cac7f22f1effe891787db1b4d6ddcd1902129e9f6660a733f5",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/necrozma-dawnwings.mp3",
+    "output": "public/audio/cries/necrozma-dawnwings.mp3",
+    "sha256": "b19504333d82f27b423805aea403c250dda1c3ae3f2bfb01e6a7941ad9f6de65",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/necrozma-duskmane.mp3",
+    "output": "public/audio/cries/necrozma-duskmane.mp3",
+    "sha256": "262cd7545e4baca93431e6c5515e92fb26f2ed8c095f49969667ba8daf45bd32",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/ninetales.mp3",
+    "output": "public/audio/cries/ninetales.mp3",
+    "sha256": "2e01db33a3ece0cc99fc47fd362480a76bf2f967cc127e63468458b7bfc39040",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/noctowl.mp3",
+    "output": "public/audio/cries/noctowl.mp3",
+    "sha256": "f163b5487ab95776db8b0d78505c313d242b6309616a3d9e9e2c8a3f2448f27e",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/noivern.mp3",
+    "output": "public/audio/cries/noivern.mp3",
+    "sha256": "a8ab871b5934d433eed17905a8d4ea511da662ba829678ea6dc2cd33f0dc28d7",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/ogerpon.mp3",
+    "output": "public/audio/cries/ogerpon.mp3",
+    "sha256": "0112149675a790d01a0b02e60d6e46b08c512202379d300d2cbe547ef348aacc",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/oinkologne.mp3",
+    "output": "public/audio/cries/oinkologne.mp3",
+    "sha256": "be8a37b9e540b3c2dadad23f899852b48b567888ada4c9f57886163a18c0e6e0",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/oinkologne-f.mp3",
+    "output": "public/audio/cries/oinkologne-f.mp3",
+    "sha256": "c63c7c0e3231940456b546902eda2d89d648529087a491b7782721ea9811a9e2",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/okidogi.mp3",
+    "output": "public/audio/cries/okidogi.mp3",
+    "sha256": "75bc78cf36fb5ea430d7ebebb757d26948f3bc3ad80cb4a8141d13e398523054",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/oranguru.mp3",
+    "output": "public/audio/cries/oranguru.mp3",
+    "sha256": "98ad296455ae473c83ee022a1b0831742a8b83843bcf4ccb43de29763d448713",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/oricorio.mp3",
+    "output": "public/audio/cries/oricorio.mp3",
+    "sha256": "79729e3989e9dfc6371961388caf3d10934da966b99179e3428bfac7cdc66c46",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/oricorio-pau.mp3",
+    "output": "public/audio/cries/oricorio-pau.mp3",
+    "sha256": "58890c194536062170830c7ab6dcac6592341a092c3cac4b8c8257dc33b46d3a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/oricorio-pompom.mp3",
+    "output": "public/audio/cries/oricorio-pompom.mp3",
+    "sha256": "d0cdd1c18b14c3f970094f85326bfec4fde7a604004d55ff1fbc98b2a4c6acf4",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/oricorio-sensu.mp3",
+    "output": "public/audio/cries/oricorio-sensu.mp3",
+    "sha256": "e35ff0426b64661909d1a86072a82c0c415645f0d46028176b1a2ca6c691be39",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/orthworm.mp3",
+    "output": "public/audio/cries/orthworm.mp3",
+    "sha256": "ed5222b241e0fdec654a41904c884b05dce1d9780324df23021e8b66a460ca25",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/overqwil.mp3",
+    "output": "public/audio/cries/overqwil.mp3",
+    "sha256": "c5f16c839de2733c11c2567562c6c26a6b9855c16222fc5fe087cd1b3c626ad2",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/pachirisu.mp3",
+    "output": "public/audio/cries/pachirisu.mp3",
+    "sha256": "495e18963b065b510b2e3135adf6e528ed4757126fba0de854dbfa75cf162644",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/palafin.mp3",
+    "output": "public/audio/cries/palafin.mp3",
+    "sha256": "7c8fcbe20bd73a7e6ecd7e9af6d8da45e68bff86bea5549b84f4ad7283ff72d1",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/palafin-hero.mp3",
+    "output": "public/audio/cries/palafin-hero.mp3",
+    "sha256": "9d9a895d3fb0851f7dc3ff793442f77a1fa108a96e4ffd0918b7cda2a023b879",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/palkia.mp3",
+    "output": "public/audio/cries/palkia.mp3",
+    "sha256": "b0ee25430c5cd1ad48431fd1ff61e65de2cf666fb68b85a3b883ad00f116f3b7",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/palossand.mp3",
+    "output": "public/audio/cries/palossand.mp3",
+    "sha256": "7d7ad8a6ba5a35d3130b8c03a893cc9f079a9ef64faffed50f67606f66a927ef",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/passimian.mp3",
+    "output": "public/audio/cries/passimian.mp3",
+    "sha256": "d2e6f5688d9d4d19821be509af01d0f58e445b954c7866d537b70371ad5b5482",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/pawmot.mp3",
+    "output": "public/audio/cries/pawmot.mp3",
+    "sha256": "5853b7b99ab42edca3297a689cbc6eea6c84239c207d608a510f5150f6b73117",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/pecharunt.mp3",
+    "output": "public/audio/cries/pecharunt.mp3",
+    "sha256": "ec40f3e82a66dd09b770cfe27ad57b2212a4267003cb879e2a2699af87579450",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/pelipper.mp3",
+    "output": "public/audio/cries/pelipper.mp3",
+    "sha256": "8fcd78dddf2261dea11309b3f8d72e6bf858a36c71546301f574867f6facb9a3",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/perrserker.mp3",
+    "output": "public/audio/cries/perrserker.mp3",
+    "sha256": "4641623acdafc42314b926e9502f2885562cbe3db015312cea2b11e37ce66e65",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/persian.mp3",
+    "output": "public/audio/cries/persian.mp3",
+    "sha256": "984ef3d395f47e740180d10064babe29e56f70b0b3663547eb0af3c2e7d0cb79",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/phione.mp3",
+    "output": "public/audio/cries/phione.mp3",
+    "sha256": "b41180119cab26b5fb384f3c49ff5a1f394fe7a1e6de5371289ced11c53bcc57",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/pikachu.mp3",
+    "output": "public/audio/cries/pikachu.mp3",
+    "sha256": "1ec10c893184b155a110d746ff0560f291978f32ce90c283b9871e61d6df12a1",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/piloswine.mp3",
+    "output": "public/audio/cries/piloswine.mp3",
+    "sha256": "a10de9d5a7112bb701e8e66ed64333a7d81e004da9280b62f5935328a3c6874a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/pincurchin.mp3",
+    "output": "public/audio/cries/pincurchin.mp3",
+    "sha256": "bbb213750294284263c407bac4b0eb2ee00f1340c5e7d468f62c9d0d17c1ba4a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/plusle.mp3",
+    "output": "public/audio/cries/plusle.mp3",
+    "sha256": "3d88f64acc9230d747d3bc8597840774d098789fdfd9e154e3b4cf15cab7b7f0",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/politoed.mp3",
+    "output": "public/audio/cries/politoed.mp3",
+    "sha256": "b71021dc1d156c2fef8c27c9db1dfebaa842790586a940dea3b14f24e7098d6e",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/poliwrath.mp3",
+    "output": "public/audio/cries/poliwrath.mp3",
+    "sha256": "3da3ba5add16c469a1beb19464998d3f8b4882c8ceb0656026440b41230c55be",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/polteageist.mp3",
+    "output": "public/audio/cries/polteageist.mp3",
+    "sha256": "b81870f4d922ffdead48bd67de8604113e6cfbac527cd50df021c520ce08150e",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/porygon2.mp3",
+    "output": "public/audio/cries/porygon2.mp3",
+    "sha256": "9c882d02cca23e199a06f7d3134c269627fb66c48819a0b5136b5ce6842e4153",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/porygonz.mp3",
+    "output": "public/audio/cries/porygonz.mp3",
+    "sha256": "7ee29f4c229e0bd08df478eae4ef02b08d22d7b670db4da7ddba439bf0764b4a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/primarina.mp3",
+    "output": "public/audio/cries/primarina.mp3",
+    "sha256": "f9f72be81ed4ad253daee98d5c8f5154f52491c7152f2cfa07fc47e43eb535c4",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/probopass.mp3",
+    "output": "public/audio/cries/probopass.mp3",
+    "sha256": "d0583392fc24696261e01ff66ed7e960479ef2b9359f7d8481e02d86b0e82691",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/pyroar.mp3",
+    "output": "public/audio/cries/pyroar.mp3",
+    "sha256": "a70b8896d2cb6090475cfbad1c0c0d22edf3dd50165613f056b4904c554ec063",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/quagsire.mp3",
+    "output": "public/audio/cries/quagsire.mp3",
+    "sha256": "22a02d74517d303702dee6a7c843789f251fe5556082136f3842c4bf10f28920",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/quaquaval.mp3",
+    "output": "public/audio/cries/quaquaval.mp3",
+    "sha256": "a715ff9121a11fa5e66a3d6da7c3ddd60ccc2413e0e3a6d32447e4868644ac22",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/qwilfish.mp3",
+    "output": "public/audio/cries/qwilfish.mp3",
+    "sha256": "9e427a229a4acc883092e7a55b86d73a1c6e4d77e59e903a14cd68296ba91c56",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/rabsca.mp3",
+    "output": "public/audio/cries/rabsca.mp3",
+    "sha256": "6eaeb0269fe45cad11eff3dc1118ae5f9bd6b773c4ded5707a3de5554054e91a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/ragingbolt.mp3",
+    "output": "public/audio/cries/ragingbolt.mp3",
+    "sha256": "79b3ad342200305da9e0884f4e55abee71b3e8a78a7dbae36f20e9b80dc7e894",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/raichu.mp3",
+    "output": "public/audio/cries/raichu.mp3",
+    "sha256": "8e907b4203265ac0df5d0f776621caf25def23862e0c66906cac5c74de7336fa",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/raikou.mp3",
+    "output": "public/audio/cries/raikou.mp3",
+    "sha256": "8261f1f0adae6287f9cbbd463e14511f8bb29510568a09a30917c29fc3de674e",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/rampardos.mp3",
+    "output": "public/audio/cries/rampardos.mp3",
+    "sha256": "6888f8551715dae22fae2e399c38472338b6d3e341a62eee08fa9ff2956f1ee1",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/rayquaza.mp3",
+    "output": "public/audio/cries/rayquaza.mp3",
+    "sha256": "002d14032c467356ce02aac4b4c7fc7dd233c77213b055234e0e7903c4e412ea",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/regice.mp3",
+    "output": "public/audio/cries/regice.mp3",
+    "sha256": "4d58302113458585aff2e7e0911427230ba4aa29220d13a6b90d85bf6a3cd112",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/regidrago.mp3",
+    "output": "public/audio/cries/regidrago.mp3",
+    "sha256": "3ac0b12ff9f634d8f5fb4c111e76c4a4062d8f22c2a6e38aacf9c11c9b520c4a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/regieleki.mp3",
+    "output": "public/audio/cries/regieleki.mp3",
+    "sha256": "7f46b015bf90a7e8c585f5754c1fe2f9f3ec15000d9736bfff6ababb811a5745",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/regigigas.mp3",
+    "output": "public/audio/cries/regigigas.mp3",
+    "sha256": "50b33349b609faebed0e3a0a393bd0325341cc4b1089c93dca47d1369805c7ab",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/regirock.mp3",
+    "output": "public/audio/cries/regirock.mp3",
+    "sha256": "4c1902c18491dfc844c867762caad5869936eee911a61f3704fec8c4e89ce49c",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/registeel.mp3",
+    "output": "public/audio/cries/registeel.mp3",
+    "sha256": "8c412b6cd2954a7d2e7edb47eb9299d569436cd7d4ea1cb9f3cb3cfe2fa1e34b",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/reshiram.mp3",
+    "output": "public/audio/cries/reshiram.mp3",
+    "sha256": "c8bf93822dcc7dc7010a3785e269476b00cd7223da140cba0a3b8e728bb409c5",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/reuniclus.mp3",
+    "output": "public/audio/cries/reuniclus.mp3",
+    "sha256": "3a3ae6d9a5efdadb58af4f7706a96f35bcd993c5ac50d485358de2d64717238c",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/revavroom.mp3",
+    "output": "public/audio/cries/revavroom.mp3",
+    "sha256": "fba669d892bddfb2592274975c0ce37779a1a3d42a2c7b6c4d07b7026f51db53",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/rhydon.mp3",
+    "output": "public/audio/cries/rhydon.mp3",
+    "sha256": "e3f5a9ea8484ddd5a26f69770e59d035adbd8532c112c80b7d07ae536a127981",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/rhyperior.mp3",
+    "output": "public/audio/cries/rhyperior.mp3",
+    "sha256": "bac4c26669386cb2b3ac1014239f8de4de34237dab696472809d38347935a99b",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/ribombee.mp3",
+    "output": "public/audio/cries/ribombee.mp3",
+    "sha256": "5394c544e2c0b83df16a7cda72e2ef33174888e49fac49c6188029dd0e087c04",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/rillaboom.mp3",
+    "output": "public/audio/cries/rillaboom.mp3",
+    "sha256": "4877eebf1b606e668133cab415a290d5910c258955c9b039bb63f8cee0291c69",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/roaringmoon.mp3",
+    "output": "public/audio/cries/roaringmoon.mp3",
+    "sha256": "bb7b3c5e83ac2bc6077b229c1bb12dd50c5aebcf3df4c89c1b0ef75e284ba32b",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/rotom.mp3",
+    "output": "public/audio/cries/rotom.mp3",
+    "sha256": "fe159f0b8c06851c120a82fa1f1713ff2375f55226cf4945e561d8f148302497",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/sableye.mp3",
+    "output": "public/audio/cries/sableye.mp3",
+    "sha256": "1e8b6915fca2894058f07266e4833b8d75a0f5ff3f6165d82c1f581de4b307e3",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/salamence.mp3",
+    "output": "public/audio/cries/salamence.mp3",
+    "sha256": "26beb1402ede4b7012c86c6cee12ae68821b6ee2c013206e09975eb21d06a5e9",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/salazzle.mp3",
+    "output": "public/audio/cries/salazzle.mp3",
+    "sha256": "efc8be6a7143896037f28fd53bd3cee0ad04d1444e9ae0645a9a79e024125ff9",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/samurott.mp3",
+    "output": "public/audio/cries/samurott.mp3",
+    "sha256": "b5c3aa0b04266fa01c542918e913ed5306839776519954fb745e420964526e3b",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/sandaconda.mp3",
+    "output": "public/audio/cries/sandaconda.mp3",
+    "sha256": "bd7600876f4261aac0b964792228ee3be6f9eaf789c5ce86fda2c4457947957c",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/sandslash.mp3",
+    "output": "public/audio/cries/sandslash.mp3",
+    "sha256": "e08e76dce048891158a27d76883f0eee2c1d2c8bf2a17b96140c8ab57df5f41a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/sandyshocks.mp3",
+    "output": "public/audio/cries/sandyshocks.mp3",
+    "sha256": "202410874bee0c5c71d9e486b138f4910246a858efd95575c403f0b4f00d967e",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/sawsbuck.mp3",
+    "output": "public/audio/cries/sawsbuck.mp3",
+    "sha256": "b30577d2c35374cc7a869d33c9c336ea6c352f99c7500cf8804001b19cc80396",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/sceptile.mp3",
+    "output": "public/audio/cries/sceptile.mp3",
+    "sha256": "d01d14f6e7ee47ea6e5d8b5c756c2e3537df69c915e15f7082691761dc0693de",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/scizor.mp3",
+    "output": "public/audio/cries/scizor.mp3",
+    "sha256": "98a33963f7d7970360b67be18bf5fb076289aaed2e79f1ac50676eea7f6d1c5b",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/scovillain.mp3",
+    "output": "public/audio/cries/scovillain.mp3",
+    "sha256": "9eda1703362f56dddc3d145ced841cc68fce9a80082f2b6b7630f6d9f64945c0",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/scrafty.mp3",
+    "output": "public/audio/cries/scrafty.mp3",
+    "sha256": "80bdaaa3ff060e8116ac8783b701d9773dc78eab78e2e11be2e8380fe218a093",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/screamtail.mp3",
+    "output": "public/audio/cries/screamtail.mp3",
+    "sha256": "28dd91f9a5cbf3c262293bf1c923f65387cb56c57870f49f22146e3acaffbc95",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/scyther.mp3",
+    "output": "public/audio/cries/scyther.mp3",
+    "sha256": "f3d2f315bcfa5a2ae9e7bc82a6dd37b3c21fe26324165669035ed0e46e447403",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/serperior.mp3",
+    "output": "public/audio/cries/serperior.mp3",
+    "sha256": "ca9e00b80b987fc36629dd7158a7c73c69b34c284053c66bb94aebe4dc2b5a0c",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/seviper.mp3",
+    "output": "public/audio/cries/seviper.mp3",
+    "sha256": "137fffeef44f0ea4528cce9fc9c61fb82a5504de0f4c3454a03dcda4d08f0f76",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/shaymin.mp3",
+    "output": "public/audio/cries/shaymin.mp3",
+    "sha256": "0a210f061ae3515d58f2ae1e964b3e89793283f1868f54f49a0982a2124c7878",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/shaymin-sky.mp3",
+    "output": "public/audio/cries/shaymin-sky.mp3",
+    "sha256": "fde57db970b487b7637c1b9c65abdfbd7ac47a44f45728fe4739a324c414fcab",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/shiftry.mp3",
+    "output": "public/audio/cries/shiftry.mp3",
+    "sha256": "a528d3d9104bd46fe6be2175fd615a24a6292ed43ff8cfda38f415df2814d943",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/sinistcha.mp3",
+    "output": "public/audio/cries/sinistcha.mp3",
+    "sha256": "092f5c696f4ffcf743df4172073b415093d89d4fa2adac0ec8566caa1e5c237c",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/skarmory.mp3",
+    "output": "public/audio/cries/skarmory.mp3",
+    "sha256": "b82f21b65b6185b340a7552bfa9791128adbdf8f44c101501aca3bf5aabd5e4b",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/skeledirge.mp3",
+    "output": "public/audio/cries/skeledirge.mp3",
+    "sha256": "4e3b65c6d99a3b6de0a0e30c677154bed5fbe99b7c82ebabef18a5928a6dfa99",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/skuntank.mp3",
+    "output": "public/audio/cries/skuntank.mp3",
+    "sha256": "73dee59c8bf01a6b1ed1df24ae73e00b77eabc39059aa10277fabaa7cc611866",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/slaking.mp3",
+    "output": "public/audio/cries/slaking.mp3",
+    "sha256": "4a3036fc7dc598473314ea33e095e4ac94e3d5928f751e04f07d72d13cdf72d6",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/slitherwing.mp3",
+    "output": "public/audio/cries/slitherwing.mp3",
+    "sha256": "ffe7ffdc5c74f10ae5dfc7f5a161516553655a7a10ee4c586607b50e9f680f7f",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/slowbro.mp3",
+    "output": "public/audio/cries/slowbro.mp3",
+    "sha256": "7b807fd0135b891fd773ab78481c68d19e7ef643f12041f69e0b0ab053f4ee5f",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/slowking.mp3",
+    "output": "public/audio/cries/slowking.mp3",
+    "sha256": "d6604ab1b24d4a1d36b94ab5a16cec05fc7edd9be1d66ec88ca669f0fb7e49e9",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/smeargle.mp3",
+    "output": "public/audio/cries/smeargle.mp3",
+    "sha256": "0a8ec08ffcd0cc972e037f571f94bd1c1d2264f5c467e9e1a003fc35bd5903c5",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/sneasler.mp3",
+    "output": "public/audio/cries/sneasler.mp3",
+    "sha256": "5be176a3af96e3f9ddcd6a9470f5722f531c810bc6a66d1ec90d0f589a8107d3",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/snorlax.mp3",
+    "output": "public/audio/cries/snorlax.mp3",
+    "sha256": "bc3e1c5994fd4d259f2718e17f5518c727310386516e691dfd2633c227f355d5",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/solgaleo.mp3",
+    "output": "public/audio/cries/solgaleo.mp3",
+    "sha256": "5305c178e470d570cda46ace338e7d858486264035b1871c9ce2a05f1445d80f",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/spectrier.mp3",
+    "output": "public/audio/cries/spectrier.mp3",
+    "sha256": "7abb06a4ceaf7128aec3f3cd8265470377ae8bb1ef5daefa60f70e5fa3dbf760",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/spidops.mp3",
+    "output": "public/audio/cries/spidops.mp3",
+    "sha256": "eddcd5f8050a45e7c9c7341ac2ff024f113017293c26041027550314422ec48f",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/spiritomb.mp3",
+    "output": "public/audio/cries/spiritomb.mp3",
+    "sha256": "5eba089e0132a34e88c37d6a38bc27f2ba7c18c75e5b733780dc1bd06ccd9aa4",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/squawkabilly.mp3",
+    "output": "public/audio/cries/squawkabilly.mp3",
+    "sha256": "7a88d3cbea17f89dace96585157c3044753a745af74e50d6485b5b2b5ec2f244",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/stantler.mp3",
+    "output": "public/audio/cries/stantler.mp3",
+    "sha256": "dfae76c660d133246fa84dc5007363392a6b1d7ebf38f4ff0bc417c545057a8d",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/staraptor.mp3",
+    "output": "public/audio/cries/staraptor.mp3",
+    "sha256": "2b666ed86795237960c29547facb0e5de782cef86ff10f6481a32b0b079fd51d",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/stonjourner.mp3",
+    "output": "public/audio/cries/stonjourner.mp3",
+    "sha256": "f4af9c9cf109962f40e5b7291c661d59eff20c49586624ea817b4a93b1c24bb7",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/sudowoodo.mp3",
+    "output": "public/audio/cries/sudowoodo.mp3",
+    "sha256": "aaa49c1f7d5519d73a888cbf37b299b7007d32463d371b24f221220514addcd8",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/suicune.mp3",
+    "output": "public/audio/cries/suicune.mp3",
+    "sha256": "ad7994a26bf1e4ece75825641f88db30afa49658d142b37cf04fdc9c6b8136fc",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/sunflora.mp3",
+    "output": "public/audio/cries/sunflora.mp3",
+    "sha256": "a2ffc66acea846260abc024c10b6efd37242fadc447a886a0ce93da48b80cbce",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/swalot.mp3",
+    "output": "public/audio/cries/swalot.mp3",
+    "sha256": "510034264df6eb2c57365a65558de0dac60bd690ce8b8d3a2119fc9b90ea3814",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/swampert.mp3",
+    "output": "public/audio/cries/swampert.mp3",
+    "sha256": "958161a5be2bea7c7436b9f4eb69aa1a50e5324cabed29cfda0f3347e6a750cd",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/swanna.mp3",
+    "output": "public/audio/cries/swanna.mp3",
+    "sha256": "e7af12660f6045122379382565113dc5330c28bf0ed932f24f5be5d798ff5842",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/sylveon.mp3",
+    "output": "public/audio/cries/sylveon.mp3",
+    "sha256": "1dd0948b863d4ae28500c71689dd354933cfade81fe1d16b7b8aa62697dbaa15",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/talonflame.mp3",
+    "output": "public/audio/cries/talonflame.mp3",
+    "sha256": "0d63c43c588bb28cc6c41968bc3a463ff5e3aa57c9cf790cba5e7eb0d6671c2e",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/tatsugiri.mp3",
+    "output": "public/audio/cries/tatsugiri.mp3",
+    "sha256": "64a2e6dc0bec50ad186b1c9ef79db59d9f91bd722491f18b429779eceefd197f",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/tatsugiri-droopy.mp3",
+    "output": "public/audio/cries/tatsugiri-droopy.mp3",
+    "sha256": "13cef93f4d422d2a04001e45f30ec181834ffc30b56ead376b15ea557b1960c6",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/tatsugiri-stretchy.mp3",
+    "output": "public/audio/cries/tatsugiri-stretchy.mp3",
+    "sha256": "b8c3c8ec53880cac70907351e9801c8b22962e027152aee724afadf3f20c833e",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/tauros.mp3",
+    "output": "public/audio/cries/tauros.mp3",
+    "sha256": "3b8f980639c422b1f4dca8d95a7fe34e87334ae08bc2d3b53d79c92c124b3da6",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/tentacruel.mp3",
+    "output": "public/audio/cries/tentacruel.mp3",
+    "sha256": "10f6280f96c8ba2c87622511636bbb1758ffda6f9ded0a020f75f95e690e9976",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/terapagos.mp3",
+    "output": "public/audio/cries/terapagos.mp3",
+    "sha256": "8bb36a60f0c24d80ff7746c55928f17d4b9c1ac4f512ef6ca032074a3dd102fd",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/terrakion.mp3",
+    "output": "public/audio/cries/terrakion.mp3",
+    "sha256": "66cec60e33e4a89ed0ad813db5af7aaaee8df6a5891439391728da9780bd5252",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/thundurus.mp3",
+    "output": "public/audio/cries/thundurus.mp3",
+    "sha256": "74c0addc0dc402d531e723871d4499ef6f337617cfbff5d5debca4b42117c3e5",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/thundurus-therian.mp3",
+    "output": "public/audio/cries/thundurus-therian.mp3",
+    "sha256": "c2f70104c44d269d1cdba4a6444ca5b4998538860b6c603cef8a8496418e44c4",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/tinglu.mp3",
+    "output": "public/audio/cries/tinglu.mp3",
+    "sha256": "e73a48383bb23575dc1b8046677461fbefe820d924d0e9baae930f25b89966fc",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/tinkaton.mp3",
+    "output": "public/audio/cries/tinkaton.mp3",
+    "sha256": "cc62cbb36a671b0358e82615c374560dfacb74a124f5073348273d0053dadf02",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/toedscruel.mp3",
+    "output": "public/audio/cries/toedscruel.mp3",
+    "sha256": "31439b1279d8e83e57167e430bb546296c648040ceecb0770869711c36218791",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/torkoal.mp3",
+    "output": "public/audio/cries/torkoal.mp3",
+    "sha256": "7c7d20597fca4ca0dfb5960037166c6cf4c8e8cded0d4de4527885eb3758e110",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/tornadus.mp3",
+    "output": "public/audio/cries/tornadus.mp3",
+    "sha256": "8f0d44d65941f947cb79fd3cdcd518c3ebff01803a3eee608c1b370dfc1e63d8",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/tornadus-therian.mp3",
+    "output": "public/audio/cries/tornadus-therian.mp3",
+    "sha256": "83dfa014fc9a5bff340ab311889c8b666e44ff445346a80e3198bb7785e29b20",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/torterra.mp3",
+    "output": "public/audio/cries/torterra.mp3",
+    "sha256": "28ac008d1c98f2fce8a504ad51f9cf41fbb1fdd5798f69b2e8ff6a2eb1b0becb",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/toucannon.mp3",
+    "output": "public/audio/cries/toucannon.mp3",
+    "sha256": "3aecd3c8b7b518e11f504f783e524d127545b6378e78f0497bd2365f90a8d03e",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/toxapex.mp3",
+    "output": "public/audio/cries/toxapex.mp3",
+    "sha256": "246763a2608d3f5b219b34caa4bc6447a7277d3d0cc39f410b14b2c7ac33b5ae",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/toxicroak.mp3",
+    "output": "public/audio/cries/toxicroak.mp3",
+    "sha256": "13571d2e1610a4b7332386910aba3305db976d9d6c569418c25587383949bed4",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/toxtricity.mp3",
+    "output": "public/audio/cries/toxtricity.mp3",
+    "sha256": "09e766580a9eb0dab47c997117fdf14d95da8eeef5311f76b44b1395308fd256",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/toxtricity-lowkey.mp3",
+    "output": "public/audio/cries/toxtricity-lowkey.mp3",
+    "sha256": "d9090488c289341637bd42342b8b87ce0014954b37ba60d833f7a4a6d6591218",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/trevenant.mp3",
+    "output": "public/audio/cries/trevenant.mp3",
+    "sha256": "f9025e94881735811fdfd58113edf3c8a9bf98d5bd79f29084e713e70fe8fd87",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/tropius.mp3",
+    "output": "public/audio/cries/tropius.mp3",
+    "sha256": "f5ce19495c53666cd6ab4c62c776e1c0226fd22cbd8406684aec4ed6db927742",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/tsareena.mp3",
+    "output": "public/audio/cries/tsareena.mp3",
+    "sha256": "18d2213b4d91afbefc758894d827def85ac8cbf5c68f9f404646e71636118650",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/typhlosion.mp3",
+    "output": "public/audio/cries/typhlosion.mp3",
+    "sha256": "000f02b0bd2777351793f574878273f917215cf0bbe4be957cc0fb1a63024f0e",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/tyranitar.mp3",
+    "output": "public/audio/cries/tyranitar.mp3",
+    "sha256": "24b6908eec66bd8b289043024b82e2c85033e39d784c33af4b450a006188073a",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/umbreon.mp3",
+    "output": "public/audio/cries/umbreon.mp3",
+    "sha256": "5e36e01c45353920eda2291dec0f712138cfdc2a42754799b6a5ddaf91d28bfd",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/ursaluna.mp3",
+    "output": "public/audio/cries/ursaluna.mp3",
+    "sha256": "01ca884442987c2b53c75ab2c10e9d3d781dc54f41c3662a232721340e1b348d",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/ursaring.mp3",
+    "output": "public/audio/cries/ursaring.mp3",
+    "sha256": "cab4e2c28674231768b1f53c5303ec5df4b6dcb39ceac1f9e2f585c4a620a6ef",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/urshifu.mp3",
+    "output": "public/audio/cries/urshifu.mp3",
+    "sha256": "616c427de6c702b4d30eec54d15ee47dc84758885cba865542fe97e2679376cf",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/urshifu-rapidstrike.mp3",
+    "output": "public/audio/cries/urshifu-rapidstrike.mp3",
+    "sha256": "cd284572b147363b48b5be2843c27357bc7a9a49816927b9ca2235ed56362efe",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/uxie.mp3",
+    "output": "public/audio/cries/uxie.mp3",
+    "sha256": "2dbd71d97478e7d53f9856533758673cb1b631f472b176ce00b10d42d729524d",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/vaporeon.mp3",
+    "output": "public/audio/cries/vaporeon.mp3",
+    "sha256": "5323edcd42e9bf4b61ac7ab02e73655ee8697ffacea87c7539ffb646dddc2b89",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/veluza.mp3",
+    "output": "public/audio/cries/veluza.mp3",
+    "sha256": "e7eca7f734767f971cfc31eff07eeb0c634335e4a372da5345f469c4f142371f",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/venomoth.mp3",
+    "output": "public/audio/cries/venomoth.mp3",
+    "sha256": "10c9902c8e648183d05fa7361448ea8831f283742f14279cac89fc554f0995d8",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/venusaur.mp3",
+    "output": "public/audio/cries/venusaur.mp3",
+    "sha256": "31ded595aecfb3ad7c3765afcb8094873d8d5b901c99132b5ca4392785f27cec",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/vespiquen.mp3",
+    "output": "public/audio/cries/vespiquen.mp3",
+    "sha256": "7eca9009fd41b56d60f9f477d770081d19792dd8a65330ef7f5d43c6a6738b30",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/victreebel.mp3",
+    "output": "public/audio/cries/victreebel.mp3",
+    "sha256": "88b2cb639d813df3eb9f43fac349b2ada6862eac999a42ce976a884b9567c011",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/vigoroth.mp3",
+    "output": "public/audio/cries/vigoroth.mp3",
+    "sha256": "2d9accd05a52b8da20bba9c78cdc23d159a71f64484563c614944dd0d41b0889",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/vikavolt.mp3",
+    "output": "public/audio/cries/vikavolt.mp3",
+    "sha256": "297ffe6bc27336d7d8656e7bc8e8b55fbe88921cd9e4c8c478c0f6dd4b523c60",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/vileplume.mp3",
+    "output": "public/audio/cries/vileplume.mp3",
+    "sha256": "2842d040ad509c7041b56aa955ede9babdee3eec200418ceeff31eece5071b9e",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/virizion.mp3",
+    "output": "public/audio/cries/virizion.mp3",
+    "sha256": "a40c7310b5536eec8770c5126d47f7f5bb93b93ea1e77d43c1bfc3112ca5b27e",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/vivillon.mp3",
+    "output": "public/audio/cries/vivillon.mp3",
+    "sha256": "9869506db702c6beed177f50b744e3abc5288707f6ed8304a662c2d3dbf00174",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/volbeat.mp3",
+    "output": "public/audio/cries/volbeat.mp3",
+    "sha256": "c33505764848469387f85ded5e7723f6d3b74e6331b56536d5854d9fc74ea040",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/volcanion.mp3",
+    "output": "public/audio/cries/volcanion.mp3",
+    "sha256": "3e2a943b132ee4e82714ab41a3656c6772e646f5259a632bd8c1ac99e2ee2428",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/volcarona.mp3",
+    "output": "public/audio/cries/volcarona.mp3",
+    "sha256": "d530534336fbfe0ddb5569f46160785facf3af4d47f30c2823c01c6b8fbaecde",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/walkingwake.mp3",
+    "output": "public/audio/cries/walkingwake.mp3",
+    "sha256": "2e28de2e9b7cb2ef02172e0cd4093294596143f994ae494ac5d9ecca0e6fe61e",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/weavile.mp3",
+    "output": "public/audio/cries/weavile.mp3",
+    "sha256": "7c66d115144e0672b4c6d8b4237842066f49d2892fec0150ce2b7deba29b4382",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/weezing.mp3",
+    "output": "public/audio/cries/weezing.mp3",
+    "sha256": "12a488a3a465052729a4e94d5374e2be58fe93ea42bdc5dc1aa6d920c92ad1ca",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/whimsicott.mp3",
+    "output": "public/audio/cries/whimsicott.mp3",
+    "sha256": "7ed9fe3e1068f16f39d4675339664bd98c3b0564d01d55c55db2f96db56aa0ac",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/whiscash.mp3",
+    "output": "public/audio/cries/whiscash.mp3",
+    "sha256": "a0ba8ac074a68e1d6f728b04d7e1a0486c98ab64dea57e57297c3920d8813365",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/wigglytuff.mp3",
+    "output": "public/audio/cries/wigglytuff.mp3",
+    "sha256": "c141ccd6dbeaec2926fcc3182e5112397111359323d0d4ae97031a124fe60c61",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/wochien.mp3",
+    "output": "public/audio/cries/wochien.mp3",
+    "sha256": "0bec04a8a94aae29f6e7cb2a28165c1cf9dd7846ecd1a74ed4a94e9246897d3d",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/wugtrio.mp3",
+    "output": "public/audio/cries/wugtrio.mp3",
+    "sha256": "4fa72eb48a73b9eed4d9be80167bab5beafd6458794a678d4dfe5c5e407a567f",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/wyrdeer.mp3",
+    "output": "public/audio/cries/wyrdeer.mp3",
+    "sha256": "8829a5a76badb38709f2307279cd7c736863cdb9323b70bbf9231f9c0a44e573",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/yanmega.mp3",
+    "output": "public/audio/cries/yanmega.mp3",
+    "sha256": "2dbbdff595a93a858dd61decab630efd0eabd6e9c39b9b3240affb99e788f252",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/zacian.mp3",
+    "output": "public/audio/cries/zacian.mp3",
+    "sha256": "4b592f4f952599069901c575e2543ec5b645c1173e7659c4e1cfad6dd8b3cc14",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/zacian-crowned.mp3",
+    "output": "public/audio/cries/zacian-crowned.mp3",
+    "sha256": "caef7ef4bb7386f902fa9da3b2cedbe916c213971ca11a34b8d01c4223b87080",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/zamazenta.mp3",
+    "output": "public/audio/cries/zamazenta.mp3",
+    "sha256": "e3e0d7ddebb05c02d5ba6f467123f538474f05dd3cecf5dcc0f71c4fc42c4721",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/zamazenta-crowned.mp3",
+    "output": "public/audio/cries/zamazenta-crowned.mp3",
+    "sha256": "a2e23415fb883782f353f445646b2b52a952ee97848675757e0ddd318f151e84",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/zangoose.mp3",
+    "output": "public/audio/cries/zangoose.mp3",
+    "sha256": "94cd60e75f40858d7325dfc5468c4e0718e64aa52db80858503e92cb2aaec0ff",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/zapdos.mp3",
+    "output": "public/audio/cries/zapdos.mp3",
+    "sha256": "82dce8bf40cc1999b4b0051f48a3c11affd0b1a5e0fbae512314b79a1b0666af",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/zarude.mp3",
+    "output": "public/audio/cries/zarude.mp3",
+    "sha256": "06e3d3db0252301854ef83c17fdb113be7ac4fde19934afa32d0d79825f9597d",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/zebstrika.mp3",
+    "output": "public/audio/cries/zebstrika.mp3",
+    "sha256": "716cc37b93c7fb1bd42f6681a6a9955f7218c97f220eab76fb3d018eaab40866",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/zekrom.mp3",
+    "output": "public/audio/cries/zekrom.mp3",
+    "sha256": "96273112e6a9f02b134d9a60a2d3a82127cc4afdc2c00bfb5a95373746929403",
+    "binary": true
+  },
+  {
+    "url": "https://play.pokemonshowdown.com/audio/cries/zoroark.mp3",
+    "output": "public/audio/cries/zoroark.mp3",
+    "sha256": "80eba132001f16d5986241e254f515d4aab2e3faf82db040a70a0acef470874f",
+    "binary": true
   }
 ]

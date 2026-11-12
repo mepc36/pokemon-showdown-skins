@@ -229,4 +229,5 @@ test('a forme uses its base species cry unless Showdown has a cry for that forme
   assert.equal(cryFile({baseSpecies: 'Landorus', formeid: '-therian'}), './audio/cries/landorus-therian.mp3');
   assert.equal(cryFile({baseSpecies: 'Necrozma', formeid: '-duskmane'}), './audio/cries/necrozma-duskmane.mp3');
   assert.equal(cryFile({baseSpecies: 'Ho-Oh', formeid: ''}), './audio/cries/hooh.mp3');
+  assert.equal(cryFile({baseSpecies: 'Ursaluna', formeid: '-bloodmoon'}), './audio/cries/ursaluna.mp3', 'Showdown has no file for this forme');
 });
