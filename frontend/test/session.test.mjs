@@ -215,3 +215,16 @@ test('a remembered battle the server lists no game for is forgotten, so Find Ran
   f.session.search();
   assert.ok(socket.sent.some(value => value.endsWith('/search gen9randombattle')));
 });
+
+test('a side that Terastallized stays recorded for the battle, and a new battle starts clean', () => {
+  const f = fixture(); f.authenticate(); f.battle();
+  assert.deepEqual(f.session.state.teraSides, []);
+  f.socket.receive(`>${room}\n|-terastallize|p2a: Landorus|Water`);
+  assert.deepEqual(f.session.state.teraSides, ['p2']);
+  f.socket.receive(`>${room}\n|-terastallize|p1a: Gengar|Ghost\n|faint|p1a: Gengar`);
+  // The request after the faint no longer marks any Pokémon as Terastallized.
+  f.socket.receive(`>${room}\n|request|${JSON.stringify(request())}`);
+  assert.deepEqual(f.session.state.teraSides, ['p2', 'p1']);
+  f.socket.receive(`>battle-gen9randombattle-67890\n|init|battle\n|request|${JSON.stringify(request())}`);
+  assert.deepEqual(f.session.state.teraSides, [], 'the next battle has its Tera again');
+});

@@ -527,7 +527,7 @@ try {
     const {demoRequest} = await import('/src/demo.mjs');
     const active = {...demoRequest.active[0]}; delete active.canTerastallize;
     const spent = {...demoRequest, rqid: 2, active: [active], side: {...demoRequest.side, pokemon: demoRequest.side.pokemon.map(p => p.ident === 'p1: Grumpig' ? {...p, condition: '150/297', terastallized: 'Psychic'} : p)}};
-    window.testSocket.onmessage({data: `>battle-gen9randombattle-12345\n|request|${JSON.stringify(spent)}`});
+    window.testSocket.onmessage({data: `>battle-gen9randombattle-12345\n|-terastallize|p1a: Grumpig|Psychic\n|request|${JSON.stringify(spent)}`});
   });
   await cancel.waitForFunction(() => document.querySelector('#tera').dataset.used === 'true');
   const teraSpent = await teraLook();
@@ -537,10 +537,16 @@ try {
   await pad(cancel, 2);
   await cancel.evaluate(async () => {
     const {demoRequest} = await import('/src/demo.mjs');
-    const hurt = {...demoRequest, rqid: 2, side: {...demoRequest.side, pokemon: demoRequest.side.pokemon.map(p => p.ident === 'p1: Grumpig' ? {...p, condition: '150/297'} : p)}};
+    // The server deletes a Pokémon's terastallized flag when it faints, so from then on no request carries it.
+    const active = {...demoRequest.active[0]}; delete active.canTerastallize;
+    const hurt = {...demoRequest, rqid: 3, active: [active], side: {...demoRequest.side, pokemon: demoRequest.side.pokemon.map(p => p.ident === 'p1: Grumpig' ? {...p, condition: '150/297'} : p)}};
     window.testSocket.onmessage({data: `>battle-gen9randombattle-12345\n|request|${JSON.stringify(hurt)}`});
   });
-  await cancel.waitForFunction(() => document.querySelector('#tera').dataset.used === 'false');
+  await cancel.waitForTimeout(300);
+  check((await teraLook()).used === 'true' && await cancel.locator('#tera').isDisabled(), 'Tera stays used for the rest of the battle when no request carries the flag any more');
+  await cancel.locator('#switch-3').focus();
+  check((await teraLook()).used === 'true', 'A bench preview still shows Tera as used then');
+  await pad(cancel, 2);
 
   // Switching reorders the server request (active first); the roster keeps the lead first.
   await cancel.evaluate(async () => {

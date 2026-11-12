@@ -172,6 +172,8 @@ function inferSets(slot) {
 }
 // Display order: the lead first, then the rest as first seen. Each entry keeps
 // serverIndex, the position in the latest request, for stats and switches.
+// Tera is used up for the rest of the battle once the log shows the own side Terastallizing.
+const teraSpent = () => !!state.teraSides?.includes((state.request || lastRequest)?.side?.id);
 function ownTeam() {
   const result = stableOwnOrder((fixture ? demoRequest : lastRequest)?.side?.pokemon || [], ownOrder);
   ownOrder = result.order;
@@ -420,7 +422,7 @@ function renderMovePreview() {
   // The Tera button follows the previewed Pokémon too, and returns to the active one's type.
   const previewed = previewIndex ? ownTeam()[previewIndex - 1] : null;
   // Once anyone on the team has Terastallized, the previewed Pokémon's Tera button is grayed out too.
-  const teraUsed = ownTeam().some(p => p.terastallized);
+  const teraUsed = teraSpent();
   if (foeMoveIndex) {
     const slot = arena?.opponents()[foeMoveIndex - 1];
     const foe = foeMoveSlots(slot);
@@ -592,8 +594,7 @@ function render() {
   $('tera').hidden = !activePokemon;
   $('tera').disabled = disabled || waiting || !choices.tera;
   $('tera').innerHTML = teraMarkup(teraType);
-  // Tera is used up once anyone on the own team has Terastallized; the server keeps that flag on the Pokémon.
-  $('tera').dataset.used = String(!!(request || lastRequest)?.side?.pokemon?.some(p => p.terastallized));
+  $('tera').dataset.used = String(teraSpent());
   $('tera').dataset.type = teraType;
   teraLabel = {html: $('tera').innerHTML, type: teraType, disabled: $('tera').disabled, used: $('tera').dataset.used};
   $('tera').setAttribute('aria-pressed', String(tera));

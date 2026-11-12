@@ -10,7 +10,7 @@ export class ShowdownSession {
     this.state = {status: 'Offline', authenticated: false, challenge: '', room: '', request: null,
       pending: false, recovering: false, searching: false, ended: false, notice: '', timer: '',
       timerOn: false, timerPending: false, timerSeconds: null, timerAt: 0, timerRunning: false,
-      foeTimerSeconds: null};
+      foeTimerSeconds: null, teraSides: []};
     const room = storage.getItem('ps-mve-room');
     if (isBattleRoom(room)) this.state.room = room;
   }
@@ -97,7 +97,7 @@ export class ShowdownSession {
       // A snapshot for another room is ignored only while the remembered room is still a live game on the server.
       if (this.state.room && this.state.room !== room && !this.state.ended && this.games.includes(this.state.room)) return;
       Object.assign(this.state, {room, ended: false, request: null, pending: false, recovering: true, searching: false, timer: '',
-        timerOn: false, timerPending: false, timerSeconds: null, timerRunning: false, foeTimerSeconds: null});
+        timerOn: false, timerPending: false, timerSeconds: null, timerRunning: false, foeTimerSeconds: null, teraSides: []});
       this.storage.setItem('ps-mve-room', room); this.turn = 0;
     }
     for (const line of lines) {
@@ -164,6 +164,11 @@ export class ShowdownSession {
         } else if (type === '-message' && / lost due to inactivity\.$/.test(value)) {
           // The server never announces 0 seconds; running out of time ends with this line instead.
           if (toID(value.replace(/ lost due to inactivity\.$/, '')) !== toID(this.expectedUser)) this.state.foeTimerSeconds = 0;
+        } else if (type === '-terastallize') {
+          // Each side Terastallizes once per battle. The battle log is the only lasting record: the server
+          // deletes a Pokémon's `terastallized` flag from the request when it faints (sim/battle.ts, faintMessages).
+          const side = value.slice(0, 2);
+          if (!this.state.teraSides.includes(side)) this.state.teraSides = [...this.state.teraSides, side];
         } else if (type === 'win' || type === 'tie') {
           this.state.ended = true; this.state.pending = false; this.state.request = null;
           this.state.recovering = false; this.state.notice = type === 'win' ? `${value} won the battle.` : 'The battle ended in a tie.';
@@ -203,7 +208,7 @@ export class ShowdownSession {
     if (this.state.ended) { this.send('/leave', this.state.room); this.state.room = ''; }
     this.state.replayUrl = '';
     this.state.ended = false; this.state.request = null; this.state.pending = false;
-    Object.assign(this.state, {timer: '', timerOn: false, timerPending: false, timerSeconds: null, timerRunning: false, foeTimerSeconds: null});
+    Object.assign(this.state, {timer: '', timerOn: false, timerPending: false, timerSeconds: null, timerRunning: false, foeTimerSeconds: null, teraSides: []});
     this.send('/noreply /blockbots'); this.send('/utm null'); this.send('/search gen9randombattle');
     this.state.searching = true; this.state.notice = ''; this.emit();
   }
