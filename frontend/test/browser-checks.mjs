@@ -437,6 +437,12 @@ try {
   await cancel.keyboard.press('s'); await cancel.locator('#primary').click();
   await cancel.waitForFunction(() => document.querySelector('#arena-wrap').dataset.room.includes('12345'));
   await cancel.waitForFunction(() => document.querySelector('#test-commands').textContent.includes('/timer on'));
+  // Showdown's own tooltip box must never open over the field: not on hover, not on a touch, not on a long press.
+  const fieldSpot = await cancel.evaluate(() => { const box = document.querySelector('#arena .has-tooltip').getBoundingClientRect(); return {count: document.querySelectorAll('#arena .has-tooltip').length, x: box.left + box.width / 2, y: box.top + box.height / 2}; });
+  await cancel.mouse.move(fieldSpot.x, fieldSpot.y); await cancel.mouse.down(); await cancel.waitForTimeout(900); await cancel.mouse.up();
+  await cancel.evaluate(() => { const spot = document.querySelector('#arena .has-tooltip'); for (const type of ['touchstart', 'touchend']) spot.dispatchEvent(new Event(type, {bubbles: true, cancelable: true})); spot.dispatchEvent(new MouseEvent('mouseover', {bubbles: true})); });
+  check(fieldSpot.count > 0 && await cancel.locator('#tooltipwrapper .tooltip, .tooltipinner').count() === 0, 'Hovering, pressing or touching a Pokémon on the field opens no Showdown tooltip');
+  await cancel.mouse.move(5, 5);
   check((await cancel.locator('#test-commands').innerText()).match(/\/timer on/g).length === 1 && await cancel.locator('#timer-toggle').count() === 0, 'The timer starts itself once when the battle starts');
   check(await cancel.locator('dialog[open]').count() === 0, 'Find Random Battle closes the menu');
   await cancel.locator('#switch-2').focus(); await cancel.keyboard.press('i'); await cancel.keyboard.press('ArrowRight'); await cancel.keyboard.press('ArrowDown'); await cancel.keyboard.press('Escape');
