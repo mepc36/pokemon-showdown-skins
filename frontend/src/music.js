@@ -17,6 +17,19 @@ export function timerToneDue(previous, current) {
   return previous != null && current != null && current < previous && TIMER_TONES.some(mark => previous > mark && current <= mark);
 }
 
+// The cry file of a species, by the rule in pinned battle-dex.ts (getSpriteData): the base species' cry, except
+// for the formes that have their own. Showdown's list also names '-bloodmoon', but its host has no
+// ursaluna-bloodmoon.mp3 (404 on 2026-11-11), so Ursaluna-Bloodmoon uses Ursaluna's cry.
+const CRY_FORMES = ['-crowned', '-eternal', '-eternamax', '-four', '-hangry', '-hero', '-lowkey', '-noice', '-primal',
+  '-rapidstrike', '-roaming', '-school', '-sky', '-starter', '-super', '-therian', '-unbound'];
+const CRY_SPECIES = ['calyrex', 'kyurem', 'cramorant', 'indeedee', 'lycanroc', 'necrozma', 'oinkologne', 'oricorio', 'slowpoke', 'tatsugiri', 'zygarde'];
+export function cryFile({baseSpecies, formeid, isMega}) {
+  const base = baseSpecies.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const own = isMega || formeid && (CRY_FORMES.includes(formeid) || CRY_SPECIES.includes(base));
+  const suffix = !own ? '' : isMega && (base === 'meowstic' || base === 'tatsugiri') ? '-mega' : formeid;
+  return `./audio/cries/${base}${suffix}.mp3`;
+}
+
 export function musicActive(state, {fixture = false, hidden = false, stopped = false, replaying = false} = {}) {
   // Authentication drops during reconnect; the battle itself has not ended.
   // After the battle, music plays only while a replay of it plays.
@@ -130,6 +143,27 @@ export class Music {
     gain.gain.setValueAtTime(0.25, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
     oscillator.connect(gain); gain.connect(this.context.destination);
     oscillator.start(now); oscillator.stop(now + 0.25);
+  }
+  // A Pokémon's cry: a short file under ./audio/cries/, downloaded and decoded once, then kept. It starts `delay`
+  // seconds from now at the music's volume, and it is not part of the tune. A cry that is still not ready a second
+  // after its moment is skipped, because it would no longer match the animation.
+  cry(url, delay = 0) {
+    if (!this.unlocked) return;
+    const due = this.context.currentTime + delay;
+    this.cries ||= new Map();
+    if (!this.cries.has(url)) {
+      this.cries.set(url, Promise.resolve().then(async () => {
+        const response = await this.fetcher(url, {credentials: 'omit', signal: AbortSignal.timeout(30000)});
+        if (!response.ok) throw new Error('Cry download failed');
+        return await this.context.decodeAudioData(await response.arrayBuffer());
+      }).catch(() => { this.cries.delete(url); return null; }));
+    }
+    this.cries.get(url).then(buffer => {
+      if (!buffer || !this.unlocked || this.context.currentTime > due + 1) return;
+      const source = this.context.createBufferSource();
+      source.buffer = buffer; source.connect(this.gain);
+      source.start(Math.max(due, this.context.currentTime));
+    });
   }
   toggle() {
     this.enabled = !this.enabled;

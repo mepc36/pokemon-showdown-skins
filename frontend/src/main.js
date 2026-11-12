@@ -5,7 +5,7 @@ import {ShowdownAuth} from './auth.mjs';
 import {availableChoices} from './protocol.mjs';
 import {startController, navigate} from './controller.mjs';
 import {PlayerRating} from './rating.mjs';
-import {Music, musicActive, replayMusicOver, timerToneDue} from './music.js';
+import {Music, cryFile, musicActive, replayMusicOver, timerToneDue} from './music.js';
 import {PossibleSets, possibleSets, narrowSets} from './possible-sets.mjs';
 import {escapeHtml, facts, typeBadges, moveList, rolePages, roleSplit, movePages, fitMoveDescription, itemIcon, regionalForm} from './info-components.mjs';
 import {demoLines, demoRequest} from './demo.mjs';
@@ -689,7 +689,9 @@ async function init() {
   rating = new PlayerRating(config.username);
   auth = new ShowdownAuth(localStorage.getItem('ps-mve-client-id') || config.clientId);
   try { ignoreButtons = new Set(JSON.parse(localStorage.getItem('ps-mve-ignored') || '[]')); } catch {}
-  const {Arena} = await import('./renderer.js');
+  const {Arena, onCry} = await import('./renderer.js');
+  // A Pokémon's cry sounds as it switches in, unless the page is in the background.
+  onCry((species, delay) => { if (!document.hidden) music.cry(cryFile(species), delay); });
   arena = new Arena($('arena'), $('hidden-log'), () => {
     renderRoster();
     refreshMoveHints();
