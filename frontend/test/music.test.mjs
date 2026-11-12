@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {Music, TRACKS, TIMER_TONES, timerToneDue, loopPosition, musicActive, replayMusicOver} from '../src/music.js';
+import {Music, cryFile, TRACKS, TIMER_TONES, timerToneDue, loopPosition, musicActive, replayMusicOver} from '../src/music.js';
 const flush = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };
 const deferred = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return {promise, resolve, reject}; };
 function setup({fetcher, suspended = false, resume, random} = {}) {
@@ -188,4 +188,45 @@ test('replay music lasts until the replay reaches its last step or the finished 
   assert.equal(replayMusicOver({ended: true}, false), false, 'a replay paused on a turn, or still playing, keeps its music');
   assert.equal(replayMusicOver({ended: true}, true), true, 'the last step ends it');
   assert.equal(replayMusicOver({ended: false}, false), true, 'a new search or battle ends it');
+});
+
+const cryPlayers = (context, sources) => { context.createBufferSource = () => { const source = {connect(target) { this.target = target; }, start(at) { this.startedAt = at; }}; sources.push(source); return source; }; };
+test('a cry plays once audio is unlocked, at its moment, and each file is downloaded once', async () => {
+  const urls = [];
+  const {music, context, sources} = setup({suspended: true, fetcher: async url => { urls.push(url); return {ok: true, arrayBuffer: async () => new ArrayBuffer(1)}; }});
+  cryPlayers(context, sources);
+  music.cry('./audio/cries/raichu.mp3', 0.8); await flush();
+  assert.equal(urls.length, 0, 'locked audio downloads and plays nothing');
+  music.unlock(); await flush();
+  context.currentTime = 10;
+  music.cry('./audio/cries/raichu.mp3', 0.8); await flush();
+  assert.deepEqual(urls, ['./audio/cries/raichu.mp3']);
+  assert.equal(sources.length, 1); assert.equal(sources[0].startedAt, 10.8); assert.equal(sources[0].loop, undefined);
+  assert.equal(sources[0].target, music.gain, 'a cry uses the music volume');
+  music.cry('./audio/cries/raichu.mp3', 0.8); await flush();
+  assert.equal(urls.length, 1, 'the second switch-in reuses the decoded cry'); assert.equal(sources.length, 2);
+});
+
+test('a cry that is ready more than a second late is skipped, and a failed download is tried again next time', async () => {
+  const slow = deferred(); let calls = 0;
+  const {music, context, sources} = setup({fetcher: async () => { calls++; return calls === 1 ? slow.promise : {ok: false}; }});
+  cryPlayers(context, sources);
+  music.unlock(); await flush();
+  music.cry('./audio/cries/landorus-therian.mp3', 0.3);
+  context.currentTime = 2;
+  slow.resolve({ok: true, arrayBuffer: async () => new ArrayBuffer(1)}); await flush();
+  assert.equal(sources.length, 0, 'too late for the animation');
+  music.cry('./audio/cries/landorus-therian.mp3', 0.3); await flush();
+  assert.equal(calls, 1); assert.equal(sources.length, 1); assert.equal(sources[0].startedAt, 2.3, 'the kept cry plays on the next switch-in');
+  music.cry('./audio/cries/unknown.mp3'); await flush();
+  music.cry('./audio/cries/unknown.mp3'); await flush();
+  assert.equal(calls, 3, 'a missing file is asked for again'); assert.equal(sources.length, 1);
+});
+
+test('a forme uses its base species cry unless Showdown has a cry for that forme', () => {
+  assert.equal(cryFile({baseSpecies: 'Raichu', formeid: ''}), './audio/cries/raichu.mp3');
+  assert.equal(cryFile({baseSpecies: 'Rotom', formeid: '-wash'}), './audio/cries/rotom.mp3');
+  assert.equal(cryFile({baseSpecies: 'Landorus', formeid: '-therian'}), './audio/cries/landorus-therian.mp3');
+  assert.equal(cryFile({baseSpecies: 'Necrozma', formeid: '-duskmane'}), './audio/cries/necrozma-duskmane.mp3');
+  assert.equal(cryFile({baseSpecies: 'Ho-Oh', formeid: ''}), './audio/cries/hooh.mp3');
 });

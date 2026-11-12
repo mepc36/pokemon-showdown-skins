@@ -417,15 +417,22 @@ try {
   silence.write('RIFF', 0); silence.writeUInt32LE(silence.length - 8, 4); silence.write('WAVEfmt ', 8); silence.writeUInt32LE(16, 16); silence.writeUInt16LE(1, 20); silence.writeUInt16LE(1, 22);
   silence.writeUInt32LE(8000, 24); silence.writeUInt32LE(8000, 28); silence.writeUInt16LE(1, 32); silence.writeUInt16LE(8, 34); silence.write('data', 36); silence.writeUInt32LE(silence.length - 44, 40);
   await cancel.route('**/audio/*.mp3', route => route.fulfill({status: 200, contentType: 'audio/wav', body: silence}));
+  // Cries get the same silent file. A tune is the looping sound; a sound that does not loop is a cry, recorded
+  // with the seconds between the switch-in and its start.
+  await cancel.route('**/audio/cries/*.mp3', route => route.fulfill({status: 200, contentType: 'audio/wav', body: silence}));
   await cancel.addInitScript(() => {
-    window.tuneLog = {playing: false, starts: []};
+    window.tuneLog = {playing: false, starts: []}; window.cryLog = [];
     const start = AudioBufferSourceNode.prototype.start, stop = AudioBufferSourceNode.prototype.stop;
-    AudioBufferSourceNode.prototype.start = function (when, offset) { window.tuneLog.playing = true; window.tuneLog.starts.push(offset || 0); return start.apply(this, arguments); };
+    AudioBufferSourceNode.prototype.start = function (when, offset) {
+      if (!this.loop) { window.cryLog.push(when - this.context.currentTime); return start.apply(this, arguments); }
+      window.tuneLog.playing = true; window.tuneLog.starts.push(offset || 0); return start.apply(this, arguments);
+    };
     AudioBufferSourceNode.prototype.stop = function () { window.tuneLog.playing = false; return stop.apply(this, arguments); };
   });
   const tune = () => cancel.evaluate(() => ({...window.tuneLog, starts: [...window.tuneLog.starts]}));
   // Every tune the page asks for, in order. A battle asks for one; the next battle must ask for a different one.
   const tunes = []; cancel.on('request', request => { const tune = request.url().match(/\/audio\/([a-z0-9-]+)\.mp3/); if (tune) tunes.push(tune[1]); });
+  const cries = []; cancel.on('request', request => { const cry = request.url().match(/\/audio\/cries\/([a-z0-9-]+)\.mp3/); if (cry) cries.push(cry[1]); });
   await cancel.goto(`${base}/test/cancel.html`); await cancel.waitForSelector('#switch-1');
   await cancel.keyboard.press('s'); await cancel.locator('#primary').click();
   await cancel.waitForFunction(() => document.querySelector('#arena-wrap').dataset.room.includes('12345'));
@@ -457,6 +464,11 @@ try {
   await cancel.setViewportSize({width: 1024, height: 540});
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|switch|p2a: Raichu|Raichu, L88, M|100/100\n|turn|17'}));
   await cancel.waitForFunction(() => document.querySelector('#opponent-4')?.textContent.includes('Raichu'));
+  if (engineName === 'chromium') {
+    await cancel.waitForFunction(() => window.cryLog.length > 0, null, {timeout: 15000});
+    const cryDelays = await cancel.evaluate(() => [...window.cryLog]);
+    check(cries.join() === 'raichu' && cryDelays.length === 1 && cryDelays[0] > 0 && cryDelays[0] < 2, `A Pokémon that switches in sounds its cry once, timed to its appearance: ${cries}, ${cryDelays.map(delay => delay.toFixed(2))} seconds after the switch`);
+  }
   await cancel.keyboard.press('f'); await cancel.locator('#opponent-4').focus(); await cancel.keyboard.press('i');
   // Roles that do not fit under the facts and stats continue on further pages; Down turns the page and wraps back to page 1.
   const rolePageCount = Number((await cancel.locator('#prev-info-page + span').count() ? await cancel.locator('#prev-info-page + span').innerText() : 'Page 1 / 1').match(/\/ (\d+)/)[1]);

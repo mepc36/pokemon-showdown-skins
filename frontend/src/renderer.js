@@ -1,6 +1,7 @@
 import {Battle, Pokemon} from '../vendor/pokemon-showdown/battle';
 import {ModifiableValue} from '../vendor/pokemon-showdown/battle-tooltips';
 import {BattleSound} from '../vendor/pokemon-showdown/battle-sound';
+import {PokemonSprite} from '../vendor/pokemon-showdown/battle-animations';
 import {Dex} from '../vendor/pokemon-showdown/battle-dex';
 import {isBattleEvent} from './protocol.mjs';
 import {opponentSlots, pokemonSpeed, ownPokemonStats, ownDisplayedHealth} from './information.mjs';
@@ -16,6 +17,23 @@ for (const [type, immunities] of Object.entries(uiData.typeImmunities)) {
 
 // Audio is controlled by the single looping Web Audio source in music.js.
 BattleSound.setMute(true);
+
+// A Pokémon's cry sounds as it switches in. Showdown's own audio stays muted, so the switch-in animations report
+// the species and the seconds until the Pokémon appears, and main.js has music.js play the cry. Nothing is
+// reported while the renderer skips animations (a seek, a snapshot).
+let cryHandler = () => {};
+export function onCry(handler) { cryHandler = handler; }
+const {animSummon, animDragIn} = PokemonSprite.prototype;
+PokemonSprite.prototype.animSummon = function (pokemon, slot, instant) {
+  // The Pokémon leaves its ball 300 ms into the animation, which itself waits for whatever is still playing.
+  if (this.scene.animating && !instant) cryHandler(pokemon.getSpecies(), (this.scene.timeOffset + 300 / this.scene.acceleration) / 1000);
+  return animSummon.call(this, pokemon, slot, instant);
+};
+PokemonSprite.prototype.animDragIn = function (pokemon, slot) {
+  // A Pokémon dragged in (Roar, Whirlwind) slides onto the field after 300 ms.
+  if (this.scene.animating) cryHandler(pokemon.getSpecies(), 0.3);
+  return animDragIn.call(this, pokemon, slot);
+};
 
 export class Arena {
   constructor(frame, log, onUpdate = () => {}) {
