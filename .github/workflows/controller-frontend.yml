@@ -14,7 +14,9 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: controller-frontend-${{ github.ref }}
+  # The event name keeps a pull request's run and the push to main apart. Without it, a pull request run that starts
+  # after its branch is already merged counts as a run on main and cancels the push run, and with it the deploy.
+  group: controller-frontend-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   build:
