@@ -52,6 +52,9 @@ export class Arena {
     this.room = room; this.finished = false;
     this.battle = new Battle({id: room, $frame: window.$(this.frame), $logFrame: window.$(this.log), paused: false, autoresize: false});
     this.battle.subscribe(() => this.scheduleUpdate());
+    // Showdown opens its own tooltip box when a Pokémon on the field is hovered, touched or long-pressed.
+    // This app shows that information on the R3 pages, so the field's tooltip listeners are removed.
+    this.battle.scene.tooltips.unlisten(this.frame);
     this.battle.messageShownTime = 700;
     this.resize();
   }

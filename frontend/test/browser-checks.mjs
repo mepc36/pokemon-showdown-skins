@@ -437,6 +437,12 @@ try {
   await cancel.keyboard.press('s'); await cancel.locator('#primary').click();
   await cancel.waitForFunction(() => document.querySelector('#arena-wrap').dataset.room.includes('12345'));
   await cancel.waitForFunction(() => document.querySelector('#test-commands').textContent.includes('/timer on'));
+  // Showdown's own tooltip box must never open over the field: not on hover, not on a touch, not on a long press.
+  const fieldSpot = await cancel.evaluate(() => { const box = document.querySelector('#arena .has-tooltip').getBoundingClientRect(); return {count: document.querySelectorAll('#arena .has-tooltip').length, x: box.left + box.width / 2, y: box.top + box.height / 2}; });
+  await cancel.mouse.move(fieldSpot.x, fieldSpot.y); await cancel.mouse.down(); await cancel.waitForTimeout(900); await cancel.mouse.up();
+  await cancel.evaluate(() => { const spot = document.querySelector('#arena .has-tooltip'); for (const type of ['touchstart', 'touchend']) spot.dispatchEvent(new Event(type, {bubbles: true, cancelable: true})); spot.dispatchEvent(new MouseEvent('mouseover', {bubbles: true})); });
+  check(fieldSpot.count > 0 && await cancel.locator('#tooltipwrapper .tooltip, .tooltipinner').count() === 0, 'Hovering, pressing or touching a Pokémon on the field opens no Showdown tooltip');
+  await cancel.mouse.move(5, 5);
   check((await cancel.locator('#test-commands').innerText()).match(/\/timer on/g).length === 1 && await cancel.locator('#timer-toggle').count() === 0, 'The timer starts itself once when the battle starts');
   check(await cancel.locator('dialog[open]').count() === 0, 'Find Random Battle closes the menu');
   await cancel.locator('#switch-2').focus(); await cancel.keyboard.press('i'); await cancel.keyboard.press('ArrowRight'); await cancel.keyboard.press('ArrowDown'); await cancel.keyboard.press('Escape');
@@ -522,6 +528,13 @@ try {
   // Tera has three looks: available (type tint), selected (deeper tint), used (gray, struck through, no dot).
   const teraLook = () => cancel.evaluate(() => { const el = document.querySelector('#tera'), css = getComputedStyle(el); return {used: el.dataset.used, pressed: el.getAttribute('aria-pressed'), image: css.backgroundImage, color: css.backgroundColor, strike: getComputedStyle(el.querySelector('.tera-type')).textDecorationLine, gem: getComputedStyle(el.querySelector('.tera-gem')).filter, dot: el.querySelectorAll('.tera-active').length}; });
   const teraFree = await teraLook();
+  // B switches a selected Tera off again when no choice has been sent, without sending anything or moving the cursor.
+  const undoCount = async () => ((await cancel.locator('#test-commands').innerText()).match(/\/undo/g) || []).length;
+  const undosBefore = await undoCount();
+  await cancel.locator('#move-2').focus(); await cancel.locator('#tera').click();
+  const teraOn = await teraLook();
+  await cancel.locator('#move-2').focus(); await pad(cancel, 0);
+  check(teraOn.pressed === 'true' && (await teraLook()).pressed === 'false' && await undoCount() === undosBefore && await cancel.evaluate(() => document.activeElement.id) === 'move-2', `B switches off a selected Tera with no choice sent, sends no undo and leaves the cursor: ${teraOn.pressed}`);
   check(teraFree.used === 'false' && teraFree.image.includes('gradient') && teraFree.strike === 'none' && teraFree.gem === 'none' && teraFree.dot === 0, `Tera available: type tint, no strike, no dot: ${JSON.stringify(teraFree)}`);
   await cancel.evaluate(async () => {
     const {demoRequest} = await import('/src/demo.mjs');

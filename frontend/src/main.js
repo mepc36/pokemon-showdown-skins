@@ -731,10 +731,12 @@ async function init() {
       navigate(action); return;
     }
     if (action === 'cancel') {
-      // B on the battle screen only undoes a pending choice. On the controller check it only shows its number.
+      // B on the battle screen undoes: a pending choice (and its Tera), or a Tera that is switched on with no
+      // choice sent yet. On the controller check it only shows its number.
       if (modal.open && modal.dataset.view === 'chat') showMenu();
       else if (modal.open && modal.dataset.view === 'diagnostics') return;
       else if (modal.open) closeModal();
+      else if (tera && !state.pending) { tera = false; render(); }
       else $('undo')?.click();
       return;
     }
