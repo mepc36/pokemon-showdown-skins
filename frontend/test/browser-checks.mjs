@@ -154,7 +154,7 @@ try {
     await page.screenshot({path: `test-results/${engineName}-battle-${viewport.width}-${viewport.height}.png`});
     check(!(await fit(page)).length, `Battle and header controls fit ${viewport.width}×${viewport.height}: ${await fit(page)}`);
     await page.locator('#switch-1').focus(); await pad(page, 8);
-    check(await page.locator('dialog[open]').count() === 1 && await page.locator('#modal-title').innerText() === 'Menu' && await page.locator('#modal #chat, #modal #rating, #modal #open-replay, #modal #setup, #modal #diagnostics, #modal #source').count() === 6 && await page.locator('#modal #primary, #modal #forfeit').count() === 0 && (await page.locator('.menu-grid button').allInnerTexts()).join(',') === 'Chat,Rating,Open replay,Setup,Controller check,Source', 'Select opens a menu modal with Chat, Rating, Open replay, Setup, Controller check, Source and no battle buttons');
+    check(await page.locator('dialog[open]').count() === 1 && await page.locator('#modal-title').innerText() === 'Menu' && await page.locator('#modal #chat, #modal #rating, #modal #setup, #modal #diagnostics, #modal #source').count() === 5 && await page.locator('#modal #open-replay').count() === 0 && await page.locator('#modal #primary, #modal #forfeit').count() === 0 && (await page.locator('.menu-grid button').allInnerTexts()).join(',') === 'Chat,Rating,Setup,Controller check,Source' && await page.evaluate(() => document.querySelector('#setup').getBoundingClientRect().left === document.querySelector('#chat').getBoundingClientRect().left && document.querySelector('#setup').getBoundingClientRect().top > document.querySelector('#chat').getBoundingClientRect().top), 'Select opens a menu modal with Chat, Rating, then Setup, Controller check, Source on the second row, and no battle buttons or Open replay');
     check(await page.locator('#source').evaluate(el => el.tagName) === 'BUTTON' && await page.locator('a#source').count() === 0, 'Source is a button, not a hyperlink');
     await page.locator('#setup').focus(); await pad(page, 12);
     check(await page.evaluate(() => document.activeElement.id) === 'chat', 'Up from the second menu row lands on the button above, not the close button');
@@ -604,7 +604,7 @@ try {
   await cancel.waitForSelector('.replay-row #replay');
   check(await cancel.locator('#tera').isVisible() && await cancel.locator('#tera').isDisabled(), 'Tera keeps its move-row cell after the battle, disabled');
   if (engineName === 'chromium') check(duringBattle.playing && duringBattle.starts[0] === 0 && !(await tune()).playing, `Music plays during the battle from its beginning and stops when the battle ends: ${JSON.stringify(duringBattle)}`);
-  check(await cancel.locator('.replay-row #replay, .replay-row #first-turn, .replay-row #prev-turn, .replay-row #play, .replay-row #next-turn, .replay-row #end-turn').count() === 6 && await cancel.locator('#upload-replay, #download-replay, #rematch, #main-menu').count() === 0 && await cancel.locator('#replay').innerText() === '🔁 Replay battle', 'After the battle a replay row holds Replay battle, First turn, Prev turn, Play, Next turn and Last turn');
+  check(await cancel.locator('.replay-row #replay, .replay-row #first-turn, .replay-row #prev-turn, .replay-row #play, .replay-row #next-turn, .replay-row #end-turn, .replay-row #open-replay').count() === 7 && await cancel.locator('.replay-row > button').last().innerText() === '🔗 Open replay' && await cancel.locator('#upload-replay, #download-replay, #rematch, #main-menu').count() === 0 && await cancel.locator('#replay').innerText() === '🔁 Replay battle', 'After the battle a replay row holds Replay battle, First turn, Prev turn, Play, Next turn, Last turn and, at the very end, Open replay');
   check(await cancel.evaluate(() => {
     const replay = document.querySelector('.replay-row').getBoundingClientRect(), moves = document.querySelector('#choices .moves').getBoundingClientRect();
     const own = [...document.querySelectorAll('#choices .moves > button[id^="move-"]')];
@@ -631,15 +631,18 @@ try {
   check(foeSlots === 4 && fieldFoe.height === fieldEnded.height && fieldOwn.height === fieldEnded.height, `After the battle flipping teams shows the foe's four move slots and keeps the field size: ${fieldEnded.height}, ${fieldFoe.height}, ${fieldOwn.height}`);
   // Palossand in slot 2 is the active Pokémon by now, so pick a slot that is on the bench.
   await cancel.locator('#roster button[data-active="false"]').first().focus(); await cancel.waitForTimeout(100);
-  check(await cancel.locator('.move-preview').count() === 4 && await cancel.locator('.replay-row > button').count() === 6, 'After the battle the cursor on a benched Pokémon previews its moves below the replay row');
-  await cancel.keyboard.press('h');
-  check(await cancel.locator('#open-replay').isDisabled(), 'Open replay in the menu is disabled until the upload finishes');
-  await cancel.keyboard.press('Escape');
+  check(await cancel.locator('.move-preview').count() === 4 && await cancel.locator('.replay-row > button').count() === 7, 'After the battle the cursor on a benched Pokémon previews its moves below the replay row');
+  const replayCells = () => cancel.evaluate(() => [...document.querySelectorAll('.replay-row > button')].map(button => Math.round(button.getBoundingClientRect().width)).join());
+  const cellsBefore = await replayCells();
+  check(await cancel.locator('.replay-row #open-replay').isDisabled(), 'Open replay in the replay row is disabled until the upload finishes');
   await cancel.evaluate(() => window.testSocket.onmessage({data: '|popup|html <p>Your replay has been uploaded! It\'s available at:</p><p> <a href="https://replay.pokemonshowdown.com/gen9randombattle-2711033563">https://replay.pokemonshowdown.com/gen9randombattle-2711033563</a>'}));
   await cancel.waitForTimeout(100);
   check(await cancel.locator('.arena-top').isHidden() && !(await cancel.locator('#notice').innerText()).includes('replay'), 'The upload popup never shows as a banner');
+  check(await cancel.locator('.replay-row #open-replay').isEnabled() && await replayCells() === cellsBefore, `Open replay enables once the server reports the upload, and no replay button changes width: ${cellsBefore}`);
+  await cancel.locator('#end-turn').focus(); await cancel.keyboard.press('ArrowRight');
+  check(await cancel.evaluate(() => document.activeElement.id) === 'open-replay', 'Right from Last turn lands on Open replay');
   await cancel.keyboard.press('h');
-  check(await cancel.locator('#open-replay').isEnabled(), 'Open replay enables once the server reports the upload');
+  check(await cancel.locator('#modal #open-replay').count() === 0, 'The Select menu has no Open replay button after the battle either');
   await cancel.keyboard.press('Escape');
   await cancel.locator('#first-turn').click();
   const earliestTurn = async () => cancel.evaluate(() => ({shown: document.querySelector('#arena .turn')?.innerText, first: document.querySelector('#hidden-log h2')?.textContent, play: !!document.querySelector('#arena .playbutton')}));
@@ -682,7 +685,7 @@ try {
   check(finished.own[0] === 'Grumpig::51' && finished.own[1] === 'Palossand:A:36' && finished.foe[2] === 'Rotom-Wash:F:0' && finished.foe[4] === 'Ninetales:A:100', `At the last turn both rosters show the final result again: ${finished.own} / ${finished.foe}`);
   await cancel.locator('#next-turn').click(); await cancel.locator('#end-turn').click();
   check(await cancel.locator('.replay-row #first-turn').count() === 1, 'Next turn and Last turn seek without error');
-  check((await cancel.locator('.replay-row > button').allInnerTexts()).every((t, i) => t.trim().startsWith(['🔁', '⏮️', '◀️', '⏯️', '▶️', '⏭️'][i])), 'Replay controls lead with their emojis');
+  check((await cancel.locator('.replay-row > button').allInnerTexts()).every((t, i) => t.trim().startsWith(['🔁', '⏮️', '◀️', '⏯️', '▶️', '⏭️', '🔗'][i])), 'Replay controls lead with their emojis');
   // Leave the finished battle with the cursor on a benched Pokémon (slot 3, also benched in the next battle), which previews it.
   // The next battle must not start on that slot or its preview.
   await cancel.locator('#switch-3').focus();

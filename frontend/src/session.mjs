@@ -168,7 +168,7 @@ export class ShowdownSession {
           this.state.ended = true; this.state.pending = false; this.state.request = null;
           this.state.recovering = false; this.state.notice = type === 'win' ? `${value} won the battle.` : 'The battle ended in a tie.';
           this.storage.removeItem('ps-mve-room');
-          // Save the replay right away; the menu's Open replay button enables once the upload finishes.
+          // Save the replay right away; the replay row's Open replay button enables once the upload finishes.
           this.state.replayUrl = ''; this.roomCommand('/savereplay');
         } else if (type === 'noinit' || type === 'deinit') {
           this.state.notice = 'This battle is no longer available on the server.';

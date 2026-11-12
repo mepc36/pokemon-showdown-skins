@@ -101,13 +101,12 @@ new MutationObserver(refreshChat).observe($('hidden-log'), {childList: true, sub
 // Menu: Select (or H) opens the secondary controls in a modal. There is no header row.
 function showMenu() {
   const reopen = modal.open && modal.dataset.view === 'menu';
-  // Two rows of three so the d-pad moves between rows instead of jumping to the close button.
-  showModal('Menu', `<div class="menu-grid">${btn('chat', 'Chat', 'menu-1')}${btn('rating', 'Rating', 'menu-1')}${btn('open-replay', 'Open replay', 'menu-1', !state.replayUrl)}
+  // Two rows so the d-pad moves between rows instead of jumping to the close button.
+  showModal('Menu', `<div class="menu-grid">${btn('chat', 'Chat', 'menu-1')}${btn('rating', 'Rating', 'menu-1')}
     ${btn('setup', 'Setup', 'menu-2')}${btn('diagnostics', 'Controller check', 'menu-2')}${btn('source', 'Source', 'menu-2')}</div>`, 'menu');
   $('chat').onclick = () => { chatTurn = null; showChat(); };
   $('rating').onclick = () => showRating();
   $('setup').onclick = setup; $('diagnostics').onclick = diagnostics;
-  $('open-replay').onclick = () => { if (state.replayUrl) window.open(state.replayUrl, '_blank', 'noopener'); };
   $('source').onclick = () => { const link = document.createElement('a'); link.href = './source.zip'; link.download = ''; link.click(); };
   if (!reopen) $('chat').focus({preventScroll: true});
 }
@@ -616,7 +615,7 @@ function render() {
   $('action-slots').append($('tera'), $('undo'));
   // After the battle the replay controls get their own row above the move slots. The panel grows once,
   // when the battle ends; both team sides keep their move slots, so flipping teams never resizes it.
-  const endControls = !fixture && state.ended ? `<div class="replay-row" role="group" aria-label="Replay">${[btn('replay', '🔁 Replay battle', 'replay'), btn('first-turn', '⏮️ First turn', 'replay'), btn('prev-turn', '◀️ Prev turn', 'replay'), btn('play', '⏯️ Play', 'replay'), btn('next-turn', '▶️ Next turn', 'replay'), btn('end-turn', '⏭️ Last turn', 'replay')].map(html => html.replace('<button ', '<button class="end-control" ')).join('')}</div>` : '';
+  const endControls = !fixture && state.ended ? `<div class="replay-row" role="group" aria-label="Replay">${[btn('replay', '🔁 Replay battle', 'replay'), btn('first-turn', '⏮️ First turn', 'replay'), btn('prev-turn', '◀️ Prev turn', 'replay'), btn('play', '⏯️ Play', 'replay'), btn('next-turn', '▶️ Next turn', 'replay'), btn('end-turn', '⏭️ Last turn', 'replay'), btn('open-replay', '🔗 Open replay', 'replay', !state.replayUrl)].map(html => html.replace('<button ', '<button class="end-control" ')).join('')}</div>` : '';
   // After the battle the own moves stay as locked slots: the cursor can land on them, nothing can be chosen.
   const reviewOnly = !fixture && state.ended;
   $('choices').innerHTML = `${endControls}<div class="moves" role="group" aria-label="Moves">${choices.moves.map(move => {
@@ -639,6 +638,8 @@ function render() {
     $('play').onclick = () => { arena.play(); if (!replayMusic && !arena.atEnd) { replayMusic = true; music.rewind(); } updateMusic(); };
     $('next-turn').onclick = () => arena.seekTurn(arena.turn + 1);
     $('end-turn').onclick = () => arena.seekTurn(Infinity);
+    // Disabled until the saved replay's upload finishes and the server reports its link.
+    $('open-replay').onclick = () => { if (state.replayUrl) window.open(state.replayUrl, '_blank', 'noopener'); };
   }
   $('tera').onclick = () => { tera = !tera; render(); };
   $('undo').onclick = () => safe(() => {
