@@ -69,7 +69,7 @@ try {
     const rosterText = await page.locator('#roster button, #opponent-roster button').allInnerTexts();
     check(rosterText.length === 12 && rosterText.every(text => !/%|\d+\/\d+|Active/.test(text)), `Roster entries show no HP numbers and no Active text: ${rosterText.join(' | ')}`);
     check(await page.locator('#switch-1[data-active=true]').count() === 1 && await page.locator('#roster [data-active=true]').count() === 1, 'The active Pokémon is marked by attribute, not text');
-    check(await page.evaluate(() => ['#switch-1', '#opponent-1'].every(sel => getComputedStyle(document.querySelector(sel)).boxShadow.includes('rgb(29, 78, 137)') && getComputedStyle(document.querySelector(sel)).boxShadow.includes('3px'))), 'Active Pokémon on both rosters carry the thick timer-blue border');
+    check(await page.evaluate(() => ['#switch-1', '#opponent-1'].every(sel => { const css = getComputedStyle(document.querySelector(sel)); return css.backgroundColor === 'rgb(201, 237, 214)' && css.backgroundImage === 'none' && css.boxShadow === 'none'; }) && ['#switch-2', '#opponent-2'].every(sel => getComputedStyle(document.querySelector(sel)).backgroundColor !== 'rgb(201, 237, 214)')), 'Active Pokémon on both rosters are shaded green, with no blue border; bench Pokémon are not');
     await page.locator('#switch-3').focus(); await stick(page, 1);
     check(await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-3', 'The right stick no longer flips the team row');
     await pad(page, 10);
@@ -438,7 +438,7 @@ try {
   check((await cancel.locator('#test-commands').innerText()).includes('/choose move 1|1'), 'Battle choices still submit immediately');
   await cancel.keyboard.press('ArrowLeft'); await cancel.locator('#move-2').click();
   check(await cancel.evaluate(() => { const el = document.querySelector('#move-2'); return !el.disabled && el.dataset.locked === 'true' && document.activeElement === el; }) && !(await cancel.locator('#test-commands').innerText()).includes('/choose move 2'), 'Moves stay focusable for review while a choice is pending but cannot be chosen');
-  check(await cancel.evaluate(() => document.querySelector('#choices').dataset.pending === 'true' && getComputedStyle(document.querySelector('#switch-1')).backgroundColor === 'rgb(211, 216, 221)' && getComputedStyle(document.querySelector('#move-1')).backgroundColor === 'rgb(211, 216, 221)'), 'A sent choice grays the move row and the active Pokémon');
+  check(await cancel.evaluate(() => document.querySelector('#choices').dataset.pending === 'true' && getComputedStyle(document.querySelector('#switch-1')).backgroundColor === 'rgb(201, 237, 214)' && getComputedStyle(document.querySelector('#move-1')).backgroundColor === 'rgb(211, 216, 221)'), 'A sent choice grays the move row; the active Pokémon keeps its green shade');
   await cancel.keyboard.press('f'); await cancel.locator('#opponent-2').focus(); await cancel.keyboard.press('Escape');
   check((await cancel.locator('#test-commands').innerText()).includes('/undo |1') && await cancel.evaluate(() => document.querySelector('.team-row[data-side="own"]').hidden && !document.querySelector('.team-row[data-side="opponent"]').hidden && document.activeElement.id === 'opponent-2'), 'B / Escape from the foe roster invokes Showdown undo and leaves the cursor and the team row where they are');
   await cancel.keyboard.press('f');

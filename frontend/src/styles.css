@@ -398,3 +398,6 @@ dialog[data-view=chat] .chat-turn{flex:1;min-height:0;overflow:auto}
 .moves #tera[data-used="true"]{background:#e3e6ea;border-color:#b9c0c8;color:#7b8794;box-shadow:none;font-weight:500}
 .moves #tera[data-used="true"] .tera-type{text-decoration:line-through}
 .moves #tera[data-used="true"] .tera-gem{filter:grayscale(1);opacity:.55}
+
+/* v1.14.0: the active Pokémon on both rosters is shaded green instead of carrying the thick blue inner border. The shade stays while a choice is pending. */
+.team button[data-active=true],.team button[data-cue]:not([data-cue=""])[data-active=true],#choices[data-pending="true"] .team button[data-active=true]{background:#c9edd6;border-color:#8fcfa8;box-shadow:none}
