@@ -401,6 +401,5 @@ dialog[data-view=chat] .chat-turn{flex:1;min-height:0;overflow:auto}
 
 /* v1.14.0: the active Pokémon on both rosters is shaded green instead of carrying the thick blue inner border. The shade stays while a choice is pending. */
 .team button[data-active=true],.team button[data-cue]:not([data-cue=""])[data-active=true],#choices[data-pending="true"] .team button[data-active=true]{background:#c9edd6;border-color:#8fcfa8;box-shadow:none}
-/* v1.16.0: Open replay is the seventh button of the replay row. The Select menu keeps its other five buttons where they were. */
+/* v1.16.0: Open replay is the seventh button of the replay row. */
 .replay-row{grid-template-columns:repeat(7,minmax(0,1fr))}
-.menu-grid #setup{grid-column-start:1}
