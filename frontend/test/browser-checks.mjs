@@ -528,6 +528,13 @@ try {
   // Tera has three looks: available (type tint), selected (deeper tint), used (gray, struck through, no dot).
   const teraLook = () => cancel.evaluate(() => { const el = document.querySelector('#tera'), css = getComputedStyle(el); return {used: el.dataset.used, pressed: el.getAttribute('aria-pressed'), image: css.backgroundImage, color: css.backgroundColor, strike: getComputedStyle(el.querySelector('.tera-type')).textDecorationLine, gem: getComputedStyle(el.querySelector('.tera-gem')).filter, dot: el.querySelectorAll('.tera-active').length}; });
   const teraFree = await teraLook();
+  // B switches a selected Tera off again when no choice has been sent, without sending anything or moving the cursor.
+  const undoCount = async () => ((await cancel.locator('#test-commands').innerText()).match(/\/undo/g) || []).length;
+  const undosBefore = await undoCount();
+  await cancel.locator('#move-2').focus(); await cancel.locator('#tera').click();
+  const teraOn = await teraLook();
+  await cancel.locator('#move-2').focus(); await pad(cancel, 0);
+  check(teraOn.pressed === 'true' && (await teraLook()).pressed === 'false' && await undoCount() === undosBefore && await cancel.evaluate(() => document.activeElement.id) === 'move-2', `B switches off a selected Tera with no choice sent, sends no undo and leaves the cursor: ${teraOn.pressed}`);
   check(teraFree.used === 'false' && teraFree.image.includes('gradient') && teraFree.strike === 'none' && teraFree.gem === 'none' && teraFree.dot === 0, `Tera available: type tint, no strike, no dot: ${JSON.stringify(teraFree)}`);
   await cancel.evaluate(async () => {
     const {demoRequest} = await import('/src/demo.mjs');
