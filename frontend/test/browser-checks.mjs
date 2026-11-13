@@ -72,10 +72,12 @@ try {
     check(await page.evaluate(() => ['#switch-1', '#opponent-1'].every(sel => { const css = getComputedStyle(document.querySelector(sel)); return css.backgroundColor === 'rgb(201, 237, 214)' && css.backgroundImage === 'none' && css.boxShadow === 'none'; }) && ['#switch-2', '#opponent-2'].every(sel => getComputedStyle(document.querySelector(sel)).backgroundColor !== 'rgb(201, 237, 214)')), 'Active Pokémon on both rosters are shaded green, with no blue border; bench Pokémon are not');
     await page.locator('#switch-3').focus(); await stick(page, 1);
     check(await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-3', 'The right stick no longer flips the team row');
-    await pad(page, 10);
+    await pad(page, 5);
     const bumperOpened = await page.evaluate(() => document.querySelector('#modal').open && document.querySelector('#modal').dataset.view === 'chat');
-    await pad(page, 10);
-    check(bumperOpened && await page.locator('dialog[open]').count() === 0 && await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-3', 'Button 10 (bumper) opens the chat from the battle screen and closes it again, back on the same button');
+    await pad(page, 5);
+    check(bumperOpened && await page.locator('dialog[open]').count() === 0 && await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-3', 'Button 5 (top right bumper) opens the chat from the battle screen and closes it again, back on the same button');
+    for (const other of [4, 6, 7, 10]) await pad(page, other);
+    check(await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'switch-3', 'Buttons 4, 6, 7 and 10 do nothing on the battle screen');
     await pad(page, 3);
     check(await page.locator('#opponent-roster').isVisible() && !await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id === 'opponent-1' && document.activeElement.dataset.active === 'true') && await page.locator('.move-preview').count() === 4, 'X flips to the opponent row and focuses their active Pokémon, with its moves in the move row');
     const foeFirstMove = await page.locator('#preview-move-1 strong').innerText();
@@ -194,7 +196,7 @@ try {
     const fieldBefore = await page.locator('#arena').evaluate(el => el.getBoundingClientRect().width);
     await page.keyboard.press('h');
     check(await page.evaluate(() => document.activeElement.id) === 'chat' && await page.locator('.menu-grid button').first().evaluate(el => el.id) === 'chat', 'The menu opens with Chat as the first button and focused');
-    await pad(page, 10);
+    await pad(page, 5);
     check(await page.locator('#modal-title').innerText() === 'Menu', 'A bumper does nothing while the menu is open');
     await pad(page, 1);
     const chatTitle = async () => page.locator('#modal-title').innerText();
@@ -250,7 +252,7 @@ try {
     check((await page.locator('#modal-title').innerText()).includes('Grumpig') && await page.locator('[data-info-tab]').count() === 0, 'Down on an own Pokémon has no pages to reveal');
     await pad(page, 15);
     check((await page.locator('#modal-title').innerText()).includes('Palossand'), 'D-pad right moves to the next Pokémon, matching the roster');
-    await pad(page, 10); await page.keyboard.press('f'); await pad(page, 3); await pad(page, 2);
+    await pad(page, 5); await page.keyboard.press('f'); await pad(page, 3); await pad(page, 2);
     check((await page.locator('#modal-title').innerText()).includes('Palossand') && await page.locator('#roster').isVisible(), 'A bumper, F, X and Y inside R3 do nothing');
     await pad(page, 14);
     check((await page.locator('#modal-title').innerText()).includes('Grumpig'), 'D-pad left moves to the previous Pokémon');

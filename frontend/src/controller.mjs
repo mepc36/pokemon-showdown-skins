@@ -1,6 +1,6 @@
 // Y (2) puts the cursor on the own active Pokémon's first move. X (3) puts it on the opponent's active Pokémon.
-// Select (8) opens the menu modal. Start (9) opens the battle menu. Button 10 (L3 and, on iPad Chrome, every bumper) opens and closes the chat.
-export const BUTTONS = {0: 'cancel', 1: 'confirm', 2: 'home', 3: 'foe', 8: 'tools', 9: 'battle', 10: 'chat', 11: 'info', 12: 'up', 13: 'down', 14: 'left', 15: 'right'};
+// Select (8) opens the menu modal. Start (9) opens the battle menu. Button 5 (the top right bumper) opens and closes the chat. Buttons 4, 6, 7 and 10 do nothing. iPad Chrome has also reported every bumper as button 10, depending on how iPadOS sees the controller; then no bumper opens the chat.
+export const BUTTONS = {0: 'cancel', 1: 'confirm', 2: 'home', 3: 'foe', 5: 'chat', 8: 'tools', 9: 'battle', 11: 'info', 12: 'up', 13: 'down', 14: 'left', 15: 'right'};
 export const risingEdges = (current, previous) => current.flatMap((pressed, index) => pressed && !previous[index] ? [index] : []);
 
 export function startController({action, diagnostic, ignored = () => new Set()}) {
