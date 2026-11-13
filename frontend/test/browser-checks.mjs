@@ -76,6 +76,12 @@ try {
     const bumperOpened = await page.evaluate(() => document.querySelector('#modal').open && document.querySelector('#modal').dataset.view === 'chat');
     await pad(page, 10);
     check(bumperOpened && await page.locator('dialog[open]').count() === 0 && await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-3', 'Button 10 (bumper) opens the chat from the battle screen and closes it again, back on the same button');
+    for (const bumper of [4, 5, 6, 7]) {
+      await pad(page, bumper);
+      const bumperOpened = await page.evaluate(() => document.querySelector('#modal').open && document.querySelector('#modal').dataset.view === 'chat');
+      await pad(page, bumper);
+      check(bumperOpened && await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'switch-3', `Button ${bumper} (bumper) opens the chat and closes it again`);
+    }
     await pad(page, 3);
     check(await page.locator('#opponent-roster').isVisible() && !await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id === 'opponent-1' && document.activeElement.dataset.active === 'true') && await page.locator('.move-preview').count() === 4, 'X flips to the opponent row and focuses their active Pokémon, with its moves in the move row');
     const foeFirstMove = await page.locator('#preview-move-1 strong').innerText();
