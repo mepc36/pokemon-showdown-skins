@@ -73,7 +73,9 @@ try {
     await page.locator('#switch-3').focus(); await stick(page, 1);
     check(await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-3', 'The right stick no longer flips the team row');
     await pad(page, 10);
-    check(await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-3', 'Button 10 (bumper) does nothing on the battle screen');
+    const bumperOpened = await page.evaluate(() => document.querySelector('#modal').open && document.querySelector('#modal').dataset.view === 'chat');
+    await pad(page, 10);
+    check(bumperOpened && await page.locator('dialog[open]').count() === 0 && await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-3', 'Button 10 (bumper) opens the chat from the battle screen and closes it again, back on the same button');
     await pad(page, 3);
     check(await page.locator('#opponent-roster').isVisible() && !await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id === 'opponent-1' && document.activeElement.dataset.active === 'true') && await page.locator('.move-preview').count() === 4, 'X flips to the opponent row and focuses their active Pokémon, with its moves in the move row');
     const foeFirstMove = await page.locator('#preview-move-1 strong').innerText();
@@ -154,12 +156,12 @@ try {
     await page.screenshot({path: `test-results/${engineName}-battle-${viewport.width}-${viewport.height}.png`});
     check(!(await fit(page)).length, `Battle and header controls fit ${viewport.width}×${viewport.height}: ${await fit(page)}`);
     await page.locator('#switch-1').focus(); await pad(page, 8);
-    check(await page.locator('dialog[open]').count() === 1 && await page.locator('#modal-title').innerText() === 'Menu' && await page.locator('#modal #chat, #modal #rating, #modal #setup, #modal #diagnostics, #modal #source').count() === 5 && await page.locator('#modal #open-replay').count() === 0 && await page.locator('#modal #primary, #modal #forfeit').count() === 0 && (await page.locator('.menu-grid button').allInnerTexts()).join(',') === 'Chat,Rating,Setup,Controller check,Source' && await page.evaluate(() => { const box = id => document.querySelector(id).getBoundingClientRect(); return ['#rating', '#setup'].every(id => box(id).top === box('#chat').top) && box('#rating').left < box('#setup').left && box('#diagnostics').top > box('#chat').top && box('#diagnostics').left === box('#chat').left && box('#source').top === box('#diagnostics').top && box('#source').left === box('#rating').left; }), 'Select opens a menu modal with Chat, Rating, Setup on the first row and Controller check, Source on the second, and no battle buttons or Open replay');
+    check(await page.locator('dialog[open]').count() === 1 && await page.locator('#modal-title').innerText() === 'Menu' && await page.locator('#modal #rating, #modal #setup, #modal #diagnostics, #modal #source').count() === 4 && await page.locator('#modal #chat').count() === 0 && await page.locator('#modal #open-replay').count() === 0 && await page.locator('#modal #primary, #modal #forfeit').count() === 0 && (await page.locator('.menu-grid button').allInnerTexts()).join(',') === 'Rating,Setup,Controller check,Source' && await page.evaluate(() => { const box = id => document.querySelector(id).getBoundingClientRect(); return ['#setup', '#diagnostics'].every(id => box(id).top === box('#rating').top) && box('#rating').left < box('#setup').left && box('#setup').left < box('#diagnostics').left && box('#source').top > box('#rating').top && box('#source').left === box('#rating').left; }), 'Select opens a menu modal with Rating, Setup, Controller check on the first row and Source on the second, and no Chat, battle buttons or Open replay');
     check(await page.locator('#source').evaluate(el => el.tagName) === 'BUTTON' && await page.locator('a#source').count() === 0, 'Source is a button, not a hyperlink');
-    await page.locator('#diagnostics').focus(); await pad(page, 12);
-    check(await page.evaluate(() => document.activeElement.id) === 'chat', 'Up from the second menu row lands on the button above, not the close button');
+    await page.locator('#source').focus(); await pad(page, 12);
+    check(await page.evaluate(() => document.activeElement.id) === 'rating', 'Up from the second menu row lands on the button above, not the close button');
     await pad(page, 13);
-    check(await page.evaluate(() => document.activeElement.id) === 'diagnostics', 'Down returns to the second row');
+    check(await page.evaluate(() => document.activeElement.id) === 'source', 'Down returns to the second row');
     check(await page.locator('#modal #replay').count() === 0, 'Replay is not in the menu');
     await pad(page, 0); await pad(page, 9);
     check(await page.locator('dialog[open]').count() === 1 && await page.locator('#modal-title').innerText() === 'Battle' && (await page.locator('.menu-grid button').allInnerTexts()).join(',') === 'Connect to Showdown,Forfeit…' && await page.evaluate(() => document.activeElement.id) === 'primary', 'Start opens the battle menu with the primary button and Forfeit, primary focused');
@@ -191,8 +193,10 @@ try {
     check(await page.locator('dialog[open]').count() === 0 && await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'move-1', 'Y flips back to the own side on the active Pokémon\'s first move; T does nothing');
     const fieldBefore = await page.locator('#arena').evaluate(el => el.getBoundingClientRect().width);
     await page.keyboard.press('h');
-    check(await page.evaluate(() => document.activeElement.id) === 'chat' && await page.locator('.menu-grid button').first().evaluate(el => el.id) === 'chat', 'The menu opens with Chat as the first button and focused');
-    await page.locator('#chat').click();
+    check(await page.evaluate(() => document.activeElement.id) === 'rating' && await page.locator('.menu-grid button').first().evaluate(el => el.id) === 'rating', 'The menu opens with Rating as the first button and focused');
+    await pad(page, 10);
+    check(await page.locator('#modal-title').innerText() === 'Menu', 'A bumper does nothing while the menu is open');
+    await pad(page, 0); await pad(page, 10);
     const chatTitle = async () => page.locator('#modal-title').innerText();
     const turnCount = await page.locator('#hidden-log .inner > h2').count();
     // The fixture's last heading (Turn 16) has no lines under it, so the chat opens on the turn before it.
@@ -214,8 +218,7 @@ try {
     const sizeLatest = await chatBox(); await pad(page, 12); const sizePrevious = await chatBox(); await pad(page, 13);
     check(sizeLatest === sizePrevious && await page.evaluate(() => document.querySelector('#modal').getBoundingClientRect().height >= Math.min(650, innerHeight - 24) - 1), `Chat modal keeps one size across turns: ${sizeLatest} vs ${sizePrevious}`);
     await pad(page, 0);
-    check(await page.locator('dialog[open]').count() === 1 && await chatTitle() === 'Menu' && await page.evaluate(() => document.activeElement.id) === 'chat', 'B in the chat returns to the menu with Chat focused');
-    await page.keyboard.press('Escape');
+    check(await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'move-1', 'B in the chat closes it, back on the battle screen');
     await page.locator('#switch-1').focus(); await pad(page, 11);
     await page.waitForSelector('#info-content');
     check(await page.locator('[data-info-tab], #prev-info-page, .inspection-note').count() === 0, 'Own Pokémon have one flat page: no Overview tab, no paging, no footnote');
@@ -609,7 +612,7 @@ try {
   check(await cancel.locator('#modal-title').innerText() === openedOn && await cancel.evaluate(() => document.querySelector('#modal').dataset.view) === 'chat', `A new turn arriving keeps the chat on ${openedOn}`);
   await pad(cancel, 13);
   check(await cancel.locator('#modal-title').innerText() === 'Turn 22', 'Down reaches the new turn');
-  await cancel.keyboard.press('Escape'); await cancel.keyboard.press('Escape');
+  await cancel.keyboard.press('Escape');
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|switch|p2a: Ninetales|Ninetales-Alola, L78|100/100\n|turn|19'}));
   await cancel.waitForFunction(() => [...document.querySelectorAll('#opponent-roster .mon-name')].some(el => el.textContent === 'Ninetales'));
   check(await cancel.locator('#opponent-roster .form-tag').innerText() === 'ALOLA' && (await cancel.locator('#matchup-foe .matchup-names .form-tag').count()) === 1, 'Regional forms show the species with a region tag on the roster and the side panel');

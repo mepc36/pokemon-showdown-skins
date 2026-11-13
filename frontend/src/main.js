@@ -101,14 +101,13 @@ new MutationObserver(refreshChat).observe($('hidden-log'), {childList: true, sub
 // Menu: Select (or H) opens the secondary controls in a modal. There is no header row.
 function showMenu() {
   const reopen = modal.open && modal.dataset.view === 'menu';
-  // Three buttons on the first row and two on the second, so the d-pad moves between rows instead of jumping to the close button.
-  showModal('Menu', `<div class="menu-grid">${btn('chat', 'Chat', 'menu-1')}${btn('rating', 'Rating', 'menu-1')}${btn('setup', 'Setup', 'menu-1')}
-    ${btn('diagnostics', 'Controller check', 'menu-2')}${btn('source', 'Source', 'menu-2')}</div>`, 'menu');
-  $('chat').onclick = () => { chatTurn = null; showChat(); };
+  // Three buttons on the first row and one on the second, so the d-pad moves between rows instead of jumping to the close button.
+  showModal('Menu', `<div class="menu-grid">${btn('rating', 'Rating', 'menu-1')}${btn('setup', 'Setup', 'menu-1')}${btn('diagnostics', 'Controller check', 'menu-1')}
+    ${btn('source', 'Source', 'menu-2')}</div>`, 'menu');
   $('rating').onclick = () => showRating();
   $('setup').onclick = setup; $('diagnostics').onclick = diagnostics;
   $('source').onclick = () => { const link = document.createElement('a'); link.href = './source.zip'; link.download = ''; link.click(); };
-  if (!reopen) $('chat').focus({preventScroll: true});
+  if (!reopen) $('rating').focus({preventScroll: true});
 }
 // Start (9) opens the battle menu: sign in / find a battle / cancel the search, and Forfeit.
 let searchAfterLogin = false;
@@ -733,8 +732,7 @@ async function init() {
     if (action === 'cancel') {
       // B on the battle screen undoes: a pending choice (and its Tera), or a Tera that is switched on with no
       // choice sent yet. On the controller check it only shows its number.
-      if (modal.open && modal.dataset.view === 'chat') showMenu();
-      else if (modal.open && modal.dataset.view === 'diagnostics') return;
+      if (modal.open && modal.dataset.view === 'diagnostics') return;
       else if (modal.open) closeModal();
       else if (tera && !state.pending) { tera = false; render(); }
       else $('undo')?.click();
@@ -748,6 +746,8 @@ async function init() {
     // Select closes the Select menu and Start closes the Start menu; either still opens its own menu from the battle screen.
     if (action === 'tools' && modal.open && modal.dataset.view === 'menu') { closeModal(); return; }
     if (action === 'battle' && modal.open && modal.dataset.view === 'battle') { closeModal(); return; }
+    // A bumper (10) opens the chat from the battle screen and closes it again; with anything else open it does nothing.
+    if (action === 'chat' && modal.open && modal.dataset.view === 'chat') { closeModal(); return; }
     if (modal.open) return;
     // Y puts the cursor on the own active Pokémon's first move, flipping back to the own row first.
     // X puts the cursor on the opponent's active Pokémon's roster button, flipping to the opponent row first.
