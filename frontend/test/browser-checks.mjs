@@ -156,12 +156,12 @@ try {
     await page.screenshot({path: `test-results/${engineName}-battle-${viewport.width}-${viewport.height}.png`});
     check(!(await fit(page)).length, `Battle and header controls fit ${viewport.width}×${viewport.height}: ${await fit(page)}`);
     await page.locator('#switch-1').focus(); await pad(page, 8);
-    check(await page.locator('dialog[open]').count() === 1 && await page.locator('#modal-title').innerText() === 'Menu' && await page.locator('#modal #rating, #modal #setup, #modal #diagnostics, #modal #source').count() === 4 && await page.locator('#modal #chat').count() === 0 && await page.locator('#modal #open-replay').count() === 0 && await page.locator('#modal #primary, #modal #forfeit').count() === 0 && (await page.locator('.menu-grid button').allInnerTexts()).join(',') === 'Rating,Setup,Controller check,Source' && await page.evaluate(() => { const box = id => document.querySelector(id).getBoundingClientRect(); return ['#setup', '#diagnostics'].every(id => box(id).top === box('#rating').top) && box('#rating').left < box('#setup').left && box('#setup').left < box('#diagnostics').left && box('#source').top > box('#rating').top && box('#source').left === box('#rating').left; }), 'Select opens a menu modal with Rating, Setup, Controller check on the first row and Source on the second, and no Chat, battle buttons or Open replay');
+    check(await page.locator('dialog[open]').count() === 1 && await page.locator('#modal-title').innerText() === 'Menu' && await page.locator('#modal #chat, #modal #rating, #modal #setup, #modal #diagnostics, #modal #source').count() === 5 && await page.locator('#modal #open-replay').count() === 0 && await page.locator('#modal #primary, #modal #forfeit').count() === 0 && (await page.locator('.menu-grid button').allInnerTexts()).join(',') === 'Chat,Rating,Setup,Controller check,Source' && await page.evaluate(() => { const box = id => document.querySelector(id).getBoundingClientRect(); return ['#rating', '#setup'].every(id => box(id).top === box('#chat').top) && box('#chat').left < box('#rating').left && box('#rating').left < box('#setup').left && box('#diagnostics').top > box('#chat').top && box('#diagnostics').left === box('#chat').left && box('#source').top === box('#diagnostics').top && box('#source').left === box('#rating').left; }), 'Select opens a menu modal with Chat, Rating, Setup on the first row and Controller check, Source on the second, and no battle buttons or Open replay');
     check(await page.locator('#source').evaluate(el => el.tagName) === 'BUTTON' && await page.locator('a#source').count() === 0, 'Source is a button, not a hyperlink');
-    await page.locator('#source').focus(); await pad(page, 12);
-    check(await page.evaluate(() => document.activeElement.id) === 'rating', 'Up from the second menu row lands on the button above, not the close button');
+    await page.locator('#diagnostics').focus(); await pad(page, 12);
+    check(await page.evaluate(() => document.activeElement.id) === 'chat', 'Up from the second menu row lands on the button above, not the close button');
     await pad(page, 13);
-    check(await page.evaluate(() => document.activeElement.id) === 'source', 'Down returns to the second row');
+    check(await page.evaluate(() => document.activeElement.id) === 'diagnostics', 'Down returns to the second row');
     check(await page.locator('#modal #replay').count() === 0, 'Replay is not in the menu');
     await pad(page, 0); await pad(page, 9);
     check(await page.locator('dialog[open]').count() === 1 && await page.locator('#modal-title').innerText() === 'Battle' && (await page.locator('.menu-grid button').allInnerTexts()).join(',') === 'Connect to Showdown,Forfeit…' && await page.evaluate(() => document.activeElement.id) === 'primary', 'Start opens the battle menu with the primary button and Forfeit, primary focused');
@@ -193,10 +193,10 @@ try {
     check(await page.locator('dialog[open]').count() === 0 && await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'move-1', 'Y flips back to the own side on the active Pokémon\'s first move; T does nothing');
     const fieldBefore = await page.locator('#arena').evaluate(el => el.getBoundingClientRect().width);
     await page.keyboard.press('h');
-    check(await page.evaluate(() => document.activeElement.id) === 'rating' && await page.locator('.menu-grid button').first().evaluate(el => el.id) === 'rating', 'The menu opens with Rating as the first button and focused');
+    check(await page.evaluate(() => document.activeElement.id) === 'chat' && await page.locator('.menu-grid button').first().evaluate(el => el.id) === 'chat', 'The menu opens with Chat as the first button and focused');
     await pad(page, 10);
     check(await page.locator('#modal-title').innerText() === 'Menu', 'A bumper does nothing while the menu is open');
-    await pad(page, 0); await pad(page, 10);
+    await pad(page, 1);
     const chatTitle = async () => page.locator('#modal-title').innerText();
     const turnCount = await page.locator('#hidden-log .inner > h2').count();
     // The fixture's last heading (Turn 16) has no lines under it, so the chat opens on the turn before it.

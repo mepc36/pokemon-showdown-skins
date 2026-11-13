@@ -101,13 +101,15 @@ new MutationObserver(refreshChat).observe($('hidden-log'), {childList: true, sub
 // Menu: Select (or H) opens the secondary controls in a modal. There is no header row.
 function showMenu() {
   const reopen = modal.open && modal.dataset.view === 'menu';
-  // Three buttons on the first row and one on the second, so the d-pad moves between rows instead of jumping to the close button.
-  showModal('Menu', `<div class="menu-grid">${btn('rating', 'Rating', 'menu-1')}${btn('setup', 'Setup', 'menu-1')}${btn('diagnostics', 'Controller check', 'menu-1')}
-    ${btn('source', 'Source', 'menu-2')}</div>`, 'menu');
+  // Three buttons on the first row and two on the second, so the d-pad moves between rows instead of jumping to the close button.
+  // Chat is here as well as on the bumper (10).
+  showModal('Menu', `<div class="menu-grid">${btn('chat', 'Chat', 'menu-1')}${btn('rating', 'Rating', 'menu-1')}${btn('setup', 'Setup', 'menu-1')}
+    ${btn('diagnostics', 'Controller check', 'menu-2')}${btn('source', 'Source', 'menu-2')}</div>`, 'menu');
+  $('chat').onclick = () => { chatTurn = null; showChat(); };
   $('rating').onclick = () => showRating();
   $('setup').onclick = setup; $('diagnostics').onclick = diagnostics;
   $('source').onclick = () => { const link = document.createElement('a'); link.href = './source.zip'; link.download = ''; link.click(); };
-  if (!reopen) $('rating').focus({preventScroll: true});
+  if (!reopen) $('chat').focus({preventScroll: true});
 }
 // Start (9) opens the battle menu: sign in / find a battle / cancel the search, and Forfeit.
 let searchAfterLogin = false;
