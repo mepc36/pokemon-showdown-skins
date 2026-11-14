@@ -226,8 +226,11 @@ function showStats(load = true, force = false) {
     <div class="stats-columns"><div><h3>All time</h3>${facts([['Wins', value ? value.wins ?? 'Unknown' : '—'], ['Losses', value ? value.losses ?? 'Unknown' : '—']])}</div>
       <div><h3>Since last reset</h3>${facts([['Wins', record.wins], ['Losses', record.losses]])}</div></div>
     <p class="small">GXE: estimated win chance against an average ladder player.${rating.checkedAt ? ` Last successful check: ${escape(new Date(rating.checkedAt).toLocaleString())}.` : ''}</p>
-    <div class="modal-actions">${btn('refresh-rating', 'Refresh', 'rating-actions', rating.status === 'loading')}${btn('reset-record', 'Reset wins and losses', 'rating-actions')}
+    <div class="modal-actions">${btn('refresh-rating', 'Refresh', 'rating-actions')}${btn('reset-record', 'Reset wins and losses', 'rating-actions')}
       <a id="rating-source" data-nav data-row="rating-actions" href="${escape(rating.url)}" target="_blank" rel="noopener noreferrer">Showdown public data</a></div>`, 'stats');
+  // The view opens with the cursor on Refresh. Refresh is never disabled, so it can hold the cursor while a lookup
+  // runs; a press during a lookup joins that lookup.
+  if (load && !force) $('refresh-rating').focus({preventScroll: true});
   $('refresh-rating').onclick = () => showStats(true, true);
   $('reset-record').onclick = () => { resetRecord(localStorage); showStats(false); };
 }

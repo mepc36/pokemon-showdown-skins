@@ -657,7 +657,7 @@ try {
   await cancel.keyboard.press('h'); await cancel.locator('#stats').click();
   // Since last reset is the second column; the peak Elo is the third box of the first row.
   const recordShown = async () => [...await cancel.locator('.stats-columns > div:nth-child(2) dd').allInnerTexts(), await cancel.locator('#modal .info-facts').first().locator('dd').nth(2).innerText()].join('|');
-  check(await cancel.locator('#modal-title').innerText() === 'Ladder stats' && /^0\|1\|\d+$/.test(await recordShown()) && Number((await recordShown()).split('|')[2]) >= 1432 && await cancel.evaluate(() => document.activeElement.id) === 'modal-close', `Ladder stats shows the lost battle since the last reset and the peak Elo, with the cursor on close: ${await recordShown()}`);
+  check(await cancel.locator('#modal-title').innerText() === 'Ladder stats' && /^0\|1\|\d+$/.test(await recordShown()) && Number((await recordShown()).split('|')[2]) >= 1432 && await cancel.evaluate(() => document.activeElement.id) === 'refresh-rating' && !await cancel.locator('#refresh-rating').isDisabled(), `Ladder stats shows the lost battle since the last reset and the peak Elo, with the cursor on Refresh: ${await recordShown()}`);
   await cancel.locator('#reset-record').focus(); await cancel.keyboard.press('Enter');
   check(await cancel.evaluate(() => document.activeElement.id) === 'reset-record' && /^0\|0\|\d+$/.test(await recordShown()), `Reset clears the wins and losses and keeps the peak Elo: ${await recordShown()}`);
   await cancel.keyboard.press('Escape');
