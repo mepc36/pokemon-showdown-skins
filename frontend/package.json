@@ -2,11 +2,11 @@
   "name": "showdown-controller-mve",
   "private": true,
   "type": "module",
-  "version": "1.27.0",
+  "version": "1.27.1",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "postinstall": "node scripts/fetch-vendor.mjs",
-    "build": "node scripts/source-archive.mjs && vite build",
+    "build": "vite build",
     "test": "node --test test/*.test.mjs",
     "refresh:sets": "node scripts/refresh-sets.mjs",
     "test:browser": "node test/browser-checks.mjs"
