@@ -142,7 +142,7 @@ function showMenu() {
 const CONTROLS = [
   ['Move the cursor, page inside a view', 'D-pad or left stick', 'Arrow keys'],
   ['Press the button under the cursor', 'A', 'Enter'],
-  ['Close a menu or view, undo a choice', 'B', 'Escape'],
+  ['Close a view, undo a choice', 'B', 'Escape'],
   ['Go to your active Pokémon\'s first move', 'Top left bumper', '1'],
   ['Go to their active Pokémon', 'Top right bumper', '2'],
   ['Open or close a move or Pokémon page', 'Y', 'I'],
@@ -797,8 +797,8 @@ async function init() {
     if (action === 'cancel') {
       // B on the battle screen undoes: a pending choice (and its Tera), or a Tera that is switched on with no
       // choice sent yet. On the controller check it only shows its number.
-      // A move or Pokémon page closes with Y (or I), the chat with X (or C); B does nothing in either.
-      if (modal.open && (modal.dataset.view === 'diagnostics' || infoPage || modal.dataset.view === 'chat')) return;
+      // B closes a move or Pokémon page and the chat too; Y (or I) and X (or C) also close the one they opened.
+      if (modal.open && modal.dataset.view === 'diagnostics') return;
       // A view opened from the Select menu goes back to that menu; a second B closes the menu.
       else if (modal.open && ['stats', 'controls', 'errors', 'setup'].includes(modal.dataset.view)) showMenu();
       else if (modal.open) closeModal();
