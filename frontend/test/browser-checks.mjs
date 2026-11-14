@@ -108,6 +108,12 @@ try {
     check(await page.evaluate(() => { const badge = document.querySelector('#app-version'), timer = document.querySelector('#battle-timer'); const wrap = document.querySelector('#arena-wrap').getBoundingClientRect(), r = badge.getBoundingClientRect(); return /^v\d+\.\d+\.\d+$/.test(badge.textContent) && getComputedStyle(badge).color === getComputedStyle(timer).color && r.left - wrap.left < 20 && wrap.bottom - r.bottom < 20; }), `Version badge shows a semver in the timer's blue at the bottom left: ${await page.locator('#app-version').innerText()}`);
     if (viewport.width === 1024 && viewport.height === 650) {
       const fresh = await browser.newPage(); await fresh.goto(`${base}/fresh.html`); await fresh.waitForSelector('#switch-1');
+      // The icons must load from the page (Chrome's new-tab tiles want a 192px icon, iPad Chrome the apple-touch-icon).
+      for (const href of ['./icons/favicon-32.png', './icons/icon-192.png', './icons/apple-touch-icon.png', './manifest.webmanifest']) {
+        const linked = await page.evaluate(h => !!document.querySelector(`head link[href="${h}"]`), href);
+        const status = (await page.request.get(`${base}/${href.slice(2)}`)).status();
+        check(linked && status === 200, `${href} is linked in the head and loads (${status})`);
+      }
       check(/\?fresh=\d{13}$/.test(fresh.url()) && await fresh.locator('#app-version').innerText() === appVersion, `fresh.html redirects to the app under a timestamped query string: ${fresh.url()}`);
       await fresh.close();
     }
