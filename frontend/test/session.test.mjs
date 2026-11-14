@@ -159,6 +159,13 @@ test('expired battle is forgotten without silently starting another match', () =
   assert.equal(f.session.state.room, ''); assert.equal(f.values.has('ps-mve-room'), false);
   assert.equal(f.session.state.searching, false);
 });
+test('a finished battle is counted once as a win or a loss, and the own rating line feeds the peak Elo', () => {
+  const f = fixture(); f.authenticate(); f.battle();
+  f.socket.receive(`>${room}\n|win|Opponent`); f.socket.receive(`>${room}\n|win|Opponent`);
+  f.socket.receive(`>${room}\n|raw|Opponent's rating: 1700 &rarr; <strong>1720</strong><br />(+20 for winning)\n|raw|mepc36363636's rating: 1432 &rarr; <strong>1412</strong><br />(-20 for losing)`);
+  const saved = JSON.parse(f.values.get('ps-mve-record'));
+  assert.equal(saved.wins, 0); assert.equal(saved.losses, 1); assert.equal(saved.peak, 1432);
+});
 test('battle end allows an explicit next search and removes recovery marker', () => {
   const f = fixture(); f.authenticate(); f.battle(); f.socket.receive(`>${room}\n|win|mepc36363636`);
   assert.equal(f.session.state.ended, true); assert.equal(f.values.has('ps-mve-room'), false);

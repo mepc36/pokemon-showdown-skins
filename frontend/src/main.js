@@ -5,6 +5,7 @@ import {ShowdownAuth} from './auth.mjs';
 import {availableChoices} from './protocol.mjs';
 import {startController, navigate} from './controller.mjs';
 import {PlayerRating} from './rating.mjs';
+import {readRecord, recordElo, resetRecord} from './record.mjs';
 import {Music, cryFile, musicActive, replayMusicOver, timerToneDue} from './music.js';
 import {PossibleSets, possibleSets, narrowSets} from './possible-sets.mjs';
 import {escapeHtml, facts, typeBadges, moveList, rolePages, roleSplit, movePages, abilityPage, fitMoveDescription, itemIcon, regionalForm} from './info-components.mjs';
@@ -101,10 +102,11 @@ new MutationObserver(refreshChat).observe($('hidden-log'), {childList: true, sub
 // Menu: Select (or H) opens the secondary controls in a modal. There is no header row.
 function showMenu() {
   const reopen = modal.open && modal.dataset.view === 'menu';
-  // Three buttons on the first row and two on the second, so the d-pad moves between rows instead of jumping to the close button.
+  // Three buttons on each row, so the d-pad moves between rows instead of jumping to the close button.
   // Chat is here as well as on X.
   showModal('Menu', `<div class="menu-grid">${btn('chat', 'Chat', 'menu-1')}${btn('rating', 'Rating', 'menu-1')}${btn('setup', 'Setup', 'menu-1')}
-    ${btn('diagnostics', 'Controller check', 'menu-2')}${btn('source', 'Source', 'menu-2')}</div>`, 'menu');
+    ${btn('diagnostics', 'Controller check', 'menu-2')}${btn('source', 'Source', 'menu-2')}${btn('record', 'Wins and losses', 'menu-2')}</div>`, 'menu');
+  $('record').onclick = () => showRecord();
   $('chat').onclick = () => { chatTurn = null; showChat(); };
   $('rating').onclick = () => showRating();
   $('setup').onclick = setup; $('diagnostics').onclick = diagnostics;
@@ -208,8 +210,22 @@ function refreshMoveHints() {
   }
 }
 
+// Wins and losses since the last reset, and the peak Elo this browser has seen. Reset clears the wins and losses only.
+// Opening it looks the rating up, so the peak is known before the first rated battle.
+function showRecord(load = true) {
+  if (load) void rating.load().then(() => {
+    if (rating.status === 'ready') recordElo(localStorage, Math.round(rating.value.elo));
+    if (modal.open && modal.dataset.view === 'record') showRecord(false);
+  });
+  const record = readRecord(localStorage);
+  showModal('Wins and losses', `${facts([['Wins', record.wins], ['Losses', record.losses], ['Peak Elo', record.peak ?? '—']])}
+    <div class="modal-actions">${btn('reset-record', 'Reset wins and losses', 'modal-actions')}</div>`, 'record');
+  $('reset-record').onclick = () => { resetRecord(localStorage); showRecord(false); };
+}
+
 function showRating(load = true, force = false) {
   if (load) void rating.load(force).then(() => {
+    if (rating.status === 'ready') recordElo(localStorage, Math.round(rating.value.elo));
     if (ratingPage && modal.open) showRating(false);
   });
   const value = rating.value;

@@ -1,4 +1,5 @@
 import {parsePacket, splitLine, toID, isBattleRoom, choiceCommand} from './protocol.mjs';
+import {recordResult, recordElo, ratingChange} from './record.mjs';
 
 export class ShowdownSession {
   constructor({url, username, auth, storage, Socket = WebSocket, schedule = (fn, ms) => setTimeout(fn, ms), cancel = id => clearTimeout(id), onState = () => {}, onBattle = () => {}}) {
@@ -172,9 +173,15 @@ export class ShowdownSession {
         } else if (type === 'win' || type === 'tie') {
           this.state.ended = true; this.state.pending = false; this.state.request = null;
           this.state.recovering = false; this.state.notice = type === 'win' ? `${value} won the battle.` : 'The battle ended in a tie.';
+          // Wins and losses are counted once per battle room; a tie counts as neither.
+          if (type === 'win') recordResult(this.storage, room, toID(value) === toID(this.expectedUser));
           this.storage.removeItem('ps-mve-room');
           // Save the replay right away; the replay row's Open replay button enables once the upload finishes.
           this.state.replayUrl = ''; this.roomCommand('/savereplay');
+        } else if (type === 'raw' && isBattleRoom(room) && ratingChange(value)) {
+          // The own rating line after a rated battle feeds the peak Elo.
+          const change = ratingChange(value);
+          if (toID(change.name) === toID(this.expectedUser)) { recordElo(this.storage, change.before); recordElo(this.storage, change.after); }
         } else if (type === 'noinit' || type === 'deinit') {
           this.state.notice = 'This battle is no longer available on the server.';
           this.state.room = ''; this.state.request = null; this.state.recovering = false;
