@@ -631,6 +631,8 @@ try {
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|switch|p2a: Ninetales|Ninetales-Alola, L78|100/100\n|turn|19'}));
   await cancel.waitForFunction(() => [...document.querySelectorAll('#opponent-roster .mon-name')].some(el => el.textContent === 'Ninetales'));
   check(await cancel.locator('#opponent-roster .form-tag').innerText() === 'ALOLA' && (await cancel.locator('#matchup-foe .matchup-names .form-tag').count()) === 1, 'Regional forms show the species with a region tag on the roster and the side panel');
+  const alolaIcon = await cancel.evaluate(() => [...document.querySelectorAll('#opponent-roster button')].find(button => button.querySelector('.mon-name')?.textContent === 'Ninetales').querySelector('.picon').getAttribute('style'));
+  check(alolaIcon.includes('-200px -2880px'), `A regional form's roster icon is its own (Ninetales-Alola is icon 1157), not the base species': ${alolaIcon}`);
   check((await cancel.locator('#opponent-roster button:has(.form-tag) .roster-ability').innerText()) === 'Snow Warning' && await cancel.locator('#opponent-roster button:has(.form-tag) .roster-item.inferred').count() === 1, 'Opponent roster shows the ability and item every remaining set agrees on, marked inferred');
   await cancel.keyboard.press('h');
   await cancel.keyboard.press('Escape');
