@@ -104,11 +104,16 @@ export function movePages(move) {
     content: `<div class="move-detail-layout"><p class="move-description">${escape(move.description)}</p>${facts([['💥 Power', move.power], ['🎯 Accuracy', move.accuracy], ['🔋 PP', move.pp], ['🏃 Priority', move.priority], ['🥊 Contact', move.contact], ['👥 Target', move.target]])}</div>`,
     note: move.disabled ? 'Currently unavailable.' : ''}];
 }
-// The whole description stays on the one page: a long one steps its text size down until the page stops overflowing.
+// The ability page of a Pokémon page: each ability's name with its whole description under it, in the move page's text style.
+export function abilityPage(abilities, possible = false) {
+  return {key: 'ability', label: 'Ability', content: `<div class="ability-layout"><h3>${possible ? 'Possible abilities' : 'Ability'}</h3>${abilities.map(ability =>
+    `<div class="ability-entry"><strong>${escape(ability.name)}</strong>${ability.description ? `<p class="move-description">${escape(ability.description)}</p>` : ''}</div>`).join('')}</div>`};
+}
+// The whole description stays on the one page: long ones step their text size down until the page stops overflowing.
 export function fitMoveDescription(content) {
-  const description = content?.querySelector('.move-description');
-  if (!description) return;
-  description.style.removeProperty('font-size');
-  let size = parseFloat(getComputedStyle(description).fontSize);
-  while (size > 1 && content.scrollHeight > content.clientHeight) { size -= 1; description.style.fontSize = `${size}px`; }
+  const descriptions = [...content?.querySelectorAll('.move-description') || []];
+  if (!descriptions.length) return;
+  for (const description of descriptions) description.style.removeProperty('font-size');
+  let size = parseFloat(getComputedStyle(descriptions[0]).fontSize);
+  while (size > 1 && content.scrollHeight > content.clientHeight) { size -= 1; for (const description of descriptions) description.style.fontSize = `${size}px`; }
 }

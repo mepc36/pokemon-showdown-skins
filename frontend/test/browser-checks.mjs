@@ -83,6 +83,11 @@ try {
     const foeFirstMove = await page.locator('#preview-move-1 strong').innerText();
     await page.locator('#preview-move-1').focus(); await pad(page, 2); await page.waitForSelector('#info-content');
     check((await page.locator('#modal-title').innerText()).startsWith(foeFirstMove.replace(/ 👀$/, '')), `R3 on the foe's first move opens that move, not an own move: ${await page.locator('#modal-title').innerText()}`);
+    const foeTitles = [await page.locator('#modal-title').innerText()];
+    for (let press = 0; press < 12; press++) { await pad(page, 15); const shown = await page.locator('#modal-title').innerText(); if (shown === foeTitles[0]) break; foeTitles.push(shown); }
+    const foeListed = await page.evaluate(() => [...document.querySelectorAll('#choices .move-preview strong')].map(el => el.textContent).filter(text => text && text !== '—' && !text.startsWith('+')).length);
+    await pad(page, 14);
+    check(new Set(foeTitles).size === foeTitles.length && foeTitles.length >= foeListed && foeTitles.length <= 12 && await page.locator('#modal-title').innerText() === foeTitles.at(-1), `Left and right on a foe move page run through that Pokémon's listed moves and wrap around: ${foeTitles.join('|')} (${foeListed} in the move row)`);
     await pad(page, 0);
     await page.locator('#opponent-3').focus();
     check((await page.locator('#opponent-3 strong').innerText()).replace(/\s+/g, ' ') === 'Rotom-Wash PAR', 'Status sits on the name line of the roster button');
@@ -221,9 +226,9 @@ try {
     check(await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'move-1', 'B in the chat closes it, back on the battle screen');
     await page.locator('#switch-1').focus(); await pad(page, 2);
     await page.waitForSelector('#info-content');
-    check(await page.locator('[data-info-tab], #prev-info-page, .inspection-note').count() === 0, 'Own Pokémon have one flat page: no Overview tab, no paging, no footnote');
+    check(await page.locator('[data-info-tab], .inspection-note').count() === 0 && (await page.locator('.inspection-footer').innerText()).includes('Page 1 / 2'), 'Own Pokémon have the main page and the ability page: no Overview tab, no footnote');
     check((await page.locator('#modal-title').innerText()) === 'Grumpig · Lv 92', 'R3 shows name and level without gender');
-    check((await page.locator('.inspection-banner').innerText()).includes('297/297') && await page.locator('.identity-types .type-badge').innerText() === 'Psychic', 'Types and exact HP share the banner');
+    check((await page.locator('.identity-hp strong').innerText()).startsWith('297/297 (100%)') && await page.locator('.identity-types .type-badge').innerText() === 'Psychic', 'Types and exact HP share the banner');
     for (const label of ['Attack', 'Defense', 'Sp. Atk', 'Sp. Def']) {
       check(await page.locator('.info-facts > div').filter({has: page.getByText(label, {exact: true})}).locator('dd').innerText() === '150', `Exact private ${label} remains available`);
     }
@@ -247,7 +252,15 @@ try {
     check(!(await fit(page)).length, `Overview fits without scrolling: ${await fit(page)}`);
     await page.screenshot({path: `test-results/${engineName}-overview-${viewport.width}-${viewport.height}.png`});
     await pad(page, 13);
-    check((await page.locator('#modal-title').innerText()).includes('Grumpig') && await page.locator('[data-info-tab]').count() === 0, 'Down on an own Pokémon has no pages to reveal');
+    check((await page.locator('#modal-title').innerText()) === 'Grumpig · Lv 92' && (await page.locator('.inspection-banner').innerText()).includes('297/297') && await page.locator('.identity-types .type-badge').innerText() === 'Psychic' && await page.locator('.overview-layout').count() === 0 && await page.locator('.ability-entry strong').innerText() === 'Thick Fat' && (await page.locator('.ability-entry .move-description').innerText()).length > 20 && (await page.locator('.inspection-footer').innerText()).includes('Page 2 / 2'), `Down on an own Pokémon shows its ability page under the same title and banner: ${await page.locator('.ability-entry').innerText()}`);
+    check(!(await fit(page)).length, `The ability page fits without scrolling: ${await fit(page)}`);
+    await page.screenshot({path: `test-results/${engineName}-ability-${viewport.width}-${viewport.height}.png`});
+    await pad(page, 13);
+    check(await page.locator('.ability-entry').count() === 1 && (await page.locator('.inspection-footer').innerText()).includes('Page 2 / 2'), 'Down on the ability page goes nowhere');
+    await pad(page, 12);
+    check(await page.locator('.overview-layout').count() === 1 && await page.locator('.ability-entry').count() === 0, 'Up on the ability page returns to the main page');
+    await pad(page, 12);
+    check(await page.locator('.overview-layout').count() === 1 && (await page.locator('.inspection-footer').innerText()).includes('Page 1 / 2'), 'Up on the main page goes nowhere');
     await pad(page, 15);
     check((await page.locator('#modal-title').innerText()).includes('Palossand'), 'D-pad right moves to the next Pokémon, matching the roster');
     await pad(page, 4); await pad(page, 5); await page.keyboard.press('f'); await pad(page, 3); await pad(page, 2); await pad(page, 11);
@@ -255,26 +268,26 @@ try {
     await pad(page, 14);
     check((await page.locator('#modal-title').innerText()).includes('Grumpig'), 'D-pad left moves to the previous Pokémon');
     await pad(page, 14);
-    check(!(await page.locator('#modal-title').innerText()).includes('Iron Hands') && await page.locator('#opponent-roster').isVisible() && !await page.locator('#roster').isVisible(), 'D-pad left from your first Pokémon continues to the opponent\'s sixth, and the roster behind follows');
+    check((await page.locator('#modal-title').innerText()).includes('Iron Hands') && await page.locator('#roster').isVisible() && !await page.locator('#opponent-roster').isVisible(), 'D-pad left from your first Pokémon wraps to your sixth, and the roster behind stays on your side');
     await pad(page, 15);
-    check((await page.locator('#modal-title').innerText()).includes('Grumpig') && await page.locator('#roster').isVisible(), 'D-pad right from the opponent\'s sixth continues to your first');
+    check((await page.locator('#modal-title').innerText()).includes('Grumpig') && await page.locator('#roster').isVisible(), 'D-pad right from your sixth wraps to your first');
     for (let press = 0; press < 5; press++) await pad(page, 15);
-    check((await page.locator('#modal-title').innerText()).includes('Iron Hands') && (await page.locator('.identity-hp').innerText()).includes('0 fnt'), 'D-pad right reaches the sixth, fainted Pokémon');
-    await pad(page, 15);
-    check((await page.locator('#modal-title').innerText()).includes('Landorus') && await page.locator('#opponent-roster').isVisible(), 'D-pad right from your sixth continues to the opponent\'s first');
-    await pad(page, 14);
-    check((await page.locator('#modal-title').innerText()).includes('Iron Hands') && await page.locator('#roster').isVisible(), 'D-pad left from the opponent\'s first returns to your sixth');
+    check((await page.locator('#modal-title').innerText()).includes('Iron Hands') && /0(\/\d+)? \(0%\)/.test(await page.locator('.identity-hp').innerText()) && !(await page.locator('.identity-hp').innerText()).includes('fnt'), `D-pad right reaches the sixth, fainted Pokémon, whose banner reads zero HP and 0%, not fnt: ${await page.locator('.identity-hp').innerText()}`);
     await pad(page, 0);
     check(!await page.locator('#modal').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-1', 'One B closes the whole panel and restores the original roster focus');
     await page.locator('#switch-2').focus(); await pad(page, 2); await pad(page, 14); await pad(page, 14); await pad(page, 0);
-    check(await page.locator('#opponent-roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'opponent-2', 'Closing after crossing to the other team inside R3 lands on the opening slot\'s number there');
-    await page.keyboard.press('f');
+    check(await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-2', 'Paging past your first Pokémon inside a page keeps your row, and closing lands on the opening button');
     check(!await page.locator('#arena .leftbar').isVisible() && !await page.locator('#arena .rightbar').isVisible(), 'Renderer side bars are hidden');
     await page.locator('#switch-1').focus(); await page.locator('#move-2').focus(); await pad(page, 2);
     check(await page.locator('#modal-title').innerText() === 'Shadow Ball' && (await page.locator('#info-content').innerText()).includes('20%'), 'R3 on a main move opens its detailed effects');
     check(!(await fit(page)).length, `Move details fit: ${await fit(page)}`);
     check(await page.evaluate(() => { const layout = document.querySelector('.move-detail-layout'); const desc = layout.querySelector('.move-description'), facts = layout.querySelector('.info-facts'); const labels = [...facts.querySelectorAll('dt')].map(d => d.textContent); return desc && facts && desc.getBoundingClientRect().bottom <= facts.getBoundingClientRect().top && getComputedStyle(facts).gridTemplateColumns.split(' ').length === 3 && labels.join('|') === '💥 Power|🎯 Accuracy|🔋 PP|🏃 Priority|🥊 Contact|👥 Target' && /^[⚔️✨🌀]/u.test(document.querySelector('.move-banner strong').textContent); }), 'Move page: description on top, then two rows of three emoji-led fact boxes, category emoji in the banner');
     await page.screenshot({path: `test-results/${engineName}-move-${viewport.width}-${viewport.height}.png`});
+    const moveTitles = [];
+    for (const button of [15, 15, 15, 14]) { await pad(page, button); moveTitles.push(await page.locator('#modal-title').innerText()); }
+    check(moveTitles.join('|') === 'Dazzling Gleam|Psyshock|Nasty Plot|Psyshock', `Left and right on a move page run through that Pokémon's four moves and wrap around: ${moveTitles.join('|')}`);
+    await pad(page, 13);
+    check(await page.locator('#modal-title').innerText() === 'Psyshock', 'Up and down do nothing on a move page');
     await pad(page, 0);
     check(await page.evaluate(() => document.activeElement.id) === 'move-2', 'Move details close directly to the battle move');
     await page.keyboard.press('f'); await page.locator('#opponent-1').focus(); await pad(page, 2);
@@ -289,8 +302,16 @@ try {
     await pad(page, 15); await pad(page, 15);
     check(await page.locator('.info-facts > div[data-list="true"]').count() >= 1 && (await page.locator('.overview-layout > h3').allInnerTexts()).join('|') === 'Stats (before modifiers)' && await page.locator('.role-group').count() >= 1 && (await page.locator('.stats-layout dt').allInnerTexts()).join(',') === 'Attack,Defense,Sp. Atk,Sp. Def,Speed' && (await page.locator('.stats-layout dd').allInnerTexts()).every(text => text.startsWith('~')), 'Right moves to the next opponent; the page uses the own layout: Ability/Item/Tera cards, five ~estimated stat boxes, one move row per role');
     check(await page.evaluate(() => [...document.querySelectorAll('.overview-layout .role-heading')].every(heading => { const range = document.createRange(); range.selectNodeContents(heading); const text = range.getBoundingClientRect(), box = heading.getBoundingClientRect(); return Math.abs((text.left + text.right) / 2 - (box.left + box.right) / 2) <= 1; })), 'Role names are centered above their moves');
+    const lastKnownFoe = await page.locator('#modal-title').innerText();
     await pad(page, 15);
-    check(await page.locator('[data-info-tab]').count() === 0 && await page.locator('#modal .type-badge, #modal .compact-move').count() === 0, 'Unknown slots expose neither a guessed identity nor possible sets');
+    check((await page.locator('#modal-title').innerText()).includes('Landorus') && await page.locator('#opponent-roster').isVisible(), `Right from the opponent's last known Pokémon wraps to their first, skipping unknown slots: ${lastKnownFoe}`);
+    await pad(page, 14);
+    check(await page.locator('#modal-title').innerText() === lastKnownFoe && await page.locator('#opponent-roster').isVisible(), 'Left from the opponent\'s first Pokémon wraps to their last known one');
+    await pad(page, 0);
+    await page.locator('#opponent-5').focus(); await pad(page, 2);
+    check(await page.locator('[data-info-tab]').count() === 0 && await page.locator('#modal .type-badge, #modal .compact-move').count() === 0 && (await page.locator('#modal-title').innerText()).includes('Unknown'), 'Unknown slots expose neither a guessed identity nor possible sets');
+    await pad(page, 15);
+    check((await page.locator('#modal-title').innerText()).includes('Landorus'), 'Right from an unknown slot goes to the opponent\'s first Pokémon');
     await pad(page, 0); await page.keyboard.press('f');
     for (const id of ['setup', 'diagnostics']) {
       await page.keyboard.press('h'); await page.locator(`#${id}`).click();
@@ -392,7 +413,8 @@ try {
   check(await failed.locator('.compact-move').count() === 4, 'Known moves survive unavailable set data');
   check(await failed.locator('#retry-sets').count() === 0, 'Own Pokémon never show a set-data retry page');
   await failed.keyboard.press('Escape'); await failed.keyboard.press('f'); await failed.locator('#opponent-1').focus(); await failed.keyboard.press('i');
-  await failed.keyboard.press('ArrowDown'); await failed.waitForSelector('#retry-sets');
+  // The retry page is the opponent's first page; Down would turn to the ability page.
+  await failed.waitForSelector('#retry-sets');
   await failed.unroute('**/data/gen9randombattle.json'); await failed.keyboard.press('Enter');
   await failed.waitForSelector('.overview-layout');
   check(await failed.locator('.overview-layout').count() === 1, 'Retry restores a possible-role page at the same depth');
@@ -479,8 +501,8 @@ try {
     check(cries.join() === 'raichu' && cryDelays.length === 1 && cryDelays[0] > 0 && cryDelays[0] < 2, `A Pokémon that switches in sounds its cry once, timed to its appearance: ${cries}, ${cryDelays.map(delay => delay.toFixed(2))} seconds after the switch`);
   }
   await cancel.keyboard.press('f'); await cancel.locator('#opponent-4').focus(); await cancel.keyboard.press('i');
-  // Roles that do not fit under the facts and stats continue on further pages; Down turns the page and wraps back to page 1.
-  const rolePageCount = Number((await cancel.locator('#prev-info-page + span').count() ? await cancel.locator('#prev-info-page + span').innerText() : 'Page 1 / 1').match(/\/ (\d+)/)[1]);
+  // Roles that do not fit under the facts and stats continue on further pages; the ability page comes after them. Down turns the page and does not wrap.
+  const rolePageCount = -1 + Number((await cancel.locator('#prev-info-page + span').count() ? await cancel.locator('#prev-info-page + span').innerText() : 'Page 1 / 1').match(/\/ (\d+)/)[1]);
   const roleRows = [], facts = [];
   for (let shown = 0; shown < rolePageCount; shown++) {
     roleRows.push(...await cancel.evaluate(() => [...document.querySelectorAll('.role-group')].map(group => [...group.querySelectorAll('.compact-move[data-move]')].map(li => li.dataset.move))));
@@ -488,6 +510,8 @@ try {
     check(await cancel.evaluate(() => { const el = document.querySelector('#info-content'); return el.scrollHeight <= el.clientHeight + 2; }), `Role page ${shown + 1} of ${rolePageCount} fits without clipping`);
     await cancel.keyboard.press('ArrowDown');
   }
+  check(await cancel.locator('.ability-entry').count() >= 1 && await cancel.locator('.role-group, #info-content .info-facts').count() === 0 && (await cancel.locator('#modal-title').innerText()).includes('❓') && (await cancel.locator('.identity-types .type-badge').count()) >= 1 && await cancel.evaluate(() => { const el = document.querySelector('#info-content'); return el.scrollHeight <= el.clientHeight + 2; }), `After the opponent's role pages comes the ability page, under the same title and banner: ${(await cancel.locator('.ability-entry strong').allInnerTexts()).join(', ')}`);
+  for (let shown = 0; shown < rolePageCount; shown++) await cancel.keyboard.press('ArrowUp');
   check(roleRows.length >= 2 && roleRows[0].filter(id => roleRows.every(row => row.includes(id))).every((id, i) => roleRows.every(row => row[i] === id)), 'Moves shared by every candidate role come first, in the same order, in each role');
   check(await cancel.locator('[data-info-tab], .inspection-tabs').count() === 0 && rolePageCount >= 2 && facts[0] > 0 && facts.slice(1).every(count => count === 0) && (await cancel.locator('#modal-title').innerText()).includes('❓') && (await cancel.locator('#modal-title').innerText()).includes('possible roles'), `Ambiguous opponent lists every matching role with the ❓ badge; the facts and stats sit on page 1 only: ${roleRows.length} roles on ${rolePageCount} pages`);
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|move|p2a: Raichu|Tera Blast|p1a: Grumpig\n|turn|18'}));
@@ -616,6 +640,8 @@ try {
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|switch|p2a: Ninetales|Ninetales-Alola, L78|100/100\n|turn|19'}));
   await cancel.waitForFunction(() => [...document.querySelectorAll('#opponent-roster .mon-name')].some(el => el.textContent === 'Ninetales'));
   check(await cancel.locator('#opponent-roster .form-tag').innerText() === 'ALOLA' && (await cancel.locator('#matchup-foe .matchup-names .form-tag').count()) === 1, 'Regional forms show the species with a region tag on the roster and the side panel');
+  const alolaIcon = await cancel.evaluate(() => [...document.querySelectorAll('#opponent-roster button')].find(button => button.querySelector('.mon-name')?.textContent === 'Ninetales').querySelector('.picon').getAttribute('style'));
+  check(alolaIcon.includes('-200px -2880px'), `A regional form's roster icon is its own (Ninetales-Alola is icon 1157), not the base species': ${alolaIcon}`);
   check((await cancel.locator('#opponent-roster button:has(.form-tag) .roster-ability').innerText()) === 'Snow Warning' && await cancel.locator('#opponent-roster button:has(.form-tag) .roster-item.inferred').count() === 1, 'Opponent roster shows the ability and item every remaining set agrees on, marked inferred');
   await cancel.keyboard.press('h');
   await cancel.keyboard.press('Escape');

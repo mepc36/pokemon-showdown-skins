@@ -173,6 +173,17 @@ test('own roster order keeps the lead first and maps each slot to its current re
   assert.deepEqual(stableOwnOrder([third, lead, bench], partial.order).team.map(p => p.ident), ['p1: Grumpig', 'p1: Palossand', 'p1: Excadrill']);
 });
 
+test('exact HP reads current/full with the percentage to one decimal place', async () => {
+  const {ownExactHealth} = await import('../src/information.mjs');
+  const battle = {mySide: {pokemon: [{ident: 'p1: Grumpig', hp: 75, maxhp: 301, status: 'par'}, {ident: 'p1: Breloom', hp: 0, maxhp: 261, fainted: true}]}};
+  assert.equal(ownExactHealth(battle, {ident: 'p1: Grumpig', condition: '301/301'}), '75/301 (24.9%)');
+  assert.equal(ownExactHealth(null, {ident: 'p1: Grumpig', condition: '100/200'}), '100/200 (50%)');
+  assert.equal(ownExactHealth(null, {ident: 'p1: Grumpig', condition: '297/297 par'}), '297/297 (100%)');
+  assert.equal(ownExactHealth(battle, {ident: 'p1: Breloom', condition: '0 fnt'}), '0/261 (0%)');
+  assert.equal(ownExactHealth(null, {ident: 'p1: Breloom', condition: '0 fnt'}), '0 (0%)');
+  assert.equal(ownExactHealth(null, {ident: 'p1: Breloom', condition: ''}), '—');
+});
+
 test('own roster HP follows the renderer copy and falls back to the request when it has none', async () => {
   const {ownDisplayedHealth} = await import('../src/information.mjs');
   const request = {ident: 'p1: Grumpig', condition: '100/297'};

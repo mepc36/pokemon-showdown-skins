@@ -3,11 +3,16 @@ import {ModifiableValue} from '../vendor/pokemon-showdown/battle-tooltips';
 import {BattleSound} from '../vendor/pokemon-showdown/battle-sound';
 import {PokemonSprite} from '../vendor/pokemon-showdown/battle-animations';
 import {Dex} from '../vendor/pokemon-showdown/battle-dex';
+import {BattlePokemonIconIndexes, BattlePokemonIconIndexesLeft} from '../vendor/pokemon-showdown/battle-dex-data';
 import {isBattleEvent} from './protocol.mjs';
-import {opponentSlots, pokemonSpeed, ownPokemonStats, ownDisplayedHealth} from './information.mjs';
+import {opponentSlots, pokemonSpeed, ownPokemonStats, ownDisplayedHealth, ownExactHealth} from './information.mjs';
 import {possibleSets} from './possible-sets.mjs';
 import {moveCue, speedCue} from './battle-hints.mjs';
 import uiData from './showdown-ui-data.json';
+
+// battle-data.ts has to set these two tables empty before the upstream modules load. The real ones come from the
+// pinned upstream data, so a regional or other alternate form (Ninetales-Alola) gets its own icon, not the base species'.
+Object.assign(window, {BattlePokemonIconIndexes, BattlePokemonIconIndexesLeft});
 
 // @pkmn/dex omits non-damage type immunities. Supply the pinned upstream
 // fields so Showdown's own tooltip calculation handles Toxic, powders, etc.
@@ -121,6 +126,7 @@ export class Arena {
     return !!client && this.battle.mySide.active.includes(client);
   }
   ownHealth(pokemon) { return ownDisplayedHealth(this.battle, pokemon, this.replaying); }
+  ownExactHealth(pokemon) { return ownExactHealth(this.battle, pokemon, this.replaying); }
   speed(side, index) { return pokemonSpeed(this.battle, side, index); }
   stats(index) { return ownPokemonStats(this.battle, index); }
   ownView(index, tera = false) {

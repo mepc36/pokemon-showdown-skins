@@ -21,6 +21,13 @@ export function moveInformation(id, currentMove) {
     summary: move.shortDesc || move.desc || ''};
 }
 
+// An ability's name and whole description, for the ability page.
+export function abilityInformation(name) {
+  const ability = Dex.abilities.get(name);
+  if (!ability.exists) return {name: name || 'Unknown', description: ''};
+  return {name: ability.name, description: ability.desc || ability.shortDesc || 'No description available.'};
+}
+
 // The party list contains all current moves, including Transform copies. An
 // active action request can be reduced to a locked move or Struggle, so use it
 // only to attach matching PP/disabled information, never to erase known moves.
@@ -60,6 +67,17 @@ export function stableOwnOrder(team, previousOrder = []) {
 // renderer's copy, which only changes when the damage line plays.
 // During a replay the renderer is the only truthful source: a Pokémon it has not
 // shown yet is at full health with no status, never the server's end state.
+// Exact HP with its percentage to one decimal place, like "75/301 (24.9%)". A fainted Pokémon reads
+// "0/301 (0%)" once the battle has shown its full HP.
+export function ownExactHealth(battle, pokemon, replaying = false) {
+  const health = ownDisplayedHealth(battle, pokemon, replaying);
+  const shown = health.condition.match(/^(\d+)\/(\d+)/);
+  if (!shown && !health.fainted) return '—';
+  const client = battle?.mySide?.pokemon?.find(p => p.ident === pokemon?.ident);
+  const maxhp = shown ? Number(shown[2]) : client?.maxhp > 0 ? client.maxhp : 0;
+  const hp = shown ? Number(shown[1]) : 0;
+  return maxhp ? `${hp}/${maxhp} (${Math.round(hp / maxhp * 1000) / 10}%)` : '0 (0%)';
+}
 export function ownDisplayedHealth(battle, pokemon, replaying = false) {
   const client = battle?.mySide?.pokemon?.find(p => p.ident === pokemon?.ident);
   if (client && Number.isFinite(client.hp) && client.maxhp > 0) {
