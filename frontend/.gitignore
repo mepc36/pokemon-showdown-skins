@@ -2,7 +2,6 @@ node_modules/
 dist/
 .env.local
 .DS_Store
-public/source.zip
 public/vendor/
 vendor/text/
 vendor/pokemon-showdown/battle*.ts
