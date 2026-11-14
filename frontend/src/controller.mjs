@@ -1,16 +1,16 @@
-// Y (2) opens the page of the move or Pokémon under the cursor. X (3) opens and closes the chat.
-// Button 4 (the top left bumper) goes to the own side and button 5 (the top right bumper) to the opponent's side; each does nothing on its own side.
-// Select (8) opens the menu modal. Start (9) opens the battle menu. Buttons 6, 7, 10 and 11 (R3) do nothing. iPad Chrome has also reported every bumper as button 10, depending on how iPadOS sees the controller; then no bumper changes sides.
-export const BUTTONS = {0: 'cancel', 1: 'confirm', 2: 'info', 3: 'chat', 4: 'home', 5: 'foe', 8: 'tools', 9: 'battle', 12: 'up', 13: 'down', 14: 'left', 15: 'right'};
+// Y (2) switches the team row: to the opponent's from yours, back to yours from theirs. X (3) does nothing.
+// Button 4 (the top left bumper) opens and closes the chat. Button 5 (the top right bumper) opens and closes the page of the move or Pokémon under the cursor.
+// Select (8) opens the menu modal. Start (9) opens the battle menu. Buttons 6, 7, 10 and 11 (R3) do nothing. iPad Chrome has also reported every bumper as button 10, depending on how iPadOS sees the controller; then neither bumper does anything.
+export const BUTTONS = {0: 'cancel', 1: 'confirm', 2: 'flip', 4: 'chat', 5: 'info', 8: 'tools', 9: 'battle', 12: 'up', 13: 'down', 14: 'left', 15: 'right'};
 export const risingEdges = (current, previous) => current.flatMap((pressed, index) => pressed && !previous[index] ? [index] : []);
 
-// The keyboard has these keys and no others: the arrows, Enter (A), Escape (B), 1, 2, I, C, Tab and Space.
+// The keyboard has these keys and no others: the arrows, Enter (A), Escape (B), 2, I, C, Tab and Space.
 // Every key that opens a view also closes it: Tab the Select menu, Space the Start menu, C the chat, and I the page
-// of the move or Pokémon under the cursor. 1 goes to the own side and 2 to the opponent's,
-// like the top bumpers. The Controls view in the Select menu (CONTROLS in main.js) lists all of this; keep it in step. Y on the controller only opens that page; B closes it.
+// of the move or Pokémon under the cursor, like the top bumpers. 2 switches the team row, like Y.
+// The Controls view in the Select menu (CONTROLS in main.js) lists all of this; keep it in step. B also closes the page and the chat.
 export function startController({action, diagnostic, ignored = () => new Set()}) {
   let previous = [], device = '', repeatAt = 0, heldDirection = '';
-  const keys = {ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Enter: 'confirm', Escape: 'cancel', i: 'infoToggle', Tab: 'tools', ' ': 'battle', 1: 'home', 2: 'foe', c: 'chat'};
+  const keys = {ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Enter: 'confirm', Escape: 'cancel', i: 'infoToggle', Tab: 'tools', ' ': 'battle', 2: 'flip', c: 'chat'};
   document.addEventListener('keydown', event => {
     if (/INPUT|TEXTAREA|SELECT/.test(event.target.tagName)) return;
     diagnostic(`Key ${event.code} · cancelable ${event.cancelable}`);

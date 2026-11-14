@@ -27,7 +27,9 @@ const fit = async page => page.evaluate(() => {
 // element handle can go stale between lookup and measurement.
 const height = (page, selector) => page.evaluate(sel => document.querySelector(sel)?.getBoundingClientRect().height ?? 0, selector);
 // The keys 2 and 1 go to the opponent's row and back to the own row; this goes to whichever row is not showing.
-const flip = async target => target.keyboard.press(await target.locator('#opponent-roster').isVisible() ? '1' : '2');
+const flip = async target => target.keyboard.press('2');
+// Y switches sides, so your active Pokémon's first move is one press away from their row and two from yours.
+async function toFirstMove(target) { if (await target.locator('#roster').isVisible()) await pad(target, 2); await pad(target, 2); }
 async function pad(page, index) {
   // Synchronize with the real controller poll. A fixed 55 ms pulse can fall
   // entirely between WebKit frames, especially immediately after a screenshot.
@@ -74,27 +76,25 @@ try {
     check(await page.evaluate(() => ['#switch-1', '#opponent-1'].every(sel => { const css = getComputedStyle(document.querySelector(sel)); return css.backgroundColor === 'rgb(201, 237, 214)' && css.backgroundImage === 'none' && css.boxShadow === 'none'; }) && ['#switch-2', '#opponent-2'].every(sel => getComputedStyle(document.querySelector(sel)).backgroundColor !== 'rgb(201, 237, 214)')), 'Active Pokémon on both rosters are shaded green, with no blue border; bench Pokémon are not');
     await page.locator('#switch-3').focus(); await stick(page, 1);
     check(await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-3', 'The right stick no longer flips the team row');
-    await pad(page, 3);
-    const bumperOpened = await page.evaluate(() => document.querySelector('#modal').open && document.querySelector('#modal').dataset.view === 'chat');
-    await pad(page, 3);
-    check(bumperOpened && await page.locator('dialog[open]').count() === 0 && await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-3', 'X (button 3) opens the chat from the battle screen and closes it again, back on the same button');
-    for (const other of [6, 7, 10, 11]) await pad(page, other);
-    check(await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'switch-3', 'Buttons 6, 7, 10 and 11 (R3) do nothing on the battle screen');
     await pad(page, 4);
-    check(await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'move-1', 'The top left bumper (4) on the own side puts the cursor on the active Pokémon\'s first move');
+    const bumperOpened = await page.evaluate(() => document.querySelector('#modal').open && document.querySelector('#modal').dataset.view === 'chat');
+    await pad(page, 4);
+    check(bumperOpened && await page.locator('dialog[open]').count() === 0 && await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-3', 'The top left bumper (4) opens the chat from the battle screen and closes it again, back on the same button');
+    for (const other of [3, 6, 7, 10, 11]) await pad(page, other);
+    check(await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'switch-3', 'X (3) and buttons 6, 7, 10 and 11 (R3) do nothing on the battle screen');
     await page.locator('#switch-3').focus();
-    await pad(page, 5);
-    check(await page.locator('#opponent-roster').isVisible() && !await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id === 'opponent-1' && document.activeElement.dataset.active === 'true') && await page.locator('.move-preview').count() === 4, 'The top right bumper (5) flips to the opponent row and focuses their active Pokémon, with its moves in the move row');
+    await pad(page, 2);
+    check(await page.locator('#opponent-roster').isVisible() && !await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id === 'opponent-1' && document.activeElement.dataset.active === 'true') && await page.locator('.move-preview').count() === 4, 'Y (2) flips to the opponent row and focuses their active Pokémon, with its moves in the move row');
     const foeFirstMove = await page.locator('#preview-move-1 strong').innerText();
-    await page.locator('#preview-move-1').focus(); await pad(page, 2); await page.waitForSelector('#info-content');
+    await page.locator('#preview-move-1').focus(); await pad(page, 5); await page.waitForSelector('#info-content');
     check((await page.locator('#modal-title').innerText()).startsWith(foeFirstMove.replace(/ 👀$/, '')), `R3 on the foe's first move opens that move, not an own move: ${await page.locator('#modal-title').innerText()}`);
     const foeTitles = [await page.locator('#modal-title').innerText()];
     for (let press = 0; press < 12; press++) { await pad(page, 15); const shown = await page.locator('#modal-title').innerText(); if (shown === foeTitles[0]) break; foeTitles.push(shown); }
     const foeListed = await page.evaluate(() => [...document.querySelectorAll('#choices .move-preview strong')].map(el => el.textContent).filter(text => text && text !== '—' && !text.startsWith('+')).length);
     await pad(page, 14);
     check(new Set(foeTitles).size === foeTitles.length && foeTitles.length >= foeListed && foeTitles.length <= 12 && await page.locator('#modal-title').innerText() === foeTitles.at(-1), `Left and right on a foe move page run through that Pokémon's listed moves and wrap around: ${foeTitles.join('|')} (${foeListed} in the move row)`);
-    await pad(page, 2);
-    check(await page.locator('dialog[open]').count() === 0, 'Y closes the move page it opened');
+    await pad(page, 5);
+    check(await page.locator('dialog[open]').count() === 0, 'The top right bumper closes the move page it opened');
     await page.locator('#opponent-3').focus();
     check((await page.locator('#opponent-3 strong').innerText()).replace(/\s+/g, ' ') === 'Rotom-Wash PAR', 'Status sits on the name line of the roster button');
     check(await page.locator('.move-preview').count() === 4 && await page.locator('.move-preview:not(.unknown-move)').count() >= 1 && (await page.locator('.move-preview').first().innerText()).includes('Hydro Pump') && !await page.locator('#move-1').isVisible() && await page.locator('#tera').isDisabled(), 'The cursor on an opponent shows that Pokémon\'s known moves in the move row, blanks for the rest');
@@ -142,7 +142,7 @@ try {
     check((await panelNames('#matchup-own'))[0] === 'Palossand' && await page.locator('.move-preview').count() === 4 && !await page.locator('#move-1').isVisible() && (await page.locator('.move-preview strong').allInnerTexts()).includes('Earth Power'), 'Cursor on a bench Pokémon previews its moves and matchup');
     check(await page.locator('#tera .tera-type').innerText() === 'Water' && (await page.locator('#tera .tera-gem').getAttribute('src')).endsWith('TeraWater.png'), 'The Tera button follows the previewed Pokémon, name plus gem');
     check(await page.locator('.form-tag').count() === 0 && await page.evaluate(() => { const name = document.querySelector('#switch-1 .mon-name'); return name.scrollWidth <= name.clientWidth + 1; }), 'Roster names fit; no region tags on the demo team');
-    await pad(page, 5); await pad(page, 4);
+    await toFirstMove(page);
     await page.locator('#switch-2').focus(); await pad(page, 13);
     check(/^preview-move-\d$/.test(await page.evaluate(() => document.activeElement.id)) && await page.locator('.move-preview').count() === 4, 'The cursor can move onto a previewed move without ending the preview');
     check(await page.evaluate(() => getComputedStyle(document.querySelector('#preview-move-1')).opacity) === '1', 'Previewed moves are not grayed out');
@@ -151,20 +151,20 @@ try {
     await page.locator('#switch-2').focus();
     await pad(page, 12);
     check(await page.locator('.move-preview').count() === 4 && /^preview-move-\d$/.test(await page.evaluate(() => document.activeElement.id)) && await page.evaluate(() => getComputedStyle(document.querySelector('.move-preview')).borderTopStyle) === 'solid', 'Up from the bench lands on the benched Pokémon\'s moves, drawn solid and gray');
-    await pad(page, 2);
+    await pad(page, 5);
     check(await page.locator('#modal').isVisible() && await page.locator('#modal-title').innerText() !== '', 'R3 on a grayed preview move opens that move\'s info');
     await pad(page, 0);
     check(await page.locator('.move-preview').count() === 4 && /^preview-move-\d$/.test(await page.evaluate(() => document.activeElement.id)), 'Closing the info returns to the preview move; the preview stays');
     await page.locator('#switch-2').focus(); await pad(page, 0);
     check(await page.locator('.move-preview').count() === 4 && await page.evaluate(() => document.activeElement.id === 'switch-2'), 'B on a bench Pokémon leaves the cursor and the preview where they are');
-    await pad(page, 4);
-    check(await page.locator('.move-preview').count() === 0 && await page.evaluate(() => document.activeElement.id === 'move-1') && await page.locator('#tera').getAttribute('aria-pressed') === 'false', 'The top left bumper on an own bench Pokémon returns to the active Pokémon\'s first move and ends the preview');
+    await pad(page, 2); await pad(page, 2);
+    check(await page.locator('.move-preview').count() === 0 && await page.evaluate(() => document.activeElement.id === 'move-1') && await page.locator('#tera').getAttribute('aria-pressed') === 'false', 'Y twice from an own bench Pokémon goes to their row and back to the active Pokémon\'s first move, ending the preview');
     await page.locator('#switch-2').focus();
-    await pad(page, 5); await page.locator('#opponent-3').focus(); await pad(page, 0);
+    await pad(page, 2); await page.locator('#opponent-3').focus(); await pad(page, 0);
     check(await page.evaluate(() => document.activeElement.id === 'opponent-3'), 'B on an opponent leaves the cursor there');
-    await pad(page, 4);
-    check(await page.locator('.move-preview').count() === 0 && await page.locator('#move-1').isVisible() && await page.evaluate(() => document.activeElement.id === 'move-1'), 'The top left bumper on an opponent returns to the active Pokémon\'s first move and ends the preview');
-    check(await page.locator('#roster').isVisible() && !await page.locator('#opponent-roster').isVisible(), 'The top left bumper on an opponent flips the team row back to the own side');
+    await pad(page, 2);
+    check(await page.locator('.move-preview').count() === 0 && await page.locator('#move-1').isVisible() && await page.evaluate(() => document.activeElement.id === 'move-1'), 'Y on an opponent returns to the active Pokémon\'s first move and ends the preview');
+    check(await page.locator('#roster').isVisible() && !await page.locator('#opponent-roster').isVisible(), 'Y on an opponent flips the team row back to the own side');
     await page.locator('#switch-1').focus();
     check(await page.locator('#tera .tera-type').innerText() === 'Psychic', 'Leaving the preview restores the active Pokémon\'s Tera type');
     check(await page.locator('.info-facts > div[data-cue]:not([data-cue=""])').count() === 0, 'No stale cue borders remain outside the panels');
@@ -198,26 +198,26 @@ try {
     await page.screenshot({path: `test-results/${engineName}-menu-${viewport.width}-${viewport.height}.png`});
     await pad(page, 0);
     check(await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'switch-1', 'B closes the menu and returns to the battle choices');
-    await page.locator('#move-1').focus(); await pad(page, 5);
-    check(await page.locator('dialog[open]').count() === 0 && await page.locator('#opponent-roster').isVisible() && await page.evaluate(() => document.activeElement.id === 'opponent-1' && document.activeElement.dataset.active === 'true') && await page.locator('.move-preview').count() === 4, 'The top right bumper from the move row flips to the opponent row, shows their active Pokémon\'s moves and focuses that Pokémon');
-    await page.locator('#opponent-3').focus(); await pad(page, 5);
-    check(await page.evaluate(() => document.activeElement.id === 'opponent-1' && document.activeElement.dataset.active === 'true'), 'The top right bumper on the opponent side returns to their active Pokémon');
-    await page.locator('#opponent-3').focus(); await pad(page, 1);
-    check(await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'opponent-3', 'A on an opponent roster button does nothing; only Y opens the page');
+    await page.locator('#move-1').focus(); await pad(page, 2);
+    check(await page.locator('dialog[open]').count() === 0 && await page.locator('#opponent-roster').isVisible() && await page.evaluate(() => document.activeElement.id === 'opponent-1' && document.activeElement.dataset.active === 'true') && await page.locator('.move-preview').count() === 4, 'Y from the move row flips to the opponent row, shows their active Pokémon\'s moves and focuses that Pokémon');
+    await page.locator('#opponent-3').focus(); await pad(page, 2);
+    check(await page.locator('#roster').isVisible() && !await page.locator('#opponent-roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'move-1', 'Y on the opponent side switches back to your row, on your active Pokémon\'s first move');
+    await pad(page, 2); await page.locator('#opponent-3').focus(); await pad(page, 1);
+    check(await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'opponent-3', 'A on an opponent roster button does nothing; only the top right bumper opens the page');
     await flip(page); await page.locator('#switch-1').focus(); await pad(page, 1);
     check(await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'switch-1', 'A on your active Pokémon\'s roster button does nothing');
     await page.locator('#switch-4').focus(); await pad(page, 1);
     check(await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'switch-4', 'A on a fainted Pokémon\'s roster button does nothing');
-    await pad(page, 2);
-    check(await page.locator('dialog[open]').count() === 1 && (await page.locator('#modal-title').innerText()).includes('Breloom'), 'Y still opens that Pokémon\'s page');
+    await pad(page, 5);
+    check(await page.locator('dialog[open]').count() === 1 && (await page.locator('#modal-title').innerText()).includes('Breloom'), 'The top right bumper still opens that Pokémon\'s page');
     await pad(page, 0);
-    await pad(page, 5); await pad(page, 4); await page.keyboard.press('t');
-    check(await page.locator('dialog[open]').count() === 0 && await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'move-1', 'The top left bumper flips back to the own side on the active Pokémon\'s first move; T does nothing');
+    await toFirstMove(page); await page.keyboard.press('t');
+    check(await page.locator('dialog[open]').count() === 0 && await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'move-1', 'Y flips back to the own side on the active Pokémon\'s first move; T does nothing');
     const fieldBefore = await page.locator('#arena').evaluate(el => el.getBoundingClientRect().width);
     await page.keyboard.press('Tab');
     check(await page.evaluate(() => document.activeElement.id) === 'stats' && await page.locator('.menu-grid button').first().evaluate(el => el.id) === 'stats', 'The menu opens with Ladder stats as the first button and focused');
-    await pad(page, 5);
-    check(await page.locator('#modal-title').innerText() === 'Menu', 'A bumper does nothing while the menu is open');
+    await pad(page, 2); await pad(page, 4); await pad(page, 5);
+    check(await page.locator('#modal-title').innerText() === 'Menu', 'Y and the bumpers do nothing while the menu is open');
     // An error in the app's code replaces the open view with the error view; B returns to the battle screen.
     await page.evaluate(() => { setTimeout(() => { throw new Error('Test failure 1'); }, 0); });
     await page.waitForFunction(() => document.querySelector('#modal').dataset.view === 'error');
@@ -257,7 +257,7 @@ try {
     check(sizeLatest === sizePrevious && await page.evaluate(() => document.querySelector('#modal').getBoundingClientRect().height >= Math.min(650, innerHeight - 24) - 1), `Chat modal keeps one size across turns: ${sizeLatest} vs ${sizePrevious}`);
     await pad(page, 0);
     check(await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'move-1', 'B in the chat closes it, back on the battle screen');
-    await page.locator('#switch-1').focus(); await pad(page, 2);
+    await page.locator('#switch-1').focus(); await pad(page, 5);
     await page.waitForSelector('#info-content');
     check(await page.locator('[data-info-tab], .inspection-note').count() === 0 && (await page.locator('.inspection-footer').innerText()).includes('Page 1 / 2'), 'Own Pokémon have the main page and the ability page: no Overview tab, no footnote');
     check((await page.locator('#modal-title').innerText()) === 'Grumpig · Lv 92', 'R3 shows name and level without gender');
@@ -296,8 +296,8 @@ try {
     check(await page.locator('.overview-layout').count() === 1 && (await page.locator('.inspection-footer').innerText()).includes('Page 1 / 2'), 'Up on the main page goes nowhere');
     await pad(page, 15);
     check((await page.locator('#modal-title').innerText()).includes('Palossand'), 'D-pad right moves to the next Pokémon, matching the roster');
-    await pad(page, 4); await pad(page, 5); await flip(page); await pad(page, 3); await pad(page, 11);
-    check((await page.locator('#modal-title').innerText()).includes('Palossand') && await page.locator('#roster').isVisible(), 'The bumpers, the side keys, X and R3 inside a page do nothing');
+    await pad(page, 4); await pad(page, 2); await flip(page); await pad(page, 3); await pad(page, 11);
+    check((await page.locator('#modal-title').innerText()).includes('Palossand') && await page.locator('#roster').isVisible(), 'The top left bumper, Y, the key 2, X and R3 inside a page do nothing');
     await pad(page, 14);
     check((await page.locator('#modal-title').innerText()).includes('Grumpig'), 'D-pad left moves to the previous Pokémon');
     await pad(page, 14);
@@ -306,12 +306,12 @@ try {
     check((await page.locator('#modal-title').innerText()).includes('Grumpig') && await page.locator('#roster').isVisible(), 'D-pad right from your sixth wraps to your first');
     for (let press = 0; press < 5; press++) await pad(page, 15);
     check((await page.locator('#modal-title').innerText()).includes('Iron Hands') && /0(\/\d+)? \(0%\)/.test(await page.locator('.identity-hp').innerText()) && !(await page.locator('.identity-hp').innerText()).includes('fnt'), `D-pad right reaches the sixth, fainted Pokémon, whose banner reads zero HP and 0%, not fnt: ${await page.locator('.identity-hp').innerText()}`);
-    await pad(page, 2);
-    check(!await page.locator('#modal').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-1', 'One Y closes the whole panel and restores the original roster focus');
-    await page.locator('#switch-2').focus(); await pad(page, 2); await pad(page, 14); await pad(page, 14); await pad(page, 2);
+    await pad(page, 5);
+    check(!await page.locator('#modal').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-1', 'One press of the top right bumper closes the whole panel and restores the original roster focus');
+    await page.locator('#switch-2').focus(); await pad(page, 5); await pad(page, 14); await pad(page, 14); await pad(page, 5);
     check(await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-2', 'Paging past your first Pokémon inside a page keeps your row, and closing lands on the opening button');
     check(!await page.locator('#arena .leftbar').isVisible() && !await page.locator('#arena .rightbar').isVisible(), 'Renderer side bars are hidden');
-    await page.locator('#switch-1').focus(); await page.locator('#move-2').focus(); await pad(page, 2);
+    await page.locator('#switch-1').focus(); await page.locator('#move-2').focus(); await pad(page, 5);
     check(await page.locator('#modal-title').innerText() === 'Shadow Ball' && (await page.locator('#info-content').innerText()).includes('20%'), 'R3 on a main move opens its detailed effects');
     check(!(await fit(page)).length, `Move details fit: ${await fit(page)}`);
     check(await page.evaluate(() => { const layout = document.querySelector('.move-detail-layout'); const desc = layout.querySelector('.move-description'), facts = layout.querySelector('.info-facts'); const labels = [...facts.querySelectorAll('dt')].map(d => d.textContent); return desc && facts && desc.getBoundingClientRect().bottom <= facts.getBoundingClientRect().top && getComputedStyle(facts).gridTemplateColumns.split(' ').length === 3 && labels.join('|') === '💥 Power|🎯 Accuracy|🔋 PP|🏃 Priority|🥊 Contact|👥 Target' && /^[⚔️✨🌀]/u.test(document.querySelector('.move-banner strong').textContent); }), 'Move page: description on top, then two rows of three emoji-led fact boxes, category emoji in the banner');
@@ -323,16 +323,16 @@ try {
     check(await page.locator('#modal-title').innerText() === 'Psyshock', 'Up and down do nothing on a move page');
     await pad(page, 0);
     check(await page.evaluate(() => document.activeElement.id) === 'move-2', 'B closes move details directly to the battle move');
-    await flip(page); await page.locator('#opponent-1').focus(); await pad(page, 2);
+    await flip(page); await page.locator('#opponent-1').focus(); await pad(page, 5);
     check(/^Landorus · Lv 76 · [✅❓] /u.test(await page.locator('#modal-title').innerText()) && (await page.locator('.info-facts').first().innerText()).includes('Sheer Force') && (await page.locator('.identity-hp').innerText()).includes('31%'), 'Opponent title shows level and the role badge; cards show the revealed ability and last shown HP');
     check(await page.locator('.overview-layout').count() === 1 && await page.locator('.role-layout, .merged-overview, [data-identified]').count() === 0 && await page.evaluate(() => [...document.querySelectorAll('.role-group')].every(group => group.querySelector('.role-heading') && group.querySelector('.compact-moves'))) && await page.locator('.compact-move[data-revealed="true"]').count() >= 1, 'The opponent page uses the own-Pokémon layout, with revealed moves marked and no duplicate role tags');
     const roleTitle = await page.locator('#modal-title').innerText();
     await page.locator('.compact-move').first().click(); await pad(page, 11);
     check(await page.locator('#modal-title').innerText() === roleTitle && await page.locator('.overview-layout').count() === 1, 'R3 on a role move never opens another menu');
-    await pad(page, 2);
-    check(await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'opponent-1', 'Y on a role move closes the page, back on the roster button');
-    await pad(page, 2);
-    check(await page.locator('#modal-title').innerText() === roleTitle, 'Y opens the page again');
+    await pad(page, 5);
+    check(await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'opponent-1', 'The top right bumper on a role move closes the page, back on the roster button');
+    await pad(page, 5);
+    check(await page.locator('#modal-title').innerText() === roleTitle, 'The top right bumper opens the page again');
     check(await page.locator('#info-content .move-description, #info-content .move-metrics, #info-content .move-summary').count() === 0, 'Role move lists omit power and descriptions');
     check(!(await fit(page)).length, `Role fits without scrolling: ${await fit(page)}`);
     await page.screenshot({path: `test-results/${engineName}-possible-role-${viewport.width}-${viewport.height}.png`});
@@ -344,12 +344,12 @@ try {
     check((await page.locator('#modal-title').innerText()).includes('Landorus') && await page.locator('#opponent-roster').isVisible(), `Right from the opponent's last known Pokémon wraps to their first, skipping unknown slots: ${lastKnownFoe}`);
     await pad(page, 14);
     check(await page.locator('#modal-title').innerText() === lastKnownFoe && await page.locator('#opponent-roster').isVisible(), 'Left from the opponent\'s first Pokémon wraps to their last known one');
-    await pad(page, 2);
-    await page.locator('#opponent-5').focus(); await pad(page, 2);
+    await pad(page, 5);
+    await page.locator('#opponent-5').focus(); await pad(page, 5);
     check(await page.locator('[data-info-tab]').count() === 0 && await page.locator('#modal .type-badge, #modal .compact-move').count() === 0 && (await page.locator('#modal-title').innerText()).includes('Unknown'), 'Unknown slots expose neither a guessed identity nor possible sets');
     await pad(page, 15);
     check((await page.locator('#modal-title').innerText()).includes('Landorus'), 'Right from an unknown slot goes to the opponent\'s first Pokémon');
-    await pad(page, 2); await flip(page);
+    await pad(page, 5); await flip(page);
     for (const id of ['setup', 'diagnostics']) {
       await page.keyboard.press('Tab'); await page.locator(`#${id}`).click();
       check(!(await fit(page)).length, `${id} has no scrolling: ${await fit(page)}`);
@@ -375,21 +375,17 @@ try {
     check(pageByKey === 1 && await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'switch-1', 'I opens the page under the cursor and closes it again');
     await page.keyboard.press('2');
     const theirSide = await page.locator('#opponent-roster').isVisible() && await page.evaluate(() => document.activeElement.id === 'opponent-1');
-    await page.keyboard.press('2');
-    const stillTheirs = await page.locator('#opponent-roster').isVisible() && await page.evaluate(() => document.activeElement.id === 'opponent-1');
-    await page.keyboard.press('1');
+    await page.locator('#opponent-3').focus(); await page.keyboard.press('2');
     const backHome = await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'move-1';
-    await page.locator('#switch-2').focus(); await page.keyboard.press('1');
-    const benchToMove = await page.evaluate(() => document.activeElement.id) === 'move-1';
-    await page.keyboard.press('2'); await page.locator('#opponent-3').focus(); await page.keyboard.press('2');
-    const backToActiveFoe = await page.evaluate(() => document.activeElement.id === 'opponent-1' && document.activeElement.dataset.active === 'true');
-    await page.keyboard.press('1');
-    check(theirSide && stillTheirs && backHome && benchToMove && backToActiveFoe && await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'move-1', '2 goes to their side and, pressed there, returns to their active Pokémon; 1 goes to your side and, pressed there, returns to your first move');
+    await page.locator('#switch-2').focus(); await page.keyboard.press('2');
+    const benchToFoe = await page.locator('#opponent-roster').isVisible() && await page.evaluate(() => document.activeElement.id === 'opponent-1' && document.activeElement.dataset.active === 'true');
+    await page.keyboard.press('2');
+    check(theirSide && backHome && benchToFoe && await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'move-1', '2 switches to their row on their active Pokémon and, pressed there, back to your row on your first move');
     const rowBefore = await page.locator('#roster').isVisible();
-    for (const key of ['f', 'l', 'h', 'x', 't', 'a', 's']) await page.keyboard.press(key);
-    check(await page.locator('dialog[open]').count() === 0 && await page.locator('#roster').isVisible() === rowBefore && await page.evaluate(() => document.activeElement.id) === 'move-1' && await page.locator('#tera').getAttribute('aria-pressed') === 'false', 'The removed keys F, L, H, X, A and S, and T, do nothing');
+    for (const key of ['1', 'f', 'l', 'h', 'x', 't', 'a', 's']) await page.keyboard.press(key);
+    check(await page.locator('dialog[open]').count() === 0 && await page.locator('#roster').isVisible() === rowBefore && await page.evaluate(() => document.activeElement.id) === 'move-1' && await page.locator('#tera').getAttribute('aria-pressed') === 'false', 'The removed keys 1, F, L, H, X, A and S, and T, do nothing');
     await page.keyboard.press('Tab'); await page.locator('#controls').click();
-    check(await page.locator('#modal-title').innerText() === 'Controls' && (await page.locator('.controls-table thead th').allInnerTexts()).join('|') === '|Controller|Keyboard' && await page.locator('.controls-table tbody tr').count() === 9 && !(await page.locator('.controls-table').innerText()).includes('Flip') && (await page.locator('.controls-table tbody tr').allInnerTexts()).map(row => row.replace(/\s+/g, ' ')).includes('Go to your active Pokémon\'s first move Top left bumper 1') && await page.locator('#modal-body button').count() === 0, `Controls lists each action with its controller button and keyboard key: ${(await page.locator('.controls-table tbody td').allInnerTexts()).join(',')}`);
+    check(await page.locator('#modal-title').innerText() === 'Controls' && (await page.locator('.controls-table thead th').allInnerTexts()).join('|') === '|Controller|Keyboard' && await page.locator('.controls-table tbody tr').count() === 8 && !(await page.locator('.controls-table').innerText()).includes('Flip') && await page.locator('.controls-table tbody tr').allInnerTexts().then(rows => rows.map(row => row.replace(/\s+/g, ' '))).then(rows => ['Open or close the chat Top left bumper C', 'Open or close a move or Pokémon page Top right bumper I', 'Switch between your team and theirs Y 2'].every(row => rows.includes(row))) && await page.locator('#modal-body button').count() === 0, `Controls lists each action with its controller button and keyboard key: ${(await page.locator('.controls-table tbody td').allInnerTexts()).join(',')}`);
     check(!(await fit(page)).length && await page.evaluate(() => { const dialog = document.querySelector('#modal'); return dialog.scrollHeight <= dialog.clientHeight + 1; }), `Controls fit without scrolling: ${await fit(page)}`);
     await page.screenshot({path: `test-results/${engineName}-controls-${viewport.width}-${viewport.height}.png`});
     await pad(page, 0);
@@ -658,7 +654,7 @@ try {
   check(teraSpent.image === 'none' && teraSpent.color === 'rgb(227, 230, 234)' && teraSpent.strike === 'line-through' && teraSpent.gem.includes('grayscale') && teraSpent.dot === 0 && await cancel.locator('#tera').isDisabled(), `Tera already used: gray button, type struck through, gray gem, no dot: ${JSON.stringify(teraSpent)}`);
   await cancel.locator('#switch-3').focus();
   check((await teraLook()).used === 'true', 'A bench preview keeps the used look');
-  await pad(cancel, 5); await pad(cancel, 4);
+  await toFirstMove(cancel);
   await cancel.evaluate(async () => {
     const {demoRequest} = await import('/src/demo.mjs');
     // The server deletes a Pokémon's terastallized flag when it faints, so from then on no request carries it.
@@ -670,7 +666,7 @@ try {
   check((await teraLook()).used === 'true' && await cancel.locator('#tera').isDisabled(), 'Tera stays used for the rest of the battle when no request carries the flag any more');
   await cancel.locator('#switch-3').focus();
   check((await teraLook()).used === 'true', 'A bench preview still shows Tera as used then');
-  await pad(cancel, 5); await pad(cancel, 4);
+  await toFirstMove(cancel);
 
   // Switching reorders the server request (active first); the roster keeps the lead first.
   await cancel.evaluate(async () => {
@@ -756,7 +752,7 @@ try {
   // R3 opens a move's page whenever the move is on screen: a locked own move, and a fainted Pokémon's move.
   const lockedMove = await cancel.locator('#move-2 strong').innerText();
   // The cursor may sit on a bench Pokémon here, whose preview hides the own moves; flipping to the opponent row and back returns to them.
-  await pad(cancel, 5); await pad(cancel, 4);
+  await toFirstMove(cancel);
   await cancel.locator('#move-2').focus();await cancel.keyboard.press('i');
   check(await cancel.locator('dialog[data-view=move][open]').count() === 1 && await cancel.locator('#modal-title').innerText() === lockedMove, `R3 on a locked own move opens that move: ${lockedMove}`);
   await cancel.keyboard.press('i');

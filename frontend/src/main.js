@@ -143,10 +143,9 @@ const CONTROLS = [
   ['Move the cursor, page inside a view', 'D-pad or left stick', 'Arrow keys'],
   ['Press the button under the cursor', 'A', 'Enter'],
   ['Close a view, undo a choice', 'B', 'Escape'],
-  ['Go to your active Pokémon\'s first move', 'Top left bumper', '1'],
-  ['Go to their active Pokémon', 'Top right bumper', '2'],
-  ['Open or close a move or Pokémon page', 'Y', 'I'],
-  ['Open or close the chat', 'X', 'C'],
+  ['Open or close the chat', 'Top left bumper', 'C'],
+  ['Open or close a move or Pokémon page', 'Top right bumper', 'I'],
+  ['Switch between your team and theirs', 'Y', '2'],
   ['Open the Select menu', 'Select', 'Tab'],
   ['Open the Start menu', 'Start', 'Space'],
 ];
@@ -544,7 +543,7 @@ function renderMatchup() {
 const choicesDisabled = request => !fixture && (!state.authenticated || state.recovering || state.ended || !request);
 // One grayed preview-move button, shared by own bench previews and foe previews.
 function previewMoveButton(move, index, description, extra = '', pp = '') {
-  if (move?.more) return `<button id="preview-move-${index + 1}" class="move-preview more-moves" data-nav data-row="moves" aria-disabled="true" aria-description="More candidate moves; Y on the Pokémon lists them"><strong>+${move.more} more</strong></button>`;
+  if (move?.more) return `<button id="preview-move-${index + 1}" class="move-preview more-moves" data-nav data-row="moves" aria-disabled="true" aria-description="More candidate moves; the top right bumper on the Pokémon lists them"><strong>+${move.more} more</strong></button>`;
   if (!move) return `<button id="preview-move-${index + 1}" class="move-preview unknown-move" data-nav data-row="moves" aria-disabled="true" aria-label="Unknown move">—</button>`;
   const type = move.type || window.BattleMovedex[move.id]?.type || '';
   return `<button id="preview-move-${index + 1}" class="move-preview" data-nav data-row="moves" aria-disabled="true" data-type="${escape(type)}" ${extra} aria-description="${description}"><strong>${escape(move.name)}</strong><small><span class="move-type">${escape(type)}</span><span>${pp}</span></small></button>`;
@@ -600,7 +599,7 @@ function renderRoster() {
   renderMatchup();
 }
 
-// One team row shows at a time; the top bumpers (4 and 5) or the keys 1 and 2 pick one. The right stick does nothing.
+// One team row shows at a time; Y (2) or the key 2 switches between them. The right stick does nothing.
 // Focus always lands on the shown side's active Pokémon, wherever the cursor was.
 function showTeam(side) {
   shownTeam = side;
@@ -685,7 +684,7 @@ function render() {
   const reviewOnly = !fixture && state.ended;
   $('choices').innerHTML = `${endControls}<div class="moves" role="group" aria-label="Moves">${choices.moves.map(move => {
     const type = window.BattleMovedex[move.id]?.type || '';
-    return btn(`move-${move.index}`, `<strong>${escape(move.move)}</strong><small><span class="move-type">${escape(type)}</span><span>${escape(move.pp ?? '—')} / ${escape(move.maxpp ?? '—')} PP</span></small>`, 'moves', !reviewOnly && (disabled || !waiting && !move.enabled), `data-type="${escape(type)}" data-locked="${reviewOnly || waiting || !move.enabled}" aria-description="Y or I for move information"`);
+    return btn(`move-${move.index}`, `<strong>${escape(move.move)}</strong><small><span class="move-type">${escape(type)}</span><span>${escape(move.pp ?? '—')} / ${escape(move.maxpp ?? '—')} PP</span></small>`, 'moves', !reviewOnly && (disabled || !waiting && !move.enabled), `data-type="${escape(type)}" data-locked="${reviewOnly || waiting || !move.enabled}" aria-description="Top right bumper or I for move information"`);
   }).join('')}</div>
     <div class="team-row" data-side="own" ${shownTeam === 'own' ? '' : 'hidden'}><span class="team-label">You</span><div id="roster" class="team" role="group" aria-label="Your six Pokémon"></div></div>
     <div class="team-row" data-side="opponent" ${shownTeam === 'opponent' ? '' : 'hidden'}><span class="team-label">Foe</span><div id="opponent-roster" class="team" role="group" aria-label="Opponent’s six Pokémon"></div></div>`;
@@ -797,7 +796,7 @@ async function init() {
     if (action === 'cancel') {
       // B on the battle screen undoes: a pending choice (and its Tera), or a Tera that is switched on with no
       // choice sent yet. On the controller check it only shows its number.
-      // B closes a move or Pokémon page and the chat too; Y (or I) and X (or C) also close the one they opened.
+      // B closes a move or Pokémon page and the chat too; the top right bumper (or I) and the top left bumper (or C) also close the one they opened.
       if (modal.open && modal.dataset.view === 'diagnostics') return;
       // A view opened from the Select menu goes back to that menu; a second B closes the menu.
       else if (modal.open && ['stats', 'controls', 'errors', 'setup'].includes(modal.dataset.view)) showMenu();
@@ -814,16 +813,16 @@ async function init() {
     // Select closes the Select menu and Start closes the Start menu; either still opens its own menu from the battle screen.
     if (action === 'tools' && modal.open && modal.dataset.view === 'menu') { closeModal(); return; }
     if (action === 'battle' && modal.open && modal.dataset.view === 'battle') { closeModal(); return; }
-    // X opens the chat from the battle screen and closes it again; with anything else open it does nothing.
+    // The top left bumper (or C) opens the chat from the battle screen and closes it again; with anything else open it does nothing.
     if (action === 'chat' && modal.open && modal.dataset.view === 'chat') { closeModal(); return; }
-    // Y and the keyboard key I close the Pokémon or move page they opened, from any of its pages.
+    // The top right bumper and the keyboard key I close the Pokémon or move page they opened, from any of its pages.
     if (action === 'infoToggle') action = 'info';
     if (action === 'info' && modal.open && infoPage) { closeModal(); return; }
     if (modal.open) return;
-    // The top left bumper shows the own row and puts the cursor on the own active Pokémon's first move.
-    // The top right bumper shows the opponent row and puts the cursor on their active Pokémon's roster button.
-    // Each also does that while its row is already showing. Y opens the page of whatever is under the cursor.
-    ({home: () => { showTeam('own'); focusFirstMove(); }, foe: () => showTeam('opponent'), info, tools: showMenu, battle: showBattleMenu, chat: () => { chatTurn = null; showChat(); }})[action]?.();
+    // Y switches the team row. From your row it shows theirs, with the cursor on their active Pokémon's roster button.
+    // From their row it shows yours, with the cursor on your active Pokémon's first move.
+    // The top right bumper opens the page of whatever is under the cursor.
+    ({flip: () => { if (shownTeam === 'own') showTeam('opponent'); else { showTeam('own'); focusFirstMove(); } }, info, tools: showMenu, battle: showBattleMenu, chat: () => { chatTurn = null; showChat(); }})[action]?.();
   }});
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { music.update(false); return; }
