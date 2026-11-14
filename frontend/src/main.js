@@ -32,7 +32,30 @@ const modal = $('modal');
 // Music is always enabled, including on devices with the old saved mute setting.
 const music = new Music(undefined, {storage: null});
 const sets = new PossibleSets();
-const safe = fn => { try { fn(); } catch (error) { localNotice = error.message; render(); } };
+// Errors in the app's own code are kept since the page loaded (newest first) and each one opens the error view at
+// once, over whatever view was open, so the exact message can be read or screenshotted. B dismisses it.
+// The Errors view in the Select menu lists them all; Clear empties the list.
+const errors = [];
+function reportError(error, where = '') {
+  const message = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+  errors.unshift({at: new Date(), where, message, stack: error instanceof Error && error.stack ? error.stack : ''});
+  if (errors.length > 50) errors.length = 50;
+  showError(errors[0]);
+}
+const errorEntry = (entry, full) => `<div class="error-entry"><small>${escape(entry.at.toLocaleTimeString())}${entry.where ? ` · ${escape(entry.where)}` : ''}</small><p>${escape(entry.message)}</p>${full && entry.stack ? `<pre class="error-stack">${escape(entry.stack)}</pre>` : ''}</div>`;
+function showError(entry) {
+  const returnTo = modalReturnFocus;
+  if (modal.open) modal.close();
+  showModal('Error', `${errorEntry(entry, true)}<p class="small">B closes this. The Errors view in the Select menu keeps it.</p>`, 'error');
+  // The cursor returns to where it was before any view opened, not to the view this one replaced.
+  if (returnTo) modalReturnFocus = returnTo;
+}
+function showErrors() {
+  showModal('Errors', `${errors.length ? errors.map(entry => errorEntry(entry, false)).join('') : '<p class="empty-info">No errors since the page loaded.</p>'}
+    <div class="modal-actions">${btn('clear-errors', 'Clear', 'modal-actions', !errors.length)}</div>`, 'errors');
+  $('clear-errors').onclick = () => { errors.length = 0; showErrors(); };
+}
+const safe = fn => { try { fn(); } catch (error) { reportError(error); } };
 
 // Your clock as last drawn during a live battle, so a tone sounds once as it passes 60, 30, 20, 15, 10 and 5 seconds.
 let ownClock = null;
@@ -103,15 +126,16 @@ new MutationObserver(refreshChat).observe($('hidden-log'), {childList: true, sub
 function showMenu() {
   const reopen = modal.open && modal.dataset.view === 'menu';
   // Three buttons on each row, so the d-pad moves between rows instead of jumping to the close button.
-  // Chat is here as well as on X.
-  showModal('Menu', `<div class="menu-grid">${btn('chat', 'Chat', 'menu-1')}${btn('stats', 'Ladder stats', 'menu-1')}${btn('controls', 'Controls', 'menu-1')}
-    ${btn('setup', 'Setup', 'menu-2')}${btn('diagnostics', 'Controller check', 'menu-2')}${btn('source', 'Source', 'menu-2')}</div>`, 'menu');
-  $('chat').onclick = () => { chatTurn = null; showChat(); };
+  // Chat is not here: X on the controller and C on the keyboard open it.
+  showModal('Menu', `<div class="menu-grid">${btn('stats', 'Ladder stats', 'menu-1')}${btn('controls', 'Controls', 'menu-1')}${btn('errors', 'Errors', 'menu-1')}
+    ${btn('setup', 'Setup', 'menu-2')}${btn('diagnostics', 'Controller check', 'menu-2')}${btn('github', 'GitHub', 'menu-2')}</div>`, 'menu');
   $('stats').onclick = () => showStats();
   $('controls').onclick = showControls;
+  $('errors').onclick = showErrors;
   $('setup').onclick = setup; $('diagnostics').onclick = diagnostics;
-  $('source').onclick = () => { const link = document.createElement('a'); link.href = './source.zip'; link.download = ''; link.click(); };
-  if (!reopen) $('chat').focus({preventScroll: true});
+  // GitHub opens the repository in a new tab. The source archive the build still makes is no longer linked from here.
+  $('github').onclick = () => window.open('https://github.com/mepc36/pokemon-showdown-skins', '_blank', 'noopener');
+  if (!reopen) $('stats').focus({preventScroll: true});
 }
 // Controls: what each controller button and keyboard key does, one row per action. Keep it in step with BUTTONS and
 // the keys in controller.mjs.
@@ -755,7 +779,7 @@ async function init() {
     onBattle(packet) { try {
       if (arena.room !== packet.room) { lastRequest = null; lastMovesRequest = null; ownOrder = []; if (modal.open && infoPage) closeModal(); }
       arena.receive(packet);
-    } catch { localNotice = 'The battle display encountered an error. Controls still use the server request; reload to rebuild the display.'; } },
+    } catch (error) { reportError(error, 'battle display'); } },
   });
   state = session.state;
   render();
@@ -803,4 +827,7 @@ async function init() {
     updateMusic();
   });
 }
-init().catch(error => { $('notice').textContent = error.message; console.error(error); });
+init().catch(error => { reportError(error, 'startup'); console.error(error); });
+// Errors outside the guarded paths (event handlers, timers, promises) open the error view too.
+window.addEventListener('error', event => { if (event.error) reportError(event.error, 'uncaught'); });
+window.addEventListener('unhandledrejection', event => reportError(event.reason, 'promise'));
