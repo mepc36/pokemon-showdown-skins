@@ -102,7 +102,7 @@ new MutationObserver(refreshChat).observe($('hidden-log'), {childList: true, sub
 function showMenu() {
   const reopen = modal.open && modal.dataset.view === 'menu';
   // Three buttons on the first row and two on the second, so the d-pad moves between rows instead of jumping to the close button.
-  // Chat is here as well as on the bumper (10).
+  // Chat is here as well as on X.
   showModal('Menu', `<div class="menu-grid">${btn('chat', 'Chat', 'menu-1')}${btn('rating', 'Rating', 'menu-1')}${btn('setup', 'Setup', 'menu-1')}
     ${btn('diagnostics', 'Controller check', 'menu-2')}${btn('source', 'Source', 'menu-2')}</div>`, 'menu');
   $('chat').onclick = () => { chatTurn = null; showChat(); };
@@ -481,7 +481,7 @@ function renderMatchup() {
 const choicesDisabled = request => !fixture && (!state.authenticated || state.recovering || state.ended || !request);
 // One grayed preview-move button, shared by own bench previews and foe previews.
 function previewMoveButton(move, index, description, extra = '', pp = '') {
-  if (move?.more) return `<button id="preview-move-${index + 1}" class="move-preview more-moves" data-nav data-row="moves" aria-disabled="true" aria-description="More candidate moves; R3 on the Pokémon lists them"><strong>+${move.more} more</strong></button>`;
+  if (move?.more) return `<button id="preview-move-${index + 1}" class="move-preview more-moves" data-nav data-row="moves" aria-disabled="true" aria-description="More candidate moves; Y on the Pokémon lists them"><strong>+${move.more} more</strong></button>`;
   if (!move) return `<button id="preview-move-${index + 1}" class="move-preview unknown-move" data-nav data-row="moves" aria-disabled="true" aria-label="Unknown move">—</button>`;
   const type = move.type || window.BattleMovedex[move.id]?.type || '';
   return `<button id="preview-move-${index + 1}" class="move-preview" data-nav data-row="moves" aria-disabled="true" data-type="${escape(type)}" ${extra} aria-description="${description}"><strong>${escape(move.name)}</strong><small><span class="move-type">${escape(type)}</span><span>${pp}</span></small></button>`;
@@ -537,7 +537,7 @@ function renderRoster() {
   renderMatchup();
 }
 
-// One team row shows at a time; a bumper (10) or F flips between them. The right stick does nothing.
+// One team row shows at a time; the top bumpers (4 and 5) pick one and F flips between them. The right stick does nothing.
 // Focus always lands on the shown side's active Pokémon, wherever the cursor was.
 function showTeam(side = shownTeam === 'own' ? 'opponent' : 'own') {
   shownTeam = side;
@@ -622,7 +622,7 @@ function render() {
   const reviewOnly = !fixture && state.ended;
   $('choices').innerHTML = `${endControls}<div class="moves" role="group" aria-label="Moves">${choices.moves.map(move => {
     const type = window.BattleMovedex[move.id]?.type || '';
-    return btn(`move-${move.index}`, `<strong>${escape(move.move)}</strong><small><span class="move-type">${escape(type)}</span><span>${escape(move.pp ?? '—')} / ${escape(move.maxpp ?? '—')} PP</span></small>`, 'moves', !reviewOnly && (disabled || !waiting && !move.enabled), `data-type="${escape(type)}" data-locked="${reviewOnly || waiting || !move.enabled}" aria-description="R3 or I for move information"`);
+    return btn(`move-${move.index}`, `<strong>${escape(move.move)}</strong><small><span class="move-type">${escape(type)}</span><span>${escape(move.pp ?? '—')} / ${escape(move.maxpp ?? '—')} PP</span></small>`, 'moves', !reviewOnly && (disabled || !waiting && !move.enabled), `data-type="${escape(type)}" data-locked="${reviewOnly || waiting || !move.enabled}" aria-description="Y or I for move information"`);
   }).join('')}</div>
     <div class="team-row" data-side="own" ${shownTeam === 'own' ? '' : 'hidden'}><span class="team-label">You</span><div id="roster" class="team" role="group" aria-label="Your six Pokémon"></div></div>
     <div class="team-row" data-side="opponent" ${shownTeam === 'opponent' ? '' : 'hidden'}><span class="team-label">Foe</span><div id="opponent-roster" class="team" role="group" aria-label="Opponent’s six Pokémon"></div></div>`;
@@ -748,12 +748,13 @@ async function init() {
     // Select closes the Select menu and Start closes the Start menu; either still opens its own menu from the battle screen.
     if (action === 'tools' && modal.open && modal.dataset.view === 'menu') { closeModal(); return; }
     if (action === 'battle' && modal.open && modal.dataset.view === 'battle') { closeModal(); return; }
-    // A bumper (10) opens the chat from the battle screen and closes it again; with anything else open it does nothing.
+    // X opens the chat from the battle screen and closes it again; with anything else open it does nothing.
     if (action === 'chat' && modal.open && modal.dataset.view === 'chat') { closeModal(); return; }
     if (modal.open) return;
-    // Y puts the cursor on the own active Pokémon's first move, flipping back to the own row first.
-    // X puts the cursor on the opponent's active Pokémon's roster button, flipping to the opponent row first.
-    ({home: () => { if (shownTeam !== 'own') showTeam('own'); focusFirstMove(); }, foe: () => showTeam('opponent'), info, team: () => showTeam(), tools: showMenu, battle: showBattleMenu, chat: () => { chatTurn = null; showChat(); }})[action]?.();
+    // The top left bumper flips back to the own row and puts the cursor on the own active Pokémon's first move.
+    // The top right bumper flips to the opponent row and puts the cursor on their active Pokémon's roster button.
+    // Each does nothing while its own row is already showing. Y opens the page of whatever is under the cursor.
+    ({home: () => { if (shownTeam !== 'own') { showTeam('own'); focusFirstMove(); } }, foe: () => { if (shownTeam !== 'opponent') showTeam('opponent'); }, info, team: () => showTeam(), tools: showMenu, battle: showBattleMenu, chat: () => { chatTurn = null; showChat(); }})[action]?.();
   }});
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { music.update(false); return; }
