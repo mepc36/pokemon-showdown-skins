@@ -142,11 +142,11 @@ function showMenu() {
 const CONTROLS = [
   ['Move the cursor, page inside a view', 'D-pad or left stick', 'Arrow keys'],
   ['Press the button under the cursor', 'A', 'Enter'],
-  ['Close a view, undo a choice', 'B', 'Escape'],
-  ['Go to your side', 'Top left bumper', '1'],
-  ['Go to their side', 'Top right bumper', '2'],
-  ['Open a move or Pokémon page', 'Y', 'I'],
-  ['Open the chat', 'X', 'C'],
+  ['Close a menu or view, undo a choice', 'B', 'Escape'],
+  ['Go to your active Pokémon\'s first move', 'Top left bumper', '1'],
+  ['Go to their active Pokémon', 'Top right bumper', '2'],
+  ['Open or close a move or Pokémon page', 'Y', 'I'],
+  ['Open or close the chat', 'X', 'C'],
   ['Open the Select menu', 'Select', 'Tab'],
   ['Open the Start menu', 'Start', 'Space'],
 ];
@@ -180,7 +180,7 @@ function setup() {
     <p class="setup-origin">This origin: <code>${escape(location.origin)}</code></p>
     <label for="client-id">Public application ID</label><input id="client-id" type="text" autocomplete="off" value="${escape(auth.clientId)}" placeholder="Assigned by Pokémon Showdown">
     <p class="small">Expected account: <strong>${escape(config.username)}</strong>. Authorization is saved in this browser. No password is stored.</p>
-    <div class="modal-actions">${btn('save-setup', 'Save setup', 'modal-actions')}${btn('sign-out', 'Clear saved sign-in', 'modal-actions')}</div>`);
+    <div class="modal-actions">${btn('save-setup', 'Save setup', 'modal-actions')}${btn('sign-out', 'Clear saved sign-in', 'modal-actions')}</div>`, 'setup');
   $('save-setup').onclick = () => {
     const value = $('client-id').value.trim();
     if (value !== auth.clientId) { auth.forget(); session.stop(); }
@@ -797,7 +797,10 @@ async function init() {
     if (action === 'cancel') {
       // B on the battle screen undoes: a pending choice (and its Tera), or a Tera that is switched on with no
       // choice sent yet. On the controller check it only shows its number.
-      if (modal.open && modal.dataset.view === 'diagnostics') return;
+      // A move or Pokémon page closes with Y (or I), the chat with X (or C); B does nothing in either.
+      if (modal.open && (modal.dataset.view === 'diagnostics' || infoPage || modal.dataset.view === 'chat')) return;
+      // A view opened from the Select menu goes back to that menu; a second B closes the menu.
+      else if (modal.open && ['stats', 'controls', 'errors', 'setup'].includes(modal.dataset.view)) showMenu();
       else if (modal.open) closeModal();
       else if (tera && !state.pending) { tera = false; render(); }
       else $('undo')?.click();
@@ -813,13 +816,14 @@ async function init() {
     if (action === 'battle' && modal.open && modal.dataset.view === 'battle') { closeModal(); return; }
     // X opens the chat from the battle screen and closes it again; with anything else open it does nothing.
     if (action === 'chat' && modal.open && modal.dataset.view === 'chat') { closeModal(); return; }
-    // The keyboard key I closes the Pokémon or move page it opened, from any of its pages; otherwise it opens one like Y.
-    if (action === 'infoToggle') { if (modal.open && infoPage) { closeModal(); return; } action = 'info'; }
+    // Y and the keyboard key I close the Pokémon or move page they opened, from any of its pages.
+    if (action === 'infoToggle') action = 'info';
+    if (action === 'info' && modal.open && infoPage) { closeModal(); return; }
     if (modal.open) return;
-    // The top left bumper flips back to the own row and puts the cursor on the own active Pokémon's first move.
-    // The top right bumper flips to the opponent row and puts the cursor on their active Pokémon's roster button.
-    // Each does nothing while its own row is already showing. Y opens the page of whatever is under the cursor.
-    ({home: () => { if (shownTeam !== 'own') { showTeam('own'); focusFirstMove(); } }, foe: () => { if (shownTeam !== 'opponent') showTeam('opponent'); }, info, tools: showMenu, battle: showBattleMenu, chat: () => { chatTurn = null; showChat(); }})[action]?.();
+    // The top left bumper shows the own row and puts the cursor on the own active Pokémon's first move.
+    // The top right bumper shows the opponent row and puts the cursor on their active Pokémon's roster button.
+    // Each also does that while its row is already showing. Y opens the page of whatever is under the cursor.
+    ({home: () => { showTeam('own'); focusFirstMove(); }, foe: () => showTeam('opponent'), info, tools: showMenu, battle: showBattleMenu, chat: () => { chatTurn = null; showChat(); }})[action]?.();
   }});
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { music.update(false); return; }
