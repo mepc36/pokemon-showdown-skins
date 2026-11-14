@@ -121,11 +121,10 @@ const CONTROLS = [
   ['Close a view, undo a choice', 'B', 'Escape'],
   ['Go to your side', 'Top left bumper', 'A'],
   ['Go to their side', 'Top right bumper', 'S'],
-  ['Open a move or Pokémon page', 'Y', 'L or I'],
+  ['Open a move or Pokémon page', 'Y', 'L'],
   ['Open the chat', 'X', 'C'],
-  ['Open the Select menu', 'Select', 'Tab or H'],
+  ['Open the Select menu', 'Select', 'Tab'],
   ['Open the Start menu', 'Start', 'Space'],
-  ['Flip between the team rows', '—', 'F'],
 ];
 function showControls() {
   showModal('Controls', `<table class="controls-table"><thead><tr><th></th><th>Controller</th><th>Keyboard</th></tr></thead>
@@ -577,9 +576,9 @@ function renderRoster() {
   renderMatchup();
 }
 
-// One team row shows at a time; the top bumpers (4 and 5) pick one and F flips between them. The right stick does nothing.
+// One team row shows at a time; the top bumpers (4 and 5) or the keys A and S pick one. The right stick does nothing.
 // Focus always lands on the shown side's active Pokémon, wherever the cursor was.
-function showTeam(side = shownTeam === 'own' ? 'opponent' : 'own') {
+function showTeam(side) {
   shownTeam = side;
   const focused = document.activeElement?.id.match(/^(switch|opponent)-(\d+)$/);
   for (const row of document.querySelectorAll('.team-row')) row.hidden = row.dataset.side !== side;
@@ -662,7 +661,7 @@ function render() {
   const reviewOnly = !fixture && state.ended;
   $('choices').innerHTML = `${endControls}<div class="moves" role="group" aria-label="Moves">${choices.moves.map(move => {
     const type = window.BattleMovedex[move.id]?.type || '';
-    return btn(`move-${move.index}`, `<strong>${escape(move.move)}</strong><small><span class="move-type">${escape(type)}</span><span>${escape(move.pp ?? '—')} / ${escape(move.maxpp ?? '—')} PP</span></small>`, 'moves', !reviewOnly && (disabled || !waiting && !move.enabled), `data-type="${escape(type)}" data-locked="${reviewOnly || waiting || !move.enabled}" aria-description="Y or I for move information"`);
+    return btn(`move-${move.index}`, `<strong>${escape(move.move)}</strong><small><span class="move-type">${escape(type)}</span><span>${escape(move.pp ?? '—')} / ${escape(move.maxpp ?? '—')} PP</span></small>`, 'moves', !reviewOnly && (disabled || !waiting && !move.enabled), `data-type="${escape(type)}" data-locked="${reviewOnly || waiting || !move.enabled}" aria-description="Y or L for move information"`);
   }).join('')}</div>
     <div class="team-row" data-side="own" ${shownTeam === 'own' ? '' : 'hidden'}><span class="team-label">You</span><div id="roster" class="team" role="group" aria-label="Your six Pokémon"></div></div>
     <div class="team-row" data-side="opponent" ${shownTeam === 'opponent' ? '' : 'hidden'}><span class="team-label">Foe</span><div id="opponent-roster" class="team" role="group" aria-label="Opponent’s six Pokémon"></div></div>`;
@@ -790,13 +789,13 @@ async function init() {
     if (action === 'battle' && modal.open && modal.dataset.view === 'battle') { closeModal(); return; }
     // X opens the chat from the battle screen and closes it again; with anything else open it does nothing.
     if (action === 'chat' && modal.open && modal.dataset.view === 'chat') { closeModal(); return; }
-    // The keyboard key I closes the Pokémon or move page it opened, from any of its pages; otherwise it opens one like Y.
+    // The keyboard key L closes the Pokémon or move page it opened, from any of its pages; otherwise it opens one like Y.
     if (action === 'infoToggle') { if (modal.open && infoPage) { closeModal(); return; } action = 'info'; }
     if (modal.open) return;
     // The top left bumper flips back to the own row and puts the cursor on the own active Pokémon's first move.
     // The top right bumper flips to the opponent row and puts the cursor on their active Pokémon's roster button.
     // Each does nothing while its own row is already showing. Y opens the page of whatever is under the cursor.
-    ({home: () => { if (shownTeam !== 'own') { showTeam('own'); focusFirstMove(); } }, foe: () => { if (shownTeam !== 'opponent') showTeam('opponent'); }, info, team: () => showTeam(), tools: showMenu, battle: showBattleMenu, chat: () => { chatTurn = null; showChat(); }})[action]?.();
+    ({home: () => { if (shownTeam !== 'own') { showTeam('own'); focusFirstMove(); } }, foe: () => { if (shownTeam !== 'opponent') showTeam('opponent'); }, info, tools: showMenu, battle: showBattleMenu, chat: () => { chatTurn = null; showChat(); }})[action]?.();
   }});
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { music.update(false); return; }
