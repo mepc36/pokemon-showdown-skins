@@ -102,15 +102,34 @@ new MutationObserver(refreshChat).observe($('hidden-log'), {childList: true, sub
 // Menu: Select (or H) opens the secondary controls in a modal. There is no header row.
 function showMenu() {
   const reopen = modal.open && modal.dataset.view === 'menu';
-  // Three buttons on the first row and two on the second, so the d-pad moves between rows instead of jumping to the close button.
+  // Three buttons on each row, so the d-pad moves between rows instead of jumping to the close button.
   // Chat is here as well as on X.
-  showModal('Menu', `<div class="menu-grid">${btn('chat', 'Chat', 'menu-1')}${btn('stats', 'Ladder stats', 'menu-1')}${btn('setup', 'Setup', 'menu-1')}
-    ${btn('diagnostics', 'Controller check', 'menu-2')}${btn('source', 'Source', 'menu-2')}</div>`, 'menu');
+  showModal('Menu', `<div class="menu-grid">${btn('chat', 'Chat', 'menu-1')}${btn('stats', 'Ladder stats', 'menu-1')}${btn('controls', 'Controls', 'menu-1')}
+    ${btn('setup', 'Setup', 'menu-2')}${btn('diagnostics', 'Controller check', 'menu-2')}${btn('source', 'Source', 'menu-2')}</div>`, 'menu');
   $('chat').onclick = () => { chatTurn = null; showChat(); };
   $('stats').onclick = () => showStats();
+  $('controls').onclick = showControls;
   $('setup').onclick = setup; $('diagnostics').onclick = diagnostics;
   $('source').onclick = () => { const link = document.createElement('a'); link.href = './source.zip'; link.download = ''; link.click(); };
   if (!reopen) $('chat').focus({preventScroll: true});
+}
+// Controls: what each controller button and keyboard key does, one row per action. Keep it in step with BUTTONS and
+// the keys in controller.mjs.
+const CONTROLS = [
+  ['Move the cursor, page inside a view', 'D-pad or left stick', 'Arrow keys'],
+  ['Press the button under the cursor', 'A', 'Enter'],
+  ['Close a view, undo a choice', 'B', 'Escape'],
+  ['Go to your side', 'Top left bumper', 'A'],
+  ['Go to their side', 'Top right bumper', 'S'],
+  ['Open a move or Pokémon page', 'Y', 'L or I'],
+  ['Open the chat', 'X', 'C'],
+  ['Open the Select menu', 'Select', 'Tab or H'],
+  ['Open the Start menu', 'Start', 'Space'],
+  ['Flip between the team rows', '—', 'F'],
+];
+function showControls() {
+  showModal('Controls', `<table class="controls-table"><thead><tr><th></th><th>Controller</th><th>Keyboard</th></tr></thead>
+    <tbody>${CONTROLS.map(([does, button, key]) => `<tr><th>${escape(does)}</th><td>${escape(button)}</td><td>${escape(key)}</td></tr>`).join('')}</tbody></table>`, 'controls');
 }
 // Start (9) opens the battle menu: sign in / find a battle / cancel the search, and Forfeit.
 let searchAfterLogin = false;
