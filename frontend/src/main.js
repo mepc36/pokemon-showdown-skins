@@ -771,6 +771,8 @@ async function init() {
     if (action === 'battle' && modal.open && modal.dataset.view === 'battle') { closeModal(); return; }
     // X opens the chat from the battle screen and closes it again; with anything else open it does nothing.
     if (action === 'chat' && modal.open && modal.dataset.view === 'chat') { closeModal(); return; }
+    // The keyboard key I closes the Pokémon or move page it opened, from any of its pages; otherwise it opens one like Y.
+    if (action === 'infoToggle') { if (modal.open && infoPage) { closeModal(); return; } action = 'info'; }
     if (modal.open) return;
     // The top left bumper flips back to the own row and puts the cursor on the own active Pokémon's first move.
     // The top right bumper flips to the opponent row and puts the cursor on their active Pokémon's roster button.

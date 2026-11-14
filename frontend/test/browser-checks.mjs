@@ -474,6 +474,14 @@ try {
   check(await cancel.locator('dialog[open]').count() === 0, 'Find Random Battle closes the menu');
   await cancel.locator('#switch-2').focus(); await cancel.keyboard.press('i'); await cancel.keyboard.press('ArrowRight'); await cancel.keyboard.press('ArrowDown'); await cancel.keyboard.press('Escape');
   check(!(await cancel.locator('#test-commands').innerText()).includes('/choose'), 'Flat information navigation never sends a battle choice');
+  await cancel.locator('#switch-2').focus(); await cancel.keyboard.press('i');
+  const keyOpened = await cancel.locator('dialog[data-view=pokemon][open]').count();
+  await cancel.keyboard.press('ArrowDown'); await cancel.keyboard.press('i');
+  check(keyOpened === 1 && await cancel.locator('dialog[open]').count() === 0 && await cancel.evaluate(() => document.activeElement.id) === 'switch-2', 'The keyboard key I opens a Pokémon page and closes it again, also from its ability page, back on the same button');
+  await cancel.locator('#move-1').focus(); await cancel.keyboard.press('i');
+  const keyOpenedMove = await cancel.locator('dialog[data-view=move][open]').count();
+  await cancel.keyboard.press('i');
+  check(keyOpenedMove === 1 && await cancel.locator('dialog[open]').count() === 0 && await cancel.evaluate(() => document.activeElement.id) === 'move-1', 'The keyboard key I opens a move page and closes it again');
   await cancel.locator('#switch-1').focus(); await cancel.locator('#move-1').click();
   check((await cancel.locator('#test-commands').innerText()).includes('/choose move 1|1'), 'Battle choices still submit immediately');
   await cancel.keyboard.press('ArrowLeft'); await cancel.locator('#move-2').click();
