@@ -4,13 +4,13 @@
 export const BUTTONS = {0: 'cancel', 1: 'confirm', 2: 'info', 3: 'chat', 4: 'home', 5: 'foe', 8: 'tools', 9: 'battle', 12: 'up', 13: 'down', 14: 'left', 15: 'right'};
 export const risingEdges = (current, previous) => current.flatMap((pressed, index) => pressed && !previous[index] ? [index] : []);
 
-// The keyboard has these keys and no others: the arrows, Enter (A), Escape (B), A, S, L, C, Tab and Space.
-// Every key that opens a view also closes it: Tab the Select menu, Space the Start menu, C the chat, and L the page
-// of the move or Pokémon under the cursor. A goes to the own side and S to the opponent's,
+// The keyboard has these keys and no others: the arrows, Enter (A), Escape (B), 1, 2, I, C, Tab and Space.
+// Every key that opens a view also closes it: Tab the Select menu, Space the Start menu, C the chat, and I the page
+// of the move or Pokémon under the cursor. 1 goes to the own side and 2 to the opponent's,
 // like the top bumpers. The Controls view in the Select menu (CONTROLS in main.js) lists all of this; keep it in step. Y on the controller only opens that page; B closes it.
 export function startController({action, diagnostic, ignored = () => new Set()}) {
   let previous = [], device = '', repeatAt = 0, heldDirection = '';
-  const keys = {ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Enter: 'confirm', Escape: 'cancel', l: 'infoToggle', Tab: 'tools', ' ': 'battle', a: 'home', s: 'foe', c: 'chat'};
+  const keys = {ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Enter: 'confirm', Escape: 'cancel', i: 'infoToggle', Tab: 'tools', ' ': 'battle', 1: 'home', 2: 'foe', c: 'chat'};
   document.addEventListener('keydown', event => {
     if (/INPUT|TEXTAREA|SELECT/.test(event.target.tagName)) return;
     diagnostic(`Key ${event.code} · cancelable ${event.cancelable}`);
