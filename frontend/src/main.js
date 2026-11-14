@@ -264,14 +264,15 @@ function showInfo(page) {
           inference?.teraType ? ['Tera · inferred', inference.teraType, {type: inference.teraType, cue: 'green', hint: 'All remaining set definitions have this Tera type'}] : ['Tera', p.teraType || 'Not revealed', p.teraType]];
       // Opponent pages show the same five stat boxes as the own page, estimated (~) from base stats and level.
       const foeStats = own ? null : arena.foeStats(page.index);
-      const statCells = stats ? [...stats.entries.map(([name, value]) => [name, value]),
+      // The own row starts with the exact HP and its percentage; the opponent's exact HP is never sent.
+      const statCells = stats ? [['HP', arena.ownExactHealth(p)], ...stats.entries.map(([name, value]) => [name, value]),
         ['Speed', speed.kind === 'known' && speed.modified != null && speed.modified !== speed.value ? `${speed.value} → ${speed.modified}` : speed.value]] :
         foeStats ? [['Attack', `~${foeStats.atk}`], ['Defense', `~${foeStats.def}`], ['Sp. Atk', `~${foeStats.spa}`], ['Sp. Def', `~${foeStats.spd}`], ['Speed', speed.kind === 'estimate' ? `~${speed.value}` : speed.value]] : null;
       const moves = knownMoves(page.side, page.index);
       const count = Math.max(1, Math.ceil(moves.length / 4));
       pages = Array.from({length: count}, (_, i) => ({key: `overview:${i}`, label: count > 1 ? `Overview ${i + 1}/${count}` : 'Overview',
         content: `<div class="overview-layout">${facts(summary)}<h3>${stats?.label.startsWith('Original') ? 'Original stats · before Transform' : stats ? 'Stats (before modifiers)' : 'Speed estimate · before modifiers'}</h3>
-          ${statCells ? `<div class="stats-layout">${facts(statCells)}</div>` : `<div class="stats-layout">${speedInfo}</div>`}
+          ${statCells ? `<div class="stats-layout"${stats ? ' data-hp="true"' : ''}>${facts(statCells)}</div>` : `<div class="stats-layout">${speedInfo}</div>`}
           <h3>${own ? 'Moves' : 'Revealed moves'}</h3>${moveList(moves.slice(i * 4, i * 4 + 4), 4)}</div>`,
         note: moves.some(m => m.copied) ? '* Copied move' : own ? '' : inference?.identified ? `Role inferred: ${inference.role}. Unrevealed moves/items remain candidates.` : inference?.status === 'unmatched' ? 'Reveals do not match this snapshot; showing all candidates.' : 'Unrevealed information stays unknown.'}));
       // Opponents get one page per role: revealed facts on top, that role's possible sets below, revealed moves highlighted.
@@ -310,26 +311,25 @@ function showInfo(page) {
 // A move page fits its description to the space it has, so a new screen size fits it again.
 window.addEventListener('resize', () => { if (modal.open && infoPage?.kind === 'move') fitMoveDescription($('info-content')); });
 const turnPage = step => showInfo({...infoPage, tab: (infoPage.tab + step + infoPage.total) % infoPage.total});
-// Pokémon panels follow the roster: left/right is the next Pokémon, up/down the next page.
-// Move panels have no siblings, so left/right turns their pages.
-// Inside a Pokémon panel the right stick means the same as on the main screen:
-// the other team, same slot number. The roster row follows so B lands there.
+// Pokémon pages: left/right is the next Pokémon on the same team, up/down the next page.
+// Move pages: left/right is the next move of the same Pokémon.
+// Both wrap around at the ends and never leave the team or the Pokémon the page was opened on.
 function navigateInfo(direction) {
   const step = direction === 'left' || direction === 'up' ? -1 : 1;
-  if (infoPage.kind !== 'pokemon') { if (direction === 'left' || direction === 'right') turnPage(step); return; }
-  if (direction === 'up' || direction === 'down') turnPage(step);
-  else {
-    // Left and Right run through all twelve Pokémon: the own six, then the opponent's six, and around again.
-    const index = (infoPage.index - 1 + step + 6) % 6 + 1;
-    const crossed = step > 0 ? infoPage.index === 6 : infoPage.index === 1;
-    const side = crossed ? (infoPage.side === 'own' ? 'opponent' : 'own') : infoPage.side;
-    if (crossed) {
-      // The roster behind the page follows the team on the page; closing lands on the opening slot's number there.
-      showTeam(side);
-      modalReturnFocus = modalReturnFocus.replace(/^(switch|opponent)-/, `${side === 'own' ? 'switch' : 'opponent'}-`);
-    }
-    showInfo({...infoPage, side, index, tab: 0});
+  const wrap = (list, current) => {
+    const at = list.indexOf(current);
+    return at < 0 ? list[step > 0 ? 0 : list.length - 1] : list[(at + step + list.length) % list.length];
+  };
+  if (infoPage.kind === 'move') {
+    const moves = infoPage.moves || [];
+    if ((direction === 'left' || direction === 'right') && moves.length > 1) showInfo({...infoPage, id: wrap(moves, infoPage.id), tab: 0});
+    return;
   }
+  if (direction === 'up' || direction === 'down') { turnPage(step); return; }
+  // Only revealed Pokémon: the opponent's unknown slots are skipped, so the page after their last known Pokémon is their first.
+  const revealed = teamSlots(infoPage.side).flatMap((slot, position) => slot.revealed ? [position + 1] : []);
+  const index = revealed.length ? wrap(revealed, infoPage.index) : infoPage.index;
+  if (index !== infoPage.index) showInfo({...infoPage, index, tab: 0});
 }
 function refreshInformation() { if (modal.open && infoPage) showInfo(infoPage); }
 
@@ -343,13 +343,16 @@ function info(index) {
   if (slot) { showInfo({kind: 'pokemon', side: slot[1] === 'switch' ? 'own' : 'opponent', index: Number(slot[2])}); return; }
   const moveIndex = Number(focusedId.match(/^move-(\d+)$/)?.[1]);
   const move = shownMoves.find(shown => shown.index === moveIndex);
-  if (move) { showInfo({kind: 'move', id: move.id}); return; }
+  // `moves` lists the ids of the same Pokémon's moves, for left/right on the move page.
+  if (move) { showInfo({kind: 'move', id: move.id, moves: shownMoves.map(shown => shown.id)}); return; }
   // A grayed preview move belongs to the previewed opponent, or to the previewed bench Pokémon.
   const previewMoveIndex = Number(focusedId.match(/^preview-move-(\d+)$/)?.[1]);
-  const foeMove = foeMoveIndex ? foeMoveSlots(arena?.opponents()[foeMoveIndex - 1]).moves[previewMoveIndex - 1] : null;
-  if (foeMove?.id) { showInfo({kind: 'move', id: foeMove.id}); return; }
-  const previewMove = previewIndex && !foeMoveIndex ? knownMoves('own', previewIndex)[previewMoveIndex - 1] : null;
-  if (previewMove) showInfo({kind: 'move', id: previewMove.id});
+  const foe = foeMoveIndex ? foeMoveSlots(arena?.opponents()[foeMoveIndex - 1]) : null;
+  const foeMove = foe?.moves[previewMoveIndex - 1];
+  if (foeMove?.id) { showInfo({kind: 'move', id: foeMove.id, moves: foe.all.map(known => known.id)}); return; }
+  const previewMoves = previewIndex && !foeMoveIndex ? knownMoves('own', previewIndex) : [];
+  const previewMove = previewMoves[previewMoveIndex - 1];
+  if (previewMove) showInfo({kind: 'move', id: previewMove.id, moves: previewMoves.map(known => known.id)});
 }
 document.addEventListener('focusin', event => {
   const id = event.target.id || '';
@@ -388,7 +391,8 @@ function foeMoveSlots(slot) {
   const empty = 4 - revealed.length;
   const candidates = pool.map(move => ({id: move.id, name: move.name, type: move.type, candidate: true}));
   const filled = candidates.length <= empty ? candidates : [...candidates.slice(0, empty - 1), {more: candidates.length - (empty - 1)}];
-  return {moves: [...revealed, ...filled], teraType: slot?.teraType || inference?.teraType || ''};
+  // `all` is every revealed move and every candidate, including the ones the last slot only counts.
+  return {moves: [...revealed, ...filled], all: [...revealed, ...candidates], teraType: slot?.teraType || inference?.teraType || ''};
 }
 function setFoePreview(index) {
   const slot = index ? arena?.opponents()[index - 1] : null;

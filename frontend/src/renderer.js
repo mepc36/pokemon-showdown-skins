@@ -4,7 +4,7 @@ import {BattleSound} from '../vendor/pokemon-showdown/battle-sound';
 import {PokemonSprite} from '../vendor/pokemon-showdown/battle-animations';
 import {Dex} from '../vendor/pokemon-showdown/battle-dex';
 import {isBattleEvent} from './protocol.mjs';
-import {opponentSlots, pokemonSpeed, ownPokemonStats, ownDisplayedHealth} from './information.mjs';
+import {opponentSlots, pokemonSpeed, ownPokemonStats, ownDisplayedHealth, ownExactHealth} from './information.mjs';
 import {possibleSets} from './possible-sets.mjs';
 import {moveCue, speedCue} from './battle-hints.mjs';
 import uiData from './showdown-ui-data.json';
@@ -121,6 +121,7 @@ export class Arena {
     return !!client && this.battle.mySide.active.includes(client);
   }
   ownHealth(pokemon) { return ownDisplayedHealth(this.battle, pokemon, this.replaying); }
+  ownExactHealth(pokemon) { return ownExactHealth(this.battle, pokemon, this.replaying); }
   speed(side, index) { return pokemonSpeed(this.battle, side, index); }
   stats(index) { return ownPokemonStats(this.battle, index); }
   ownView(index, tera = false) {
