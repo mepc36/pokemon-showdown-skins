@@ -163,10 +163,14 @@ try {
     await page.screenshot({path: `test-results/${engineName}-battle-${viewport.width}-${viewport.height}.png`});
     check(!(await fit(page)).length, `Battle and header controls fit ${viewport.width}×${viewport.height}: ${await fit(page)}`);
     await page.locator('#switch-1').focus(); await pad(page, 8);
-    check(await page.locator('dialog[open]').count() === 1 && await page.locator('#modal-title').innerText() === 'Menu' && await page.locator('#modal #chat, #modal #stats, #modal #controls, #modal #setup, #modal #diagnostics, #modal #source').count() === 6 && await page.locator('#modal #rating, #modal #record').count() === 0 && await page.locator('#modal #open-replay').count() === 0 && await page.locator('#modal #primary, #modal #forfeit').count() === 0 && (await page.locator('.menu-grid button').allInnerTexts()).join(',') === 'Chat,Ladder stats,Controls,Setup,Controller check,Source' && await page.evaluate(() => { const box = id => document.querySelector(id).getBoundingClientRect(); return ['#stats', '#controls'].every(id => box(id).top === box('#chat').top) && box('#chat').left < box('#stats').left && box('#stats').left < box('#controls').left && box('#setup').top > box('#chat').top && box('#setup').left === box('#chat').left && ['#diagnostics', '#source'].every(id => box(id).top === box('#setup').top) && box('#diagnostics').left === box('#stats').left && box('#source').left === box('#controls').left; }), 'Select opens a menu modal with Chat, Ladder stats, Controls on the first row and Setup, Controller check, Source on the second, and no battle buttons or Open replay');
-    check(await page.locator('#source').evaluate(el => el.tagName) === 'BUTTON' && await page.locator('a#source').count() === 0, 'Source is a button, not a hyperlink');
+    check(await page.locator('dialog[open]').count() === 1 && await page.locator('#modal-title').innerText() === 'Menu' && await page.locator('#modal #stats, #modal #controls, #modal #errors, #modal #setup, #modal #diagnostics, #modal #github').count() === 6 && await page.locator('#modal #chat, #modal #source').count() === 0 && await page.locator('#modal #rating, #modal #record').count() === 0 && await page.locator('#modal #open-replay').count() === 0 && await page.locator('#modal #primary, #modal #forfeit').count() === 0 && (await page.locator('.menu-grid button').allInnerTexts()).join(',') === 'Ladder stats,Controls,Errors,Setup,Controller check,GitHub' && await page.evaluate(() => { const box = id => document.querySelector(id).getBoundingClientRect(); return ['#controls', '#errors'].every(id => box(id).top === box('#stats').top) && box('#stats').left < box('#controls').left && box('#controls').left < box('#errors').left && box('#setup').top > box('#stats').top && box('#setup').left === box('#stats').left && ['#diagnostics', '#github'].every(id => box(id).top === box('#setup').top) && box('#diagnostics').left === box('#controls').left && box('#github').left === box('#errors').left; }), 'Select opens a menu modal with Ladder stats, Controls, Errors on the first row and Setup, Controller check, GitHub on the second, and no Chat, Source, battle buttons or Open replay');
+    const popup = page.waitForEvent('popup', {timeout: 5000});
+    await page.locator('#github').focus(); await pad(page, 1);
+    const opened = await popup;
+    check(opened.url() === 'https://github.com/mepc36/pokemon-showdown-skins' && await page.locator('#modal-title').innerText() === 'Menu', `GitHub opens the repository in a new tab and leaves the menu open: ${opened.url()}`);
+    await opened.close();
     await page.locator('#diagnostics').focus(); await pad(page, 12);
-    check(await page.evaluate(() => document.activeElement.id) === 'stats', 'Up from the second menu row lands on the button above, not the close button');
+    check(await page.evaluate(() => document.activeElement.id) === 'controls', 'Up from the second menu row lands on the button above, not the close button');
     await pad(page, 13);
     check(await page.evaluate(() => document.activeElement.id) === 'diagnostics', 'Down returns to the second row');
     check(await page.locator('#modal #replay').count() === 0, 'Replay is not in the menu');
@@ -200,10 +204,24 @@ try {
     check(await page.locator('dialog[open]').count() === 0 && await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'move-1', 'The top left bumper flips back to the own side on the active Pokémon\'s first move; T does nothing');
     const fieldBefore = await page.locator('#arena').evaluate(el => el.getBoundingClientRect().width);
     await page.keyboard.press('Tab');
-    check(await page.evaluate(() => document.activeElement.id) === 'chat' && await page.locator('.menu-grid button').first().evaluate(el => el.id) === 'chat', 'The menu opens with Chat as the first button and focused');
+    check(await page.evaluate(() => document.activeElement.id) === 'stats' && await page.locator('.menu-grid button').first().evaluate(el => el.id) === 'stats', 'The menu opens with Ladder stats as the first button and focused');
     await pad(page, 5);
     check(await page.locator('#modal-title').innerText() === 'Menu', 'A bumper does nothing while the menu is open');
-    await pad(page, 1);
+    // An error in the app's code replaces the open view with the error view; B returns to the battle screen.
+    await page.evaluate(() => { setTimeout(() => { throw new Error('Test failure 1'); }, 0); });
+    await page.waitForFunction(() => document.querySelector('#modal').dataset.view === 'error');
+    check(await page.locator('#modal-title').innerText() === 'Error' && (await page.locator('.error-entry p').innerText()) === 'Error: Test failure 1' && await page.locator('.error-stack').count() === 1 && await page.locator('dialog[open]').count() === 1, 'An error opens the error view at once, over the menu that was open, with its exact message and stack');
+    await page.waitForTimeout(4000);
+    check(await page.evaluate(() => document.querySelector('#modal').dataset.view) === 'error', 'The error view stays until dismissed');
+    await pad(page, 0);
+    check(await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'move-1', 'B dismisses the error view and the cursor returns to where it was before the menu');
+    await page.keyboard.press('Tab'); await page.locator('#errors').click();
+    check(await page.locator('#modal-title').innerText() === 'Errors' && await page.locator('.error-entry').count() === 1 && (await page.locator('.error-entry p').innerText()) === 'Error: Test failure 1' && await page.locator('.error-stack').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'modal-close', 'The Errors view lists the error and opens with the cursor on close');
+    await page.locator('#clear-errors').focus(); await pad(page, 1);
+    check(await page.locator('.error-entry').count() === 0 && (await page.locator('#modal-body').innerText()).includes('No errors') && await page.locator('#clear-errors').isDisabled(), 'Clear empties the list');
+    await pad(page, 0);
+    // The chat is opened with the key C now that it has no menu button.
+    await page.keyboard.press('c');
     const chatTitle = async () => page.locator('#modal-title').innerText();
     const turnCount = await page.locator('#hidden-log .inner > h2').count();
     // The fixture's last heading (Turn 16) has no lines under it, so the chat opens on the turn before it.
@@ -362,7 +380,7 @@ try {
     check(await page.locator('#modal-title').innerText() === 'Ladder stats' && (await page.locator('#modal .info-facts').first().locator('dt').allInnerTexts()).join('|') === 'GXE|Elo|Peak Elo' && (await page.locator('#modal .info-facts').first().locator('dd').allInnerTexts()).join('|') === '54.5%|1375|1375' && await page.locator('#rating-source').count() === 0 && !(await page.locator('#modal-body').innerText()).includes('estimated win chance') && (await page.locator('#modal-body').innerText()).includes('Last successful check') && (await page.locator('.stats-columns h3').allInnerTexts()).join('|') === 'All time|Since last reset' && (await page.locator('.stats-columns dd').allInnerTexts()).join('|') === '228|244|0|0' && await page.evaluate(() => { const [first, second] = [...document.querySelectorAll('.stats-columns > div')].map(el => el.getBoundingClientRect()); return first.top === second.top && first.right <= second.left; }), `Ladder stats reads GXE, Elo, Peak Elo, then the all-time and since-last-reset counts side by side, with the last check and no GXE note or link: ${(await page.locator('#modal dd').allInnerTexts()).join('|')}`);
     check(!(await fit(page)).length, `Ladder stats fit: ${await fit(page)}`);
     await page.screenshot({path: `test-results/${engineName}-ladder-stats-${viewport.width}-${viewport.height}.png`}); await pad(page, 0);
-    check(errors.length === 0, `No runtime errors: ${errors.join(', ')}`);
+    check(errors.every(message => message.includes('Test failure 1')), `No runtime errors other than the one the check threw: ${errors.join(', ')}`);
     await page.close();
   }
 
