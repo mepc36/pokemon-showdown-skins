@@ -27,7 +27,7 @@ let landOnFirstMove = false;
 let foePreviewIndex = null; // opponent roster slot under the cursor; the panels compare against it instead of their active Pokémon
 let teraLabel = null; // Tera button text for the active Pokémon, restored after a bench preview
 let modalReturnFocus = '';
-let selectedMoveId = '', infoPage = null, rating = null, ratingPage = false, autoTimerRoom = '';
+let selectedMoveId = '', infoPage = null, rating = null, autoTimerRoom = '';
 const modal = $('modal');
 // Music is always enabled, including on devices with the old saved mute setting.
 const music = new Music(undefined, {storage: null});
@@ -54,14 +54,14 @@ function updateTimer() {
 function showModal(title, content, view = '') {
   const previousFocus = modal.open ? document.activeElement?.id : '';
   if (!modal.open) modalReturnFocus = document.activeElement?.id || '';
-  infoPage = null; ratingPage = false; modal.dataset.view = view;
+  infoPage = null; modal.dataset.view = view;
   $('modal-title').textContent = title; $('modal-body').innerHTML = content;
   if (!modal.open) modal.showModal();
   ($(previousFocus) || $('modal-close')).focus({preventScroll: true});
   modal.scrollTop = 0;
 }
 function closeModal() {
-  infoPage = null; ratingPage = false;
+  infoPage = null;
   modal.close();
   const target = $(modalReturnFocus);
   (target && !target.disabled ? target : document.querySelector('#choices button:not(:disabled)'))?.focus({preventScroll: true});
@@ -102,13 +102,12 @@ new MutationObserver(refreshChat).observe($('hidden-log'), {childList: true, sub
 // Menu: Select (or H) opens the secondary controls in a modal. There is no header row.
 function showMenu() {
   const reopen = modal.open && modal.dataset.view === 'menu';
-  // Three buttons on each row, so the d-pad moves between rows instead of jumping to the close button.
+  // Three buttons on the first row and two on the second, so the d-pad moves between rows instead of jumping to the close button.
   // Chat is here as well as on X.
-  showModal('Menu', `<div class="menu-grid">${btn('chat', 'Chat', 'menu-1')}${btn('rating', 'Rating', 'menu-1')}${btn('setup', 'Setup', 'menu-1')}
-    ${btn('diagnostics', 'Controller check', 'menu-2')}${btn('source', 'Source', 'menu-2')}${btn('record', 'Wins and losses', 'menu-2')}</div>`, 'menu');
-  $('record').onclick = () => showRecord();
+  showModal('Menu', `<div class="menu-grid">${btn('chat', 'Chat', 'menu-1')}${btn('stats', 'Ladder stats', 'menu-1')}${btn('setup', 'Setup', 'menu-1')}
+    ${btn('diagnostics', 'Controller check', 'menu-2')}${btn('source', 'Source', 'menu-2')}</div>`, 'menu');
   $('chat').onclick = () => { chatTurn = null; showChat(); };
-  $('rating').onclick = () => showRating();
+  $('stats').onclick = () => showStats();
   $('setup').onclick = setup; $('diagnostics').onclick = diagnostics;
   $('source').onclick = () => { const link = document.createElement('a'); link.href = './source.zip'; link.download = ''; link.click(); };
   if (!reopen) $('chat').focus({preventScroll: true});
@@ -210,37 +209,27 @@ function refreshMoveHints() {
   }
 }
 
-// Wins and losses since the last reset, and the peak Elo this browser has seen. Reset clears the wins and losses only.
-// Opening it looks the rating up, so the peak is known before the first rated battle.
-function showRecord(load = true) {
-  if (load) void rating.load().then(() => {
-    if (rating.status === 'ready') recordElo(localStorage, Math.round(rating.value.elo));
-    if (modal.open && modal.dataset.view === 'record') showRecord(false);
-  });
-  const record = readRecord(localStorage);
-  showModal('Wins and losses', `${facts([['Wins', record.wins], ['Losses', record.losses], ['Peak Elo', record.peak ?? '—']])}
-    <div class="modal-actions">${btn('reset-record', 'Reset wins and losses', 'modal-actions')}</div>`, 'record');
-  $('reset-record').onclick = () => { resetRecord(localStorage); showRecord(false); };
-}
-
-function showRating(load = true, force = false) {
+// Ladder stats: the ladder's own numbers from Showdown's public data (Elo, GXE, all-time wins and losses), and what
+// this browser keeps (the peak Elo it has seen, and the wins and losses since the last reset). Reset clears those
+// wins and losses only. Opening the view looks the rating up, so the peak is known before the first rated battle.
+function showStats(load = true, force = false) {
   if (load) void rating.load(force).then(() => {
     if (rating.status === 'ready') recordElo(localStorage, Math.round(rating.value.elo));
-    if (ratingPage && modal.open) showRating(false);
+    if (modal.open && modal.dataset.view === 'stats') showStats(false);
   });
-  const value = rating.value;
-  const details = rating.status === 'loading' ? '<p>Loading your public ladder rating…</p>' :
-    rating.status === 'error' ? '<p>Could not load your rating. Try Refresh rating.</p>' :
-    rating.status === 'unrated' ? '<p>No Gen 9 Random Battle rating was returned for this account.</p>' :
-    facts([['Elo', Math.round(value.elo)], ['GXE', value.gxe === null ? 'Unknown' : `${value.gxe}%`],
-      ['Wins', value.wins ?? 'Unknown'], ['Losses', value.losses ?? 'Unknown']]);
-  showModal('Your rating', `<p class="info-kicker">${escape(config.username)} · Gen 9 Random Battle</p>${details}
-    <p class="small">GXE: estimated win chance against an average ladder player.</p>
-    ${rating.checkedAt ? `<p class="small">Last successful check: ${escape(new Date(rating.checkedAt).toLocaleString())}. Refresh after a rated battle.</p>` : ''}
-    <div class="modal-actions">${btn('refresh-rating', 'Refresh rating', 'rating-actions', rating.status === 'loading')}
-      <a id="rating-source" data-nav data-row="rating-actions" href="${escape(rating.url)}" target="_blank" rel="noopener noreferrer">Showdown public data</a></div>`);
-  ratingPage = true;
-  $('refresh-rating').onclick = () => showRating(true, true);
+  const value = rating.status === 'ready' ? rating.value : null, record = readRecord(localStorage);
+  const status = rating.status === 'loading' ? 'Loading your public ladder rating…' :
+    rating.status === 'error' ? 'Could not load your rating. Try Refresh.' :
+    rating.status === 'unrated' ? 'No Gen 9 Random Battle rating was returned for this account.' : '';
+  showModal('Ladder stats', `<p class="info-kicker">${escape(config.username)} · Gen 9 Random Battle${status ? ` · ${escape(status)}` : ''}</p>
+    ${facts([['Elo', value ? Math.round(value.elo) : '—'], ['GXE', value ? value.gxe === null ? 'Unknown' : `${value.gxe}%` : '—'], ['Peak Elo', record.peak ?? '—']])}
+    <div class="stats-columns"><div><h3>All time</h3>${facts([['Wins', value ? value.wins ?? 'Unknown' : '—'], ['Losses', value ? value.losses ?? 'Unknown' : '—']])}</div>
+      <div><h3>Since last reset</h3>${facts([['Wins', record.wins], ['Losses', record.losses]])}</div></div>
+    <p class="small">GXE: estimated win chance against an average ladder player.${rating.checkedAt ? ` Last successful check: ${escape(new Date(rating.checkedAt).toLocaleString())}.` : ''}</p>
+    <div class="modal-actions">${btn('refresh-rating', 'Refresh', 'rating-actions', rating.status === 'loading')}${btn('reset-record', 'Reset wins and losses', 'rating-actions')}
+      <a id="rating-source" data-nav data-row="rating-actions" href="${escape(rating.url)}" target="_blank" rel="noopener noreferrer">Showdown public data</a></div>`, 'stats');
+  $('refresh-rating').onclick = () => showStats(true, true);
+  $('reset-record').onclick = () => { resetRecord(localStorage); showStats(false); };
 }
 
 function showInfo(page) {
