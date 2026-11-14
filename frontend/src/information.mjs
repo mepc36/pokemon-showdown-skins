@@ -21,6 +21,13 @@ export function moveInformation(id, currentMove) {
     summary: move.shortDesc || move.desc || ''};
 }
 
+// An ability's name and whole description, for the ability page.
+export function abilityInformation(name) {
+  const ability = Dex.abilities.get(name);
+  if (!ability.exists) return {name: name || 'Unknown', description: ''};
+  return {name: ability.name, description: ability.desc || ability.shortDesc || 'No description available.'};
+}
+
 // The party list contains all current moves, including Transform copies. An
 // active action request can be reduced to a locked move or Struggle, so use it
 // only to attach matching PP/disabled information, never to erase known moves.
