@@ -407,3 +407,5 @@ dialog[data-view=chat] .chat-turn{flex:1;min-height:0;overflow:auto}
 .ability-entry{background:#fff;border:1px solid #d0d8df;border-radius:6px;padding:12px 16px;margin-bottom:10px}.ability-entry strong{display:block;font-size:24px}.ability-entry .move-description{margin-top:6px}#modal-body .ability-layout .move-description{font-size:22px;line-height:1.5}
 /* Ladder stats view: the all-time and since-last-reset counts sit side by side. */
 .stats-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.stats-columns h3{margin:0 0 6px}.stats-columns .info-facts{grid-template-columns:repeat(2,minmax(0,1fr));margin:0 0 12px}
+/* Controls view: one row per action, with its controller button and its keyboard key. */
+.controls-table{width:100%;border-collapse:collapse;font-size:17px}.controls-table th,.controls-table td{text-align:left;padding:5px 10px;border-bottom:1px solid #d0d8df}.controls-table thead th{font-size:14px;color:var(--muted)}.controls-table tbody th{font-weight:500}.controls-table td{font-weight:700;white-space:nowrap}

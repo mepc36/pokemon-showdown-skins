@@ -102,15 +102,34 @@ new MutationObserver(refreshChat).observe($('hidden-log'), {childList: true, sub
 // Menu: Select (or H) opens the secondary controls in a modal. There is no header row.
 function showMenu() {
   const reopen = modal.open && modal.dataset.view === 'menu';
-  // Three buttons on the first row and two on the second, so the d-pad moves between rows instead of jumping to the close button.
+  // Three buttons on each row, so the d-pad moves between rows instead of jumping to the close button.
   // Chat is here as well as on X.
-  showModal('Menu', `<div class="menu-grid">${btn('chat', 'Chat', 'menu-1')}${btn('stats', 'Ladder stats', 'menu-1')}${btn('setup', 'Setup', 'menu-1')}
-    ${btn('diagnostics', 'Controller check', 'menu-2')}${btn('source', 'Source', 'menu-2')}</div>`, 'menu');
+  showModal('Menu', `<div class="menu-grid">${btn('chat', 'Chat', 'menu-1')}${btn('stats', 'Ladder stats', 'menu-1')}${btn('controls', 'Controls', 'menu-1')}
+    ${btn('setup', 'Setup', 'menu-2')}${btn('diagnostics', 'Controller check', 'menu-2')}${btn('source', 'Source', 'menu-2')}</div>`, 'menu');
   $('chat').onclick = () => { chatTurn = null; showChat(); };
   $('stats').onclick = () => showStats();
+  $('controls').onclick = showControls;
   $('setup').onclick = setup; $('diagnostics').onclick = diagnostics;
   $('source').onclick = () => { const link = document.createElement('a'); link.href = './source.zip'; link.download = ''; link.click(); };
   if (!reopen) $('chat').focus({preventScroll: true});
+}
+// Controls: what each controller button and keyboard key does, one row per action. Keep it in step with BUTTONS and
+// the keys in controller.mjs.
+const CONTROLS = [
+  ['Move the cursor, page inside a view', 'D-pad or left stick', 'Arrow keys'],
+  ['Press the button under the cursor', 'A', 'Enter'],
+  ['Close a view, undo a choice', 'B', 'Escape'],
+  ['Go to your side', 'Top left bumper', 'A'],
+  ['Go to their side', 'Top right bumper', 'S'],
+  ['Open a move or Pokémon page', 'Y', 'L or I'],
+  ['Open the chat', 'X', 'C'],
+  ['Open the Select menu', 'Select', 'Tab or H'],
+  ['Open the Start menu', 'Start', 'Space'],
+  ['Flip between the team rows', '—', 'F'],
+];
+function showControls() {
+  showModal('Controls', `<table class="controls-table"><thead><tr><th></th><th>Controller</th><th>Keyboard</th></tr></thead>
+    <tbody>${CONTROLS.map(([does, button, key]) => `<tr><th>${escape(does)}</th><td>${escape(button)}</td><td>${escape(key)}</td></tr>`).join('')}</tbody></table>`, 'controls');
 }
 // Start (9) opens the battle menu: sign in / find a battle / cancel the search, and Forfeit.
 let searchAfterLogin = false;
@@ -209,7 +228,7 @@ function refreshMoveHints() {
   }
 }
 
-// Ladder stats: the ladder's own numbers from Showdown's public data (Elo, GXE, all-time wins and losses), and what
+// Ladder stats: the ladder's own numbers from Showdown's public data (GXE, Elo, all-time wins and losses), and what
 // this browser keeps (the peak Elo it has seen, and the wins and losses since the last reset). Reset clears those
 // wins and losses only. Opening the view looks the rating up, so the peak is known before the first rated battle.
 function showStats(load = true, force = false) {
@@ -222,12 +241,11 @@ function showStats(load = true, force = false) {
     rating.status === 'error' ? 'Could not load your rating. Try Refresh.' :
     rating.status === 'unrated' ? 'No Gen 9 Random Battle rating was returned for this account.' : '';
   showModal('Ladder stats', `<p class="info-kicker">${escape(config.username)} · Gen 9 Random Battle${status ? ` · ${escape(status)}` : ''}</p>
-    ${facts([['Elo', value ? Math.round(value.elo) : '—'], ['GXE', value ? value.gxe === null ? 'Unknown' : `${value.gxe}%` : '—'], ['Peak Elo', record.peak ?? '—']])}
+    ${facts([['GXE', value ? value.gxe === null ? 'Unknown' : `${value.gxe}%` : '—'], ['Elo', value ? Math.round(value.elo) : '—'], ['Peak Elo', record.peak ?? '—']])}
     <div class="stats-columns"><div><h3>All time</h3>${facts([['Wins', value ? value.wins ?? 'Unknown' : '—'], ['Losses', value ? value.losses ?? 'Unknown' : '—']])}</div>
       <div><h3>Since last reset</h3>${facts([['Wins', record.wins], ['Losses', record.losses]])}</div></div>
-    <p class="small">GXE: estimated win chance against an average ladder player.${rating.checkedAt ? ` Last successful check: ${escape(new Date(rating.checkedAt).toLocaleString())}.` : ''}</p>
-    <div class="modal-actions">${btn('refresh-rating', 'Refresh', 'rating-actions')}${btn('reset-record', 'Reset wins and losses', 'rating-actions')}
-      <a id="rating-source" data-nav data-row="rating-actions" href="${escape(rating.url)}" target="_blank" rel="noopener noreferrer">Showdown public data</a></div>`, 'stats');
+    ${rating.checkedAt ? `<p class="small">Last successful check: ${escape(new Date(rating.checkedAt).toLocaleString())}.</p>` : ''}
+    <div class="modal-actions">${btn('refresh-rating', 'Refresh', 'rating-actions')}${btn('reset-record', 'Reset wins and losses', 'rating-actions')}</div>`, 'stats');
   // The view opens with the cursor on Refresh. Refresh is never disabled, so it can hold the cursor while a lookup
   // runs; a press during a lookup joins that lookup.
   if (load && !force) $('refresh-rating').focus({preventScroll: true});
@@ -772,6 +790,8 @@ async function init() {
     if (action === 'battle' && modal.open && modal.dataset.view === 'battle') { closeModal(); return; }
     // X opens the chat from the battle screen and closes it again; with anything else open it does nothing.
     if (action === 'chat' && modal.open && modal.dataset.view === 'chat') { closeModal(); return; }
+    // The keyboard key I closes the Pokémon or move page it opened, from any of its pages; otherwise it opens one like Y.
+    if (action === 'infoToggle') { if (modal.open && infoPage) { closeModal(); return; } action = 'info'; }
     if (modal.open) return;
     // The top left bumper flips back to the own row and puts the cursor on the own active Pokémon's first move.
     // The top right bumper flips to the opponent row and puts the cursor on their active Pokémon's roster button.

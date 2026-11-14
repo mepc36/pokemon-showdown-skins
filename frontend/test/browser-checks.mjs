@@ -161,10 +161,10 @@ try {
     await page.screenshot({path: `test-results/${engineName}-battle-${viewport.width}-${viewport.height}.png`});
     check(!(await fit(page)).length, `Battle and header controls fit ${viewport.width}×${viewport.height}: ${await fit(page)}`);
     await page.locator('#switch-1').focus(); await pad(page, 8);
-    check(await page.locator('dialog[open]').count() === 1 && await page.locator('#modal-title').innerText() === 'Menu' && await page.locator('#modal #chat, #modal #stats, #modal #setup, #modal #diagnostics, #modal #source').count() === 5 && await page.locator('#modal #rating, #modal #record').count() === 0 && await page.locator('#modal #open-replay').count() === 0 && await page.locator('#modal #primary, #modal #forfeit').count() === 0 && (await page.locator('.menu-grid button').allInnerTexts()).join(',') === 'Chat,Ladder stats,Setup,Controller check,Source' && await page.evaluate(() => { const box = id => document.querySelector(id).getBoundingClientRect(); return ['#stats', '#setup'].every(id => box(id).top === box('#chat').top) && box('#chat').left < box('#stats').left && box('#stats').left < box('#setup').left && box('#diagnostics').top > box('#chat').top && box('#diagnostics').left === box('#chat').left && box('#source').top === box('#diagnostics').top && box('#source').left === box('#stats').left; }), 'Select opens a menu modal with Chat, Ladder stats, Setup on the first row and Controller check, Source on the second, and no battle buttons or Open replay');
+    check(await page.locator('dialog[open]').count() === 1 && await page.locator('#modal-title').innerText() === 'Menu' && await page.locator('#modal #chat, #modal #stats, #modal #controls, #modal #setup, #modal #diagnostics, #modal #source').count() === 6 && await page.locator('#modal #rating, #modal #record').count() === 0 && await page.locator('#modal #open-replay').count() === 0 && await page.locator('#modal #primary, #modal #forfeit').count() === 0 && (await page.locator('.menu-grid button').allInnerTexts()).join(',') === 'Chat,Ladder stats,Controls,Setup,Controller check,Source' && await page.evaluate(() => { const box = id => document.querySelector(id).getBoundingClientRect(); return ['#stats', '#controls'].every(id => box(id).top === box('#chat').top) && box('#chat').left < box('#stats').left && box('#stats').left < box('#controls').left && box('#setup').top > box('#chat').top && box('#setup').left === box('#chat').left && ['#diagnostics', '#source'].every(id => box(id).top === box('#setup').top) && box('#diagnostics').left === box('#stats').left && box('#source').left === box('#controls').left; }), 'Select opens a menu modal with Chat, Ladder stats, Controls on the first row and Setup, Controller check, Source on the second, and no battle buttons or Open replay');
     check(await page.locator('#source').evaluate(el => el.tagName) === 'BUTTON' && await page.locator('a#source').count() === 0, 'Source is a button, not a hyperlink');
     await page.locator('#diagnostics').focus(); await pad(page, 12);
-    check(await page.evaluate(() => document.activeElement.id) === 'chat', 'Up from the second menu row lands on the button above, not the close button');
+    check(await page.evaluate(() => document.activeElement.id) === 'stats', 'Up from the second menu row lands on the button above, not the close button');
     await pad(page, 13);
     check(await page.evaluate(() => document.activeElement.id) === 'diagnostics', 'Down returns to the second row');
     check(await page.locator('#modal #replay').count() === 0, 'Replay is not in the menu');
@@ -327,9 +327,30 @@ try {
       }
       await page.locator('#modal-close').click();
     }
+    // Keyboard: Tab and Space open and close the two menus, L a page; S goes to their side and A back to yours.
+    const titleNow = async () => await page.locator('dialog[open]').count() ? await page.locator('#modal-title').innerText() : '';
+    const keyTitles = [];
+    for (const key of ['Tab', 'Tab', 'Space', 'Space']) { await page.keyboard.press(key); keyTitles.push(await titleNow()); }
+    check(keyTitles.join('|') === 'Menu||Battle|', `Tab opens and closes the Select menu, Space the Start menu: ${keyTitles.join('|')}`);
+    await page.locator('#switch-1').focus(); await page.keyboard.press('l');
+    const pageByL = await page.locator('dialog[data-view=pokemon][open]').count();
+    await page.keyboard.press('l');
+    check(pageByL === 1 && await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'switch-1', 'L opens the page under the cursor and closes it again');
+    await page.keyboard.press('s');
+    const theirSide = await page.locator('#opponent-roster').isVisible() && await page.evaluate(() => document.activeElement.id === 'opponent-1');
+    await page.keyboard.press('s');
+    const stillTheirs = await page.locator('#opponent-roster').isVisible() && await page.evaluate(() => document.activeElement.id === 'opponent-1');
+    await page.keyboard.press('a');
+    check(theirSide && stillTheirs && await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'move-1', 'S goes to their side and does nothing there; A goes back to your side, on the first move');
+    await page.keyboard.press('h'); await page.locator('#controls').click();
+    check(await page.locator('#modal-title').innerText() === 'Controls' && (await page.locator('.controls-table thead th').allInnerTexts()).join('|') === '|Controller|Keyboard' && await page.locator('.controls-table tbody tr').count() === 10 && (await page.locator('.controls-table tbody tr').allInnerTexts()).map(row => row.replace(/\s+/g, ' ')).includes('Go to your side Top left bumper A') && await page.locator('#modal-body button').count() === 0, `Controls lists each action with its controller button and keyboard key: ${(await page.locator('.controls-table tbody td').allInnerTexts()).join(',')}`);
+    check(!(await fit(page)).length && await page.evaluate(() => { const dialog = document.querySelector('#modal'); return dialog.scrollHeight <= dialog.clientHeight + 1; }), `Controls fit without scrolling: ${await fit(page)}`);
+    await page.screenshot({path: `test-results/${engineName}-controls-${viewport.width}-${viewport.height}.png`});
+    await pad(page, 0);
+    check(await page.locator('dialog[open]').count() === 0, 'B closes Controls');
     await page.route('**/users/mepc36363636.json', route => route.fulfill({json: {userid: 'mepc36363636', ratings: {gen9randombattle: {elo: 1375.16, gxe: 54.5, w: 228, l: 244}}}}));
     await page.keyboard.press('h'); await page.locator('#stats').click(); await page.waitForFunction(() => document.querySelector('#modal-body').textContent.includes('1375'));
-    check(await page.locator('#modal-title').innerText() === 'Ladder stats' && (await page.locator('#modal .info-facts').first().locator('dt').allInnerTexts()).join('|') === 'Elo|GXE|Peak Elo' && (await page.locator('#modal .info-facts').first().locator('dd').allInnerTexts()).join('|') === '1375|54.5%|1375' && (await page.locator('.stats-columns h3').allInnerTexts()).join('|') === 'All time|Since last reset' && (await page.locator('.stats-columns dd').allInnerTexts()).join('|') === '228|244|0|0' && await page.evaluate(() => { const [first, second] = [...document.querySelectorAll('.stats-columns > div')].map(el => el.getBoundingClientRect()); return first.top === second.top && first.right <= second.left; }), `Ladder stats holds the rating, the peak Elo, and the all-time and since-last-reset counts side by side: ${(await page.locator('#modal dd').allInnerTexts()).join('|')}`);
+    check(await page.locator('#modal-title').innerText() === 'Ladder stats' && (await page.locator('#modal .info-facts').first().locator('dt').allInnerTexts()).join('|') === 'GXE|Elo|Peak Elo' && (await page.locator('#modal .info-facts').first().locator('dd').allInnerTexts()).join('|') === '54.5%|1375|1375' && await page.locator('#rating-source').count() === 0 && !(await page.locator('#modal-body').innerText()).includes('estimated win chance') && (await page.locator('#modal-body').innerText()).includes('Last successful check') && (await page.locator('.stats-columns h3').allInnerTexts()).join('|') === 'All time|Since last reset' && (await page.locator('.stats-columns dd').allInnerTexts()).join('|') === '228|244|0|0' && await page.evaluate(() => { const [first, second] = [...document.querySelectorAll('.stats-columns > div')].map(el => el.getBoundingClientRect()); return first.top === second.top && first.right <= second.left; }), `Ladder stats reads GXE, Elo, Peak Elo, then the all-time and since-last-reset counts side by side, with the last check and no GXE note or link: ${(await page.locator('#modal dd').allInnerTexts()).join('|')}`);
     check(!(await fit(page)).length, `Ladder stats fit: ${await fit(page)}`);
     await page.screenshot({path: `test-results/${engineName}-ladder-stats-${viewport.width}-${viewport.height}.png`}); await pad(page, 0);
     check(errors.length === 0, `No runtime errors: ${errors.join(', ')}`);
@@ -432,7 +453,7 @@ try {
 
   const lobby = await browser.newPage(); await gamepad(lobby);
   await lobby.goto(`${base}/test/cancel.html?lobby`); await lobby.waitForSelector('#switch-1');
-  await lobby.keyboard.press('s'); await lobby.locator('#primary').click();
+  await lobby.keyboard.press('Space'); await lobby.locator('#primary').click();
   await lobby.waitForFunction(() => document.querySelector('#arena-wrap').dataset.room.includes('12345'));
   check((await lobby.locator('#test-commands').innerText()).match(/\/search gen9randombattle/g).length === 1 && await lobby.locator('dialog[open]').count() === 0, 'Connect to Showdown searches for a battle by itself once the login is confirmed');
   await lobby.close();
@@ -461,7 +482,7 @@ try {
   const tunes = []; cancel.on('request', request => { const tune = request.url().match(/\/audio\/([a-z0-9-]+)\.mp3/); if (tune) tunes.push(tune[1]); });
   const cries = []; cancel.on('request', request => { const cry = request.url().match(/\/audio\/cries\/([a-z0-9-]+)\.mp3/); if (cry) cries.push(cry[1]); });
   await cancel.goto(`${base}/test/cancel.html`); await cancel.waitForSelector('#switch-1');
-  await cancel.keyboard.press('s'); await cancel.locator('#primary').click();
+  await cancel.keyboard.press('Space'); await cancel.locator('#primary').click();
   await cancel.waitForFunction(() => document.querySelector('#arena-wrap').dataset.room.includes('12345'));
   await cancel.waitForFunction(() => document.querySelector('#test-commands').textContent.includes('/timer on'));
   // Showdown's own tooltip box must never open over the field: not on hover, not on a touch, not on a long press.
@@ -474,6 +495,14 @@ try {
   check(await cancel.locator('dialog[open]').count() === 0, 'Find Random Battle closes the menu');
   await cancel.locator('#switch-2').focus(); await cancel.keyboard.press('i'); await cancel.keyboard.press('ArrowRight'); await cancel.keyboard.press('ArrowDown'); await cancel.keyboard.press('Escape');
   check(!(await cancel.locator('#test-commands').innerText()).includes('/choose'), 'Flat information navigation never sends a battle choice');
+  await cancel.locator('#switch-2').focus(); await cancel.keyboard.press('i');
+  const keyOpened = await cancel.locator('dialog[data-view=pokemon][open]').count();
+  await cancel.keyboard.press('ArrowDown'); await cancel.keyboard.press('i');
+  check(keyOpened === 1 && await cancel.locator('dialog[open]').count() === 0 && await cancel.evaluate(() => document.activeElement.id) === 'switch-2', 'The keyboard key I opens a Pokémon page and closes it again, also from its ability page, back on the same button');
+  await cancel.locator('#move-1').focus(); await cancel.keyboard.press('i');
+  const keyOpenedMove = await cancel.locator('dialog[data-view=move][open]').count();
+  await cancel.keyboard.press('i');
+  check(keyOpenedMove === 1 && await cancel.locator('dialog[open]').count() === 0 && await cancel.evaluate(() => document.activeElement.id) === 'move-1', 'The keyboard key I opens a move page and closes it again');
   await cancel.locator('#switch-1').focus(); await cancel.locator('#move-1').click();
   check((await cancel.locator('#test-commands').innerText()).includes('/choose move 1|1'), 'Battle choices still submit immediately');
   await cancel.keyboard.press('ArrowLeft'); await cancel.locator('#move-2').click();
@@ -529,7 +558,7 @@ try {
   const foeRow = await cancel.evaluate(() => { const b = [...document.querySelectorAll('.move-preview')]; return {total: b.length, revealed: b.filter(x => !x.dataset.candidate && !x.classList.contains('more-moves') && !x.classList.contains('unknown-move')).length, candidates: b.filter(x => x.dataset.candidate).length, more: b.filter(x => x.classList.contains('more-moves')).map(x => x.textContent), blanks: b.filter(x => x.classList.contains('unknown-move')).length}; });
   check(foeRow.total === 4 && foeRow.revealed === 1 && foeRow.blanks === 0 && foeRow.candidates + foeRow.more.length === 3 && (!foeRow.more.length || /^\+\d+ more$/.test(foeRow.more[0])), `An identified role fills the foe move row with candidates, no blanks: ${JSON.stringify(foeRow)}`);
   check(await cancel.evaluate(() => getComputedStyle(document.querySelector('.move-preview[data-seen="true"] strong'), '::after').content.includes('👀') && getComputedStyle(document.querySelector('.move-preview[data-candidate="true"] strong'), '::after').content.includes('🔮')), 'Foe move row marks seen moves 👀 and inferred candidates 🔮');
-  await cancel.keyboard.press('s');
+  await cancel.keyboard.press('Space');
   check(await cancel.evaluate(() => document.activeElement.id) === 'forfeit' && await cancel.locator('#primary').isDisabled(), 'Mid-battle the Start menu opens on Forfeit because Find Random Battle is disabled');
   await cancel.locator('#forfeit').click();
   check(await cancel.evaluate(() => document.activeElement.id) === 'keep-playing' && await cancel.locator('#modal-title').innerText() === 'Forfeit battle?' && await cancel.locator('#confirm-forfeit').innerText() === 'Forfeit' && await cancel.evaluate(() => { const [left, right] = document.querySelectorAll('.modal-actions button'); return left.id === 'keep-playing' && right.id === 'confirm-forfeit' && getComputedStyle(left.parentElement).justifyContent === 'center'; }), 'The forfeit dialog is titled Forfeit battle?, opens on Keep playing (left) with Forfeit on the right, buttons centered');
@@ -750,7 +779,7 @@ try {
   // The next battle must not start on that slot or its preview.
   await cancel.locator('#switch-3').focus();
   const previewedBefore = await cancel.evaluate(() => [document.querySelector('#choices .moves').dataset.preview, document.querySelectorAll('.move-preview').length]);
-  await cancel.keyboard.press('s');
+  await cancel.keyboard.press('Space');
   const fieldBefore = await cancel.locator('#arena-wrap').boundingBox();
   await cancel.locator('#primary').click();
   await cancel.waitForFunction(() => !document.querySelector('#search-overlay').hidden);
