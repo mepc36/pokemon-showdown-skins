@@ -26,8 +26,8 @@ const fit = async page => page.evaluate(() => {
 // Resolve and measure in one JS turn: the rosters re-render while animations play, so a Playwright
 // element handle can go stale between lookup and measurement.
 const height = (page, selector) => page.evaluate(sel => document.querySelector(sel)?.getBoundingClientRect().height ?? 0, selector);
-// The keys S and A go to the opponent's row and back to the own row; this goes to whichever row is not showing.
-const flip = async target => target.keyboard.press(await target.locator('#opponent-roster').isVisible() ? 'a' : 's');
+// The keys 2 and 1 go to the opponent's row and back to the own row; this goes to whichever row is not showing.
+const flip = async target => target.keyboard.press(await target.locator('#opponent-roster').isVisible() ? '1' : '2');
 async function pad(page, index) {
   // Synchronize with the real controller poll. A fixed 55 ms pulse can fall
   // entirely between WebKit frames, especially immediately after a screenshot.
@@ -329,26 +329,30 @@ try {
       }
       await page.locator('#modal-close').click();
     }
-    // Keyboard: Tab and Space open and close the two menus, L a page; S goes to their side and A back to yours.
+    // Keyboard: Tab and Space open and close the two menus, I a page; 2 goes to their side and 1 back to yours.
     const titleNow = async () => await page.locator('dialog[open]').count() ? await page.locator('#modal-title').innerText() : '';
     const keyTitles = [];
     for (const key of ['Tab', 'Tab', 'Space', 'Space']) { await page.keyboard.press(key); keyTitles.push(await titleNow()); }
     check(keyTitles.join('|') === 'Menu||Battle|', `Tab opens and closes the Select menu, Space the Start menu: ${keyTitles.join('|')}`);
-    await page.locator('#switch-1').focus(); await page.keyboard.press('l');
-    const pageByL = await page.locator('dialog[data-view=pokemon][open]').count();
-    await page.keyboard.press('l');
-    check(pageByL === 1 && await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'switch-1', 'L opens the page under the cursor and closes it again');
-    await page.keyboard.press('s');
+    await page.locator('#switch-1').focus(); await page.keyboard.press('i');
+    const pageByKey = await page.locator('dialog[data-view=pokemon][open]').count();
+    await page.keyboard.press('i');
+    check(pageByKey === 1 && await page.locator('dialog[open]').count() === 0 && await page.evaluate(() => document.activeElement.id) === 'switch-1', 'I opens the page under the cursor and closes it again');
+    await page.keyboard.press('2');
     const theirSide = await page.locator('#opponent-roster').isVisible() && await page.evaluate(() => document.activeElement.id === 'opponent-1');
-    await page.keyboard.press('s');
+    await page.keyboard.press('2');
     const stillTheirs = await page.locator('#opponent-roster').isVisible() && await page.evaluate(() => document.activeElement.id === 'opponent-1');
-    await page.keyboard.press('a');
-    check(theirSide && stillTheirs && await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'move-1', 'S goes to their side and does nothing there; A goes back to your side, on the first move');
+    await page.keyboard.press('1');
+    const backHome = await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'move-1';
+    await page.locator('#switch-2').focus(); await page.keyboard.press('1');
+    const stillBench = await page.evaluate(() => document.activeElement.id) === 'switch-2';
+    await page.keyboard.press('2'); await page.keyboard.press('1');
+    check(theirSide && stillTheirs && backHome && stillBench && await page.locator('#roster').isVisible() && await page.evaluate(() => document.activeElement.id) === 'move-1', '2 goes to their side and does nothing there; 1 goes back to your side, on the first move, and does nothing there');
     const rowBefore = await page.locator('#roster').isVisible();
-    for (const key of ['f', 'i', 'h', 'x', 't']) await page.keyboard.press(key);
-    check(await page.locator('dialog[open]').count() === 0 && await page.locator('#roster').isVisible() === rowBefore && await page.evaluate(() => document.activeElement.id) === 'move-1' && await page.locator('#tera').getAttribute('aria-pressed') === 'false', 'The removed keys F, I, H and X, and T, do nothing');
+    for (const key of ['f', 'l', 'h', 'x', 't', 'a', 's']) await page.keyboard.press(key);
+    check(await page.locator('dialog[open]').count() === 0 && await page.locator('#roster').isVisible() === rowBefore && await page.evaluate(() => document.activeElement.id) === 'move-1' && await page.locator('#tera').getAttribute('aria-pressed') === 'false', 'The removed keys F, L, H, X, A and S, and T, do nothing');
     await page.keyboard.press('Tab'); await page.locator('#controls').click();
-    check(await page.locator('#modal-title').innerText() === 'Controls' && (await page.locator('.controls-table thead th').allInnerTexts()).join('|') === '|Controller|Keyboard' && await page.locator('.controls-table tbody tr').count() === 9 && !(await page.locator('.controls-table').innerText()).includes('Flip') && (await page.locator('.controls-table tbody tr').allInnerTexts()).map(row => row.replace(/\s+/g, ' ')).includes('Go to your side Top left bumper A') && await page.locator('#modal-body button').count() === 0, `Controls lists each action with its controller button and keyboard key: ${(await page.locator('.controls-table tbody td').allInnerTexts()).join(',')}`);
+    check(await page.locator('#modal-title').innerText() === 'Controls' && (await page.locator('.controls-table thead th').allInnerTexts()).join('|') === '|Controller|Keyboard' && await page.locator('.controls-table tbody tr').count() === 9 && !(await page.locator('.controls-table').innerText()).includes('Flip') && (await page.locator('.controls-table tbody tr').allInnerTexts()).map(row => row.replace(/\s+/g, ' ')).includes('Go to your side Top left bumper 1') && await page.locator('#modal-body button').count() === 0, `Controls lists each action with its controller button and keyboard key: ${(await page.locator('.controls-table tbody td').allInnerTexts()).join(',')}`);
     check(!(await fit(page)).length && await page.evaluate(() => { const dialog = document.querySelector('#modal'); return dialog.scrollHeight <= dialog.clientHeight + 1; }), `Controls fit without scrolling: ${await fit(page)}`);
     await page.screenshot({path: `test-results/${engineName}-controls-${viewport.width}-${viewport.height}.png`});
     await pad(page, 0);
@@ -365,7 +369,7 @@ try {
   // Render every real candidate role at the smallest supported landscape size.
   const pools = await browser.newPage({viewport: {width: 1024, height: 540}, hasTouch: true, isMobile: true});
   await pools.goto(base); await pools.waitForSelector('#switch-1');
-  await flip(pools); await pools.locator('#opponent-1').focus(); await pools.keyboard.press('l');
+  await flip(pools); await pools.locator('#opponent-1').focus(); await pools.keyboard.press('i');
   await pools.waitForSelector('.overview-layout');
   // Every Pokémon in the snapshot with all of its candidate roles, at the short test screen and at Martin's iPad Chrome size.
   for (const viewport of [{width: 1024, height: 540}, {width: 1000, height: 622}]) {
@@ -414,7 +418,7 @@ try {
   await pools.keyboard.press('Escape'); await flip(pools);
   for (const viewport of [{width: 1024, height: 540}, {width: 1000, height: 622}]) {
     await pools.setViewportSize(viewport);
-    await pools.locator('#move-1').focus(); await pools.keyboard.press('l'); await pools.waitForSelector('dialog[data-view=move] .move-detail-layout');
+    await pools.locator('#move-1').focus(); await pools.keyboard.press('i'); await pools.waitForSelector('dialog[data-view=move] .move-detail-layout');
     const onePage = await pools.evaluate(async () => {
       const {movePages, fitMoveDescription} = await import('/src/info-components.mjs'); const {moveInformation} = await import('/src/information.mjs');
       const {Dex} = await import('/node_modules/@pkmn/dex/build/index.mjs');
@@ -437,10 +441,10 @@ try {
   const failed = await browser.newPage();
   await failed.route('**/data/gen9randombattle.json', route => route.fulfill({status: 503, body: 'Unavailable'}));
   await failed.goto(base); await failed.waitForSelector('#switch-1');
-  await failed.locator('#switch-1').focus(); await failed.keyboard.press('l');
+  await failed.locator('#switch-1').focus(); await failed.keyboard.press('i');
   check(await failed.locator('.compact-move').count() === 4, 'Known moves survive unavailable set data');
   check(await failed.locator('#retry-sets').count() === 0, 'Own Pokémon never show a set-data retry page');
-  await failed.keyboard.press('Escape'); await flip(failed); await failed.locator('#opponent-1').focus(); await failed.keyboard.press('l');
+  await failed.keyboard.press('Escape'); await flip(failed); await failed.locator('#opponent-1').focus(); await failed.keyboard.press('i');
   // The retry page is the opponent's first page; Down would turn to the ability page.
   await failed.waitForSelector('#retry-sets');
   await failed.unroute('**/data/gen9randombattle.json'); await failed.keyboard.press('Enter');
@@ -498,19 +502,19 @@ try {
   await cancel.mouse.move(5, 5);
   check((await cancel.locator('#test-commands').innerText()).match(/\/timer on/g).length === 1 && await cancel.locator('#timer-toggle').count() === 0, 'The timer starts itself once when the battle starts');
   check(await cancel.locator('dialog[open]').count() === 0, 'Find Random Battle closes the menu');
-  await cancel.locator('#switch-2').focus(); await cancel.keyboard.press('l'); await cancel.keyboard.press('ArrowRight'); await cancel.keyboard.press('ArrowDown'); await cancel.keyboard.press('Escape');
+  await cancel.locator('#switch-2').focus(); await cancel.keyboard.press('i'); await cancel.keyboard.press('ArrowRight'); await cancel.keyboard.press('ArrowDown'); await cancel.keyboard.press('Escape');
   check(!(await cancel.locator('#test-commands').innerText()).includes('/choose'), 'Flat information navigation never sends a battle choice');
-  await cancel.locator('#switch-2').focus(); await cancel.keyboard.press('l');
+  await cancel.locator('#switch-2').focus(); await cancel.keyboard.press('i');
   const keyOpened = await cancel.locator('dialog[data-view=pokemon][open]').count();
-  await cancel.keyboard.press('ArrowDown'); await cancel.keyboard.press('l');
-  check(keyOpened === 1 && await cancel.locator('dialog[open]').count() === 0 && await cancel.evaluate(() => document.activeElement.id) === 'switch-2', 'The keyboard key L opens a Pokémon page and closes it again, also from its ability page, back on the same button');
+  await cancel.keyboard.press('ArrowDown'); await cancel.keyboard.press('i');
+  check(keyOpened === 1 && await cancel.locator('dialog[open]').count() === 0 && await cancel.evaluate(() => document.activeElement.id) === 'switch-2', 'The keyboard key I opens a Pokémon page and closes it again, also from its ability page, back on the same button');
   // Up from the bench Pokémon lands on one of its previewed moves.
   await cancel.keyboard.press('ArrowUp');
   const keyMove = await cancel.evaluate(() => document.activeElement.id);
-  await cancel.keyboard.press('l');
+  await cancel.keyboard.press('i');
   const keyOpenedMove = await cancel.locator('dialog[data-view=move][open]').count();
-  await cancel.keyboard.press('l');
-  check(/^preview-move-\d$/.test(keyMove) && keyOpenedMove === 1 && await cancel.locator('dialog[open]').count() === 0 && await cancel.evaluate(() => document.activeElement.id) === keyMove, `The keyboard key L opens a move page and closes it again: ${keyMove}`);
+  await cancel.keyboard.press('i');
+  check(/^preview-move-\d$/.test(keyMove) && keyOpenedMove === 1 && await cancel.locator('dialog[open]').count() === 0 && await cancel.evaluate(() => document.activeElement.id) === keyMove, `The keyboard key I opens a move page and closes it again: ${keyMove}`);
   await cancel.locator('#switch-2').focus();
   await cancel.locator('#switch-1').focus(); await cancel.locator('#move-1').click();
   check((await cancel.locator('#test-commands').innerText()).includes('/choose move 1|1'), 'Battle choices still submit immediately');
@@ -540,7 +544,7 @@ try {
     const cryDelays = await cancel.evaluate(() => [...window.cryLog]);
     check(cries.join() === 'raichu' && cryDelays.length === 1 && cryDelays[0] > 0 && cryDelays[0] < 2, `A Pokémon that switches in sounds its cry once, timed to its appearance: ${cries}, ${cryDelays.map(delay => delay.toFixed(2))} seconds after the switch`);
   }
-  await flip(cancel); await cancel.locator('#opponent-4').focus(); await cancel.keyboard.press('l');
+  await flip(cancel); await cancel.locator('#opponent-4').focus(); await cancel.keyboard.press('i');
   // Roles that do not fit under the facts and stats continue on further pages; the ability page comes after them. Down turns the page and does not wrap.
   const rolePageCount = -1 + Number((await cancel.locator('#prev-info-page + span').count() ? await cancel.locator('#prev-info-page + span').innerText() : 'Page 1 / 1').match(/\/ (\d+)/)[1]);
   const roleRows = [], facts = [];
@@ -572,7 +576,7 @@ try {
   await cancel.locator('#forfeit').click();
   check(await cancel.evaluate(() => document.activeElement.id) === 'keep-playing' && await cancel.locator('#modal-title').innerText() === 'Forfeit battle?' && await cancel.locator('#confirm-forfeit').innerText() === 'Forfeit' && await cancel.evaluate(() => { const [left, right] = document.querySelectorAll('.modal-actions button'); return left.id === 'keep-playing' && right.id === 'confirm-forfeit' && getComputedStyle(left.parentElement).justifyContent === 'center'; }), 'The forfeit dialog is titled Forfeit battle?, opens on Keep playing (left) with Forfeit on the right, buttons centered');
   await cancel.locator('#keep-playing').click();
-  await cancel.locator('#opponent-4').focus(); await cancel.keyboard.press('l'); await cancel.waitForSelector('.inspection-note');
+  await cancel.locator('#opponent-4').focus(); await cancel.keyboard.press('i'); await cancel.waitForSelector('.inspection-note');
   await cancel.screenshot({path: `test-results/${engineName}-inferred-set.png`});
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|move|p2a: Raichu|Spore|p1a: Grumpig\n|turn|19'}));
   await cancel.waitForFunction(() => document.querySelector('.inspection-note').textContent.includes('do not match'));
@@ -660,7 +664,7 @@ try {
     window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|switch|p2a: Raichu|Raichu, L88, M|100/100\n|turn|22'});
   });
   await cancel.waitForFunction(() => document.querySelector('#matchup-foe .matchup-names span:first-child')?.textContent === 'Raichu', null, {timeout: 15000});
-  await cancel.locator('#switch-1').focus(); await cancel.keyboard.press('l');
+  await cancel.locator('#switch-1').focus(); await cancel.keyboard.press('i');
   check((await cancel.locator('#modal-title').innerText()).includes('Grumpig'), 'R3 on the first roster slot still opens the lead');
   await cancel.keyboard.press('Escape');
   await cancel.locator('#switch-1').click();
@@ -713,12 +717,12 @@ try {
   const lockedMove = await cancel.locator('#move-2 strong').innerText();
   // The cursor may sit on a bench Pokémon here, whose preview hides the own moves; flipping to the opponent row and back returns to them.
   await pad(cancel, 5); await pad(cancel, 4);
-  await cancel.locator('#move-2').focus();await cancel.keyboard.press('l');
+  await cancel.locator('#move-2').focus();await cancel.keyboard.press('i');
   check(await cancel.locator('dialog[data-view=move][open]').count() === 1 && await cancel.locator('#modal-title').innerText() === lockedMove, `R3 on a locked own move opens that move: ${lockedMove}`);
   await cancel.keyboard.press('Escape');
   await cancel.locator('#roster button[data-fainted="true"]').first().focus(); await cancel.keyboard.press('ArrowUp');
   const faintedMove = await cancel.evaluate(() => document.activeElement.querySelector('strong')?.textContent || '');
-  await cancel.keyboard.press('l');
+  await cancel.keyboard.press('i');
   check(/^preview-move-\d$/.test(await cancel.evaluate(() => document.querySelector('#choices .move-preview:focus, #choices .move-preview')?.id || '')) && faintedMove !== '' && await cancel.locator('dialog[data-view=move][open]').count() === 1 && await cancel.locator('#modal-title').innerText() === faintedMove, `R3 on a fainted Pokémon's move opens that move: ${faintedMove}`);
   await cancel.keyboard.press('Escape'); await cancel.locator('#move-1').focus();
   const fieldEnded = await cancel.locator('#arena-wrap').boundingBox();
