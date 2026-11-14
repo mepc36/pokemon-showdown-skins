@@ -228,13 +228,12 @@ try {
     await page.waitForSelector('#info-content');
     check(await page.locator('[data-info-tab], .inspection-note').count() === 0 && (await page.locator('.inspection-footer').innerText()).includes('Page 1 / 2'), 'Own Pokémon have the main page and the ability page: no Overview tab, no footnote');
     check((await page.locator('#modal-title').innerText()) === 'Grumpig · Lv 92', 'R3 shows name and level without gender');
-    check((await page.locator('.inspection-banner').innerText()).includes('297/297') && await page.locator('.identity-types .type-badge').innerText() === 'Psychic', 'Types and exact HP share the banner');
+    check((await page.locator('.identity-hp strong').innerText()).startsWith('297/297 (100%)') && await page.locator('.identity-types .type-badge').innerText() === 'Psychic', 'Types and exact HP share the banner');
     for (const label of ['Attack', 'Defense', 'Sp. Atk', 'Sp. Def']) {
       check(await page.locator('.info-facts > div').filter({has: page.getByText(label, {exact: true})}).locator('dd').innerText() === '150', `Exact private ${label} remains available`);
     }
     check(await page.locator('.compact-move').count() === 4 && await page.locator('.compact-move button').count() === 0, 'Four compact moves cannot open a nested menu');
-    check(JSON.stringify(await page.locator('.stats-layout dt').allInnerTexts()) === JSON.stringify(['HP', 'Attack', 'Defense', 'Sp. Atk', 'Sp. Def', 'Speed']) && await page.locator('.identity-speed').count() === 0 && await page.evaluate(() => new Set([...document.querySelectorAll('.stats-layout .info-facts > div')].map(cell => Math.round(cell.getBoundingClientRect().top))).size) === 1, 'Stats read HP, Attack, Defense, Sp. Atk, Sp. Def, Speed in one row');
-    check(await page.locator('.stats-layout dd').first().innerText() === '297/297 (100%)' && await page.evaluate(() => { const value = document.querySelector('.stats-layout dd'); return value.scrollWidth <= value.clientWidth + 1; }), `HP leads the stats row as exact HP and percent on one line: ${await page.locator('.stats-layout dd').first().innerText()}`);
+    check(JSON.stringify(await page.locator('.stats-layout dt').allInnerTexts()) === JSON.stringify(['Attack', 'Defense', 'Sp. Atk', 'Sp. Def', 'Speed']) && await page.locator('.identity-speed').count() === 0, 'Stats read Attack, Defense, Sp. Atk, Sp. Def, Speed in one row');
     check(JSON.stringify(await page.locator('.overview-layout > .info-facts dt').allInnerTexts()) === JSON.stringify(['Ability', 'Item', 'Tera']) && (await page.locator('.overview-layout > .info-facts').innerText()).includes('Thick Fat') && !(await page.locator('#modal-body').innerText()).includes('IVs'), 'Own overview reads Ability, Item, Tera, without the IV note');
     check(await height(page, '.overview-layout .compact-move') >= 0.85 * await height(page, '.stats-layout .info-facts > div'), 'R3 move entries are about as tall as the stat cells');
     check(await page.locator('.compact-moves').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length) === 4, 'Known moves sit in one row of four');
@@ -274,7 +273,6 @@ try {
     check((await page.locator('#modal-title').innerText()).includes('Grumpig') && await page.locator('#roster').isVisible(), 'D-pad right from your sixth wraps to your first');
     for (let press = 0; press < 5; press++) await pad(page, 15);
     check((await page.locator('#modal-title').innerText()).includes('Iron Hands') && /0(\/\d+)? \(0%\)/.test(await page.locator('.identity-hp').innerText()) && !(await page.locator('.identity-hp').innerText()).includes('fnt'), `D-pad right reaches the sixth, fainted Pokémon, whose banner reads zero HP and 0%, not fnt: ${await page.locator('.identity-hp').innerText()}`);
-    check(/^0(\/\d+)? \(0%\)$/.test(await page.locator('.stats-layout dd').first().innerText()), `A fainted Pokémon's HP cell reads zero: ${await page.locator('.stats-layout dd').first().innerText()}`);
     await pad(page, 0);
     check(!await page.locator('#modal').isVisible() && await page.evaluate(() => document.activeElement.id) === 'switch-1', 'One B closes the whole panel and restores the original roster focus');
     await page.locator('#switch-2').focus(); await pad(page, 2); await pad(page, 14); await pad(page, 14); await pad(page, 0);

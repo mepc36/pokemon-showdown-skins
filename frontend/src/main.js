@@ -270,15 +270,14 @@ function showInfo(page) {
           inference?.teraType ? ['Tera · inferred', inference.teraType, {type: inference.teraType, cue: 'green', hint: 'All remaining set definitions have this Tera type'}] : ['Tera', p.teraType || 'Not revealed', p.teraType]];
       // Opponent pages show the same five stat boxes as the own page, estimated (~) from base stats and level.
       const foeStats = own ? null : arena.foeStats(page.index);
-      // The own row starts with the exact HP and its percentage; the opponent's exact HP is never sent.
-      const statCells = stats ? [['HP', exactHp], ...stats.entries.map(([name, value]) => [name, value]),
+      const statCells = stats ? [...stats.entries.map(([name, value]) => [name, value]),
         ['Speed', speed.kind === 'known' && speed.modified != null && speed.modified !== speed.value ? `${speed.value} → ${speed.modified}` : speed.value]] :
         foeStats ? [['Attack', `~${foeStats.atk}`], ['Defense', `~${foeStats.def}`], ['Sp. Atk', `~${foeStats.spa}`], ['Sp. Def', `~${foeStats.spd}`], ['Speed', speed.kind === 'estimate' ? `~${speed.value}` : speed.value]] : null;
       const moves = knownMoves(page.side, page.index);
       const count = Math.max(1, Math.ceil(moves.length / 4));
       pages = Array.from({length: count}, (_, i) => ({key: `overview:${i}`, label: count > 1 ? `Overview ${i + 1}/${count}` : 'Overview',
         content: `<div class="overview-layout">${facts(summary)}<h3>${stats?.label.startsWith('Original') ? 'Original stats · before Transform' : stats ? 'Stats (before modifiers)' : 'Speed estimate · before modifiers'}</h3>
-          ${statCells ? `<div class="stats-layout"${stats ? ' data-hp="true"' : ''}>${facts(statCells)}</div>` : `<div class="stats-layout">${speedInfo}</div>`}
+          ${statCells ? `<div class="stats-layout">${facts(statCells)}</div>` : `<div class="stats-layout">${speedInfo}</div>`}
           <h3>${own ? 'Moves' : 'Revealed moves'}</h3>${moveList(moves.slice(i * 4, i * 4 + 4), 4)}</div>`,
         note: moves.some(m => m.copied) ? '* Copied move' : own ? '' : inference?.identified ? `Role inferred: ${inference.role}. Unrevealed moves/items remain candidates.` : inference?.status === 'unmatched' ? 'Reveals do not match this snapshot; showing all candidates.' : 'Unrevealed information stays unknown.'}));
       // Opponents get one page per role: revealed facts on top, that role's possible sets below, revealed moves highlighted.
