@@ -550,7 +550,7 @@ try {
   check(teraSpent.image === 'none' && teraSpent.color === 'rgb(227, 230, 234)' && teraSpent.strike === 'line-through' && teraSpent.gem.includes('grayscale') && teraSpent.dot === 0 && await cancel.locator('#tera').isDisabled(), `Tera already used: gray button, type struck through, gray gem, no dot: ${JSON.stringify(teraSpent)}`);
   await cancel.locator('#switch-3').focus();
   check((await teraLook()).used === 'true', 'A bench preview keeps the used look');
-  await pad(cancel, 2);
+  await pad(cancel, 5); await pad(cancel, 4);
   await cancel.evaluate(async () => {
     const {demoRequest} = await import('/src/demo.mjs');
     // The server deletes a Pokémon's terastallized flag when it faints, so from then on no request carries it.
@@ -562,7 +562,7 @@ try {
   check((await teraLook()).used === 'true' && await cancel.locator('#tera').isDisabled(), 'Tera stays used for the rest of the battle when no request carries the flag any more');
   await cancel.locator('#switch-3').focus();
   check((await teraLook()).used === 'true', 'A bench preview still shows Tera as used then');
-  await pad(cancel, 2);
+  await pad(cancel, 5); await pad(cancel, 4);
 
   // Switching reorders the server request (active first); the roster keeps the lead first.
   await cancel.evaluate(async () => {
@@ -635,8 +635,8 @@ try {
   check((await cancel.locator('#test-commands').innerText()).includes('|/savereplay'), 'The replay is saved automatically when the battle ends');
   // R3 opens a move's page whenever the move is on screen: a locked own move, and a fainted Pokémon's move.
   const lockedMove = await cancel.locator('#move-2 strong').innerText();
-  // The cursor may sit on a bench Pokémon here, whose preview hides the own moves; Y returns to them.
-  await pad(cancel, 2);
+  // The cursor may sit on a bench Pokémon here, whose preview hides the own moves; flipping to the opponent row and back returns to them.
+  await pad(cancel, 5); await pad(cancel, 4);
   await cancel.locator('#move-2').focus();await cancel.keyboard.press('i');
   check(await cancel.locator('dialog[data-view=move][open]').count() === 1 && await cancel.locator('#modal-title').innerText() === lockedMove, `R3 on a locked own move opens that move: ${lockedMove}`);
   await cancel.keyboard.press('Escape');
