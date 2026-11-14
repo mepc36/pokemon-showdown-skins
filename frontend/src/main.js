@@ -638,7 +638,7 @@ function render() {
   $('tera').dataset.type = teraType;
   teraLabel = {html: $('tera').innerHTML, type: teraType, disabled: $('tera').disabled, used: $('tera').dataset.used};
   $('tera').setAttribute('aria-pressed', String(tera));
-  $('tera').title = choices.tera ? 'Toggle Terastallize for your next move (X)' : 'This Pokémon’s Tera type; Terastallize is unavailable right now.';
+  $('tera').title = choices.tera ? 'Toggle Terastallize for your next move' : 'This Pokémon’s Tera type; Terastallize is unavailable right now.';
   const canCancel = !fixture && state.pending && request && !request.noCancel && state.authenticated && !state.recovering && !state.ended;
   // No Cancel button in the row: B is cancel. The node stays in #action-slots so B can trigger it.
   $('undo').hidden = true;
