@@ -104,11 +104,12 @@ function chatTurns() {
 }
 function showChat(step = 0) {
   const turns = chatTurns();
-  const latest = Math.max(0, turns.length - 1);
-  // The current turn has nothing in it yet, so the chat opens on the last turn that has lines.
+  // The current turn is left out while it has no lines yet, so the chat opens on the newest turn with lines.
   const hasLines = turn => turn.some(node => node.tagName !== 'H2');
-  const opening = chatTurn ?? Math.max(0, turns.findLastIndex(hasLines));
-  const index = Math.min(Math.max(opening + step, 0), latest);
+  const latest = Math.max(0, turns.findLastIndex(hasLines));
+  const opening = chatTurn ?? latest;
+  // Down from the newest turn wraps to Battle start, and Up from Battle start wraps back to it.
+  const index = opening + step > latest ? 0 : opening + step < 0 ? latest : opening + step;
   chatTurn = index;
   const turn = turns[index] || [];
   const title = turn[0]?.tagName === 'H2' ? turn[0].textContent : 'Battle start';
