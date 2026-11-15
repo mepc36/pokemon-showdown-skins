@@ -18,6 +18,8 @@ const escape = escapeHtml;
 const nameTag = (name, tagClass = 'form-tag') => { const form = regionalForm(name); return `<span class="mon-name">${escapeHtml(form.base)}</span>${form.region ? `<small class="${tagClass}">${escapeHtml(form.region.toUpperCase())}</small>` : ''}`; };
 const btn = (id, label, row, disabled = false, extra = '') => `<button id="${id}" data-nav data-row="${row}" ${disabled ? 'disabled' : ''} ${extra}>${label}</button>`;
 let arena, session, auth, config, state = {}, fixture = true, tera = false, lastRequest, lastMovesRequest, selectedRequest, localNotice = '', ignoreButtons = new Set();
+// The last move list the server sent for each own Pokémon, by ident, with PP as of that request.
+const lastMovesByPokemon = new Map();
 let diagnosticLines = [];
 let ownOrder = [];
 let shownTeam = 'own';
@@ -427,6 +429,16 @@ document.addEventListener('focusin', event => {
   setFoePreview(foe ? Number(foe[1]) : null);
   if (foe || move || event.target.closest('.moves') && !event.target.classList.contains('move-preview') || own) setFoeMovePreview(foe ? Number(foe[1]) : null);
 });
+// The locked move row belongs to the Pokémon that is active now. The last request with moves can belong to the one
+// that just left the field: you switch, the opponent uses U-turn, and the server's wait request carries no move list.
+// Then the row shows the new Pokémon's own last move list, or its move ids with PP unknown if it has none yet.
+function lockedMoves(request) {
+  const active = request?.side?.pokemon?.find(p => p.active);
+  const lastActive = lastMovesRequest.side?.pokemon?.find(p => p.active);
+  const moves = !active || active.ident === lastActive?.ident ? lastMovesRequest.active[0].moves
+    : lastMovesByPokemon.get(active.ident) || (active.moves || []).map(id => ({id, move: window.BattleMovedex[id]?.name || id}));
+  return availableChoices({active: [{moves}]}).moves;
+}
 function focusFirstMove() {
   setPreview(null); setFoeMovePreview(null);
   (document.querySelector('#choices .moves > button[id^="move-"]:not([hidden])') || document.querySelector('#choices .moves > button:not([hidden])'))?.focus({preventScroll: true});
@@ -644,11 +656,15 @@ function render() {
   }
   const request = fixture ? demoRequest : state.request;
   if (request?.side) lastRequest = request;
-  if (request?.active?.[0]?.moves?.length) lastMovesRequest = request;
+  if (request?.active?.[0]?.moves?.length) {
+    lastMovesRequest = request;
+    const ident = request.side?.pokemon?.find(p => p.active)?.ident;
+    if (ident) lastMovesByPokemon.set(ident, request.active[0].moves);
+  }
   if (request !== selectedRequest) { selectedRequest = request; tera = false; }
   const choices = availableChoices(request);
   // While the opponent picks a replacement, and after the battle, keep showing the active Pokémon's four moves, locked.
-  if (!fixture && (request?.wait || request?.forceSwitch || state.ended) && lastMovesRequest) choices.moves = availableChoices({...lastMovesRequest, wait: false}).moves;
+  if (!fixture && (request?.wait || request?.forceSwitch || state.ended) && lastMovesRequest) choices.moves = lockedMoves(request);
   shownMoves = choices.moves;
   const disabled = choicesDisabled(request);
   // While a choice is pending or the opponent is moving, moves stay focusable for review but cannot be chosen.
@@ -730,7 +746,7 @@ function render() {
 }
 
 function startLive() {
-  fixture = false; localNotice = ''; lastRequest = null; lastMovesRequest = null; ownOrder = []; selectedMoveId = '';
+  fixture = false; localNotice = ''; lastRequest = null; lastMovesRequest = null; lastMovesByPokemon.clear(); ownOrder = []; selectedMoveId = '';
   arena.reset('battle-gen9randombattle-0');
   session.connect();
 }
@@ -769,7 +785,7 @@ async function init() {
   arena.receive({room: 'battle-gen9randombattle-0', lines: demoLines, snapshot: true, request: demoRequest});
   session = new ShowdownSession({url: config.server, username: config.username, auth, storage: localStorage,
     onState(next) {
-      if (state.room && !next.room) { lastRequest = null; lastMovesRequest = null; ownOrder = []; }
+      if (state.room && !next.room) { lastRequest = null; lastMovesRequest = null; lastMovesByPokemon.clear(); ownOrder = []; }
       if (next.room && next.room !== musicRoom) { musicRoom = next.room; music.newBattle(); }
       // A new battle starts on your active Pokémon: nothing from the last battle stays previewed, and the cursor
       // lands on the first move instead of on the roster slot it was left on.
@@ -777,7 +793,7 @@ async function init() {
       state = next; updateMusic(); render();
     },
     onBattle(packet) { try {
-      if (arena.room !== packet.room) { lastRequest = null; lastMovesRequest = null; ownOrder = []; if (modal.open && infoPage) closeModal(); }
+      if (arena.room !== packet.room) { lastRequest = null; lastMovesRequest = null; lastMovesByPokemon.clear(); ownOrder = []; if (modal.open && infoPage) closeModal(); }
       arena.receive(packet);
     } catch (error) { reportError(error, 'battle display'); } },
   });

@@ -697,6 +697,26 @@ try {
   await cancel.waitForFunction(() => document.querySelector('#matchup-foe .matchup-names span:first-child')?.textContent === '—', null, {timeout: 15000});
   await cancel.locator('#switch-2').focus();
   check(await cancel.locator('#matchup-own').isVisible() && await cancel.locator('#matchup-foe').isVisible() && await cancel.locator('#matchup-own .matchup-names span').first().innerText() === 'Palossand' && /^\d+$/.test(await cancel.locator('#matchup-own .stat-box strong').first().innerText()) && (await cancel.locator('#matchup-foe .stat-box strong').first().innerText()) === '—', 'Side panels stay while the opponent picks a replacement, keeping my columns');
+  // You switch mid-turn and the opponent's U-turn makes the server send a wait request: the locked move row shows the
+  // Pokémon that is active now, not the one whose request came last.
+  // Sends a request with the named Pokémon active: a wait request, or a move request when moves are given.
+  const requestWithActive = (name, rqid, moves) => cancel.evaluate(async ([name, rqid, moves]) => {
+    const {demoRequest} = await import('/src/demo.mjs');
+    const team = demoRequest.side.pokemon.map(p => ({...p, active: p.ident === `p1: ${name}`}));
+    const request = moves ? {rqid, active: [{moves}], side: {...demoRequest.side, pokemon: team}} : {wait: true, rqid, side: {...demoRequest.side, pokemon: team}};
+    window.testSocket.onmessage({data: `>battle-gen9randombattle-12345\n|request|${JSON.stringify(request)}`});
+  }, [name, rqid, moves]);
+  const moveRow = () => cancel.evaluate(() => [...document.querySelectorAll('#choices .moves > button[id^="move-"]')].map(el => `${el.querySelector('strong').textContent}:${el.querySelector('small span:last-child').textContent}`).join('|'));
+  await requestWithActive('Amoonguss', 5);
+  await cancel.waitForTimeout(300);
+  await pad(cancel, 4);
+  check(await moveRow() === 'Spore:— / — PP|Giga Drain:— / — PP|Sludge Bomb:— / — PP|Foul Play:— / — PP' && await cancel.evaluate(() => document.activeElement.id) === 'move-1', `A Pokémon that switched in mid-turn shows its own moves while waiting, PP unknown, and the top left bumper lands on its first move: ${await moveRow()}`);
+  // Amoonguss gets a move request, then Grumpig switches back in mid-turn: Grumpig's moves come from its own earlier request.
+  await requestWithActive('Amoonguss', 6, [['Spore', 'spore', 16], ['Giga Drain', 'gigadrain', 16], ['Sludge Bomb', 'sludgebomb', 16], ['Foul Play', 'foulplay', 24]].map(([move, id, maxpp]) => ({move, id, pp: maxpp - 1, maxpp})));
+  await cancel.waitForTimeout(300);
+  await requestWithActive('Grumpig', 7);
+  await cancel.waitForTimeout(300);
+  check(await moveRow() === 'Nasty Plot:32 / 32 PP|Shadow Ball:24 / 24 PP|Dazzling Gleam:16 / 16 PP|Psyshock:16 / 16 PP', `A Pokémon that had a move request earlier shows its moves with PP from that request: ${await moveRow()}`);
   await cancel.evaluate(async () => {
     const {demoRequest} = await import('/src/demo.mjs');
     const team = demoRequest.side.pokemon.map(p => ({...p, active: p.ident === 'p1: Palossand'}));
