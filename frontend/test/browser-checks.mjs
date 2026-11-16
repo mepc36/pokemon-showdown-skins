@@ -156,13 +156,15 @@ try {
     await pad(page, 0);
     check(await page.locator('.move-preview').count() === 4 && /^preview-move-\d$/.test(await page.evaluate(() => document.activeElement.id)), 'Closing the info returns to the preview move; the preview stays');
     await page.locator('#switch-2').focus(); await pad(page, 0);
-    check(await page.locator('.move-preview').count() === 4 && await page.evaluate(() => document.activeElement.id === 'switch-2'), 'B on a bench Pokémon leaves the cursor and the preview where they are');
-    await pad(page, 4);
+    check(await page.locator('.move-preview').count() === 0 && await page.evaluate(() => document.activeElement.id === 'move-1'), 'B on a bench Pokémon returns to the active Pokémon\'s first move and ends the preview');
+    await page.locator('#switch-2').focus(); await pad(page, 4);
     check(await page.locator('.move-preview').count() === 0 && await page.evaluate(() => document.activeElement.id === 'move-1') && await page.locator('#tera').getAttribute('aria-pressed') === 'false', 'The top left bumper on an own bench Pokémon returns to the active Pokémon\'s first move and ends the preview');
     await page.locator('#switch-2').focus();
-    await pad(page, 5); await page.locator('#opponent-3').focus(); await pad(page, 0);
-    check(await page.evaluate(() => document.activeElement.id === 'opponent-3'), 'B on an opponent leaves the cursor there');
-    await pad(page, 4);
+    await pad(page, 5); await page.locator('#opponent-3').focus(); await pad(page, 8); await pad(page, 0);
+    check(await page.locator('dialog[open]').count() === 0 && await page.locator('#opponent-roster').isVisible() && !await page.locator('#roster').isVisible(), 'B in a menu opened from the opponent row only closes the menu and keeps the opponent row');
+    await page.locator('#opponent-3').focus(); await pad(page, 0);
+    check(await page.locator('#roster').isVisible() && !await page.locator('#opponent-roster').isVisible() && await page.locator('.move-preview').count() === 0 && await page.evaluate(() => document.activeElement.id === 'move-1'), 'B on an opponent flips to the own row and returns to the active Pokémon\'s first move');
+    await pad(page, 5); await page.locator('#opponent-3').focus(); await pad(page, 4);
     check(await page.locator('.move-preview').count() === 0 && await page.locator('#move-1').isVisible() && await page.evaluate(() => document.activeElement.id === 'move-1'), 'The top left bumper on an opponent returns to the active Pokémon\'s first move and ends the preview');
     check(await page.locator('#roster').isVisible() && !await page.locator('#opponent-roster').isVisible(), 'The top left bumper on an opponent flips the team row back to the own side');
     await page.locator('#switch-1').focus();
@@ -563,9 +565,7 @@ try {
   check(await cancel.evaluate(() => { const el = document.querySelector('#move-2'); return !el.disabled && el.dataset.locked === 'true' && document.activeElement === el; }) && !(await cancel.locator('#test-commands').innerText()).includes('/choose move 2'), 'Moves stay focusable for review while a choice is pending but cannot be chosen');
   check(await cancel.evaluate(() => document.querySelector('#choices').dataset.pending === 'true' && getComputedStyle(document.querySelector('#switch-1')).backgroundColor === 'rgb(201, 237, 214)' && getComputedStyle(document.querySelector('#move-1')).backgroundColor === 'rgb(211, 216, 221)'), 'A sent choice grays the move row; the active Pokémon keeps its green shade');
   await flip(cancel); await cancel.locator('#opponent-2').focus(); await cancel.keyboard.press('Escape');
-  check((await cancel.locator('#test-commands').innerText()).includes('/undo |1') && await cancel.evaluate(() => document.querySelector('.team-row[data-side="own"]').hidden && !document.querySelector('.team-row[data-side="opponent"]').hidden && document.activeElement.id === 'opponent-2'), 'B / Escape from the foe roster invokes Showdown undo and leaves the cursor and the team row where they are');
-  await flip(cancel);
-  check(await cancel.evaluate(() => !document.querySelector('.team-row[data-side="own"]').hidden && document.activeElement.id === 'move-1'), 'Flipping back after the undo lands on the first move');
+  check((await cancel.locator('#test-commands').innerText()).includes('/undo |1') && await cancel.evaluate(() => !document.querySelector('.team-row[data-side="own"]').hidden && document.querySelector('.team-row[data-side="opponent"]').hidden && document.activeElement.id === 'move-1'), 'B / Escape from the foe roster invokes Showdown undo, flips to the own row and lands on the first move');
   check(await cancel.locator('#foe-timer-value').innerText() === '—' && (await cancel.locator('#battle-timer .timer-who').allInnerTexts()).join(' ') === 'You: Them:', 'The opponent timer shows a dash until the server warns about them');
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|inactive|Offline preview has 20 seconds left.'}));
   check(await cancel.locator('#foe-timer-value').innerText() === '0:20', 'An opponent warning fills the Them timer');
@@ -588,15 +588,17 @@ try {
   await flip(cancel); await cancel.locator('#opponent-4').focus(); await cancel.keyboard.press('i');
   // Roles that do not fit under the facts and stats continue on further pages; the ability page comes after them. Down turns the page and does not wrap.
   const rolePageCount = -1 + Number((await cancel.locator('#prev-info-page + span').count() ? await cancel.locator('#prev-info-page + span').innerText() : 'Page 1 / 1').match(/\/ (\d+)/)[1]);
-  const roleRows = [], facts = [];
+  const roleRows = [], facts = [], pageCandidates = [];
   for (let shown = 0; shown < rolePageCount; shown++) {
     roleRows.push(...await cancel.evaluate(() => [...document.querySelectorAll('.role-group')].map(group => [...group.querySelectorAll('.compact-move[data-move]')].map(li => li.dataset.move))));
     facts.push(await cancel.locator('#info-content .info-facts').count());
+    pageCandidates.push(await cancel.locator('.compact-move[data-candidate="true"]').count());
     check(await cancel.evaluate(() => { const el = document.querySelector('#info-content'); return el.scrollHeight <= el.clientHeight + 2; }), `Role page ${shown + 1} of ${rolePageCount} fits without clipping`);
     await cancel.keyboard.press('ArrowDown');
   }
   check(await cancel.locator('.ability-entry').count() >= 1 && await cancel.locator('.role-group, #info-content .info-facts').count() === 0 && (await cancel.locator('#modal-title').innerText()).includes('❓') && (await cancel.locator('.identity-types .type-badge').count()) >= 1 && await cancel.evaluate(() => { const el = document.querySelector('#info-content'); return el.scrollHeight <= el.clientHeight + 2; }), `After the opponent's role pages comes the ability page, under the same title and banner: ${(await cancel.locator('.ability-entry strong').allInnerTexts()).join(', ')}`);
   for (let shown = 0; shown < rolePageCount; shown++) await cancel.keyboard.press('ArrowUp');
+  check(pageCandidates.every(count => count === 0), `Before a role is identified, no move on the role pages carries 🔮: ${pageCandidates}`);
   check(roleRows.length >= 2 && roleRows[0].filter(id => roleRows.every(row => row.includes(id))).every((id, i) => roleRows.every(row => row[i] === id)), 'Moves shared by every candidate role come first, in the same order, in each role');
   check(await cancel.locator('[data-info-tab], .inspection-tabs').count() === 0 && rolePageCount >= 2 && facts[0] > 0 && facts.slice(1).every(count => count === 0) && (await cancel.locator('#modal-title').innerText()).includes('❓') && (await cancel.locator('#modal-title').innerText()).includes('possible roles'), `Ambiguous opponent lists every matching role with the ❓ badge; the facts and stats sit on page 1 only: ${roleRows.length} roles on ${rolePageCount} pages`);
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|move|p2a: Raichu|Tera Blast|p1a: Grumpig\n|turn|18'}));
@@ -607,6 +609,7 @@ try {
   check(await cancel.locator('#opponent-4').getAttribute('data-cue') === 'green', 'Identified opponent gets a green roster border');
   check(!(await fit(cancel)).length, `Inferred overview fits the smallest viewport: ${await fit(cancel)}`);
   check(await cancel.locator('.compact-move[data-revealed="true"]').count() >= 1 && await cancel.evaluate(() => getComputedStyle(document.querySelector('.compact-move[data-revealed="true"] strong'), '::after').content.includes('👀')), 'Seen moves on the role page carry the 👀 mark');
+  check(await cancel.evaluate(() => { const items = [...document.querySelectorAll('.role-group .compact-move[data-move]')]; const unseen = items.filter(li => li.dataset.revealed !== 'true'); return unseen.length >= 1 && unseen.every(li => li.dataset.candidate === 'true' && getComputedStyle(li.querySelector('strong'), '::after').content.includes('🔮')) && items.filter(li => li.dataset.revealed === 'true').every(li => li.dataset.candidate === 'false'); }), 'Once the role is identified, its unseen moves on the role page carry 🔮, as in the battle screen\'s move row');
   check(await cancel.evaluate(() => { const items = [...document.querySelectorAll('.compact-move:not(.unknown-move)')]; const firstUnseen = items.findIndex(li => li.dataset.revealed !== 'true'); return items[0]?.dataset.revealed === 'true' && items.slice(Math.max(firstUnseen, 0)).every(li => firstUnseen < 0 || li.dataset.revealed !== 'true'); }), 'Seen moves come first in the role page move list');
   await cancel.keyboard.press('i'); await cancel.locator('#opponent-3').focus(); await cancel.locator('#opponent-4').focus();
   const foeRow = await cancel.evaluate(() => { const b = [...document.querySelectorAll('.move-preview')]; return {total: b.length, revealed: b.filter(x => !x.dataset.candidate && !x.classList.contains('more-moves') && !x.classList.contains('unknown-move')).length, candidates: b.filter(x => x.dataset.candidate).length, more: b.filter(x => x.classList.contains('more-moves')).map(x => x.textContent), blanks: b.filter(x => x.classList.contains('unknown-move')).length}; });
@@ -646,7 +649,7 @@ try {
   await cancel.locator('#move-2').focus(); await cancel.locator('#tera').click();
   const teraOn = await teraLook();
   await cancel.locator('#move-2').focus(); await pad(cancel, 0);
-  check(teraOn.pressed === 'true' && (await teraLook()).pressed === 'false' && await undoCount() === undosBefore && await cancel.evaluate(() => document.activeElement.id) === 'move-2', `B switches off a selected Tera with no choice sent, sends no undo and leaves the cursor: ${teraOn.pressed}`);
+  check(teraOn.pressed === 'true' && (await teraLook()).pressed === 'false' && await undoCount() === undosBefore && await cancel.evaluate(() => document.activeElement.id) === 'move-1', `B switches off a selected Tera with no choice sent, sends no undo and returns to the first move: ${teraOn.pressed}`);
   check(teraFree.used === 'false' && teraFree.image.includes('gradient') && teraFree.strike === 'none' && teraFree.gem === 'none' && teraFree.dot === 0, `Tera available: type tint, no strike, no dot: ${JSON.stringify(teraFree)}`);
   await cancel.evaluate(async () => {
     const {demoRequest} = await import('/src/demo.mjs');
