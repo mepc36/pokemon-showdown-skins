@@ -145,7 +145,7 @@ function showMenu() {
 const CONTROLS = [
   ['Move the cursor, page inside a view', 'D-pad or left stick', 'Arrow keys'],
   ['Press the button under the cursor', 'A', 'Enter'],
-  ['Close a view, undo a choice', 'B', 'Escape'],
+  ['Close a view, undo a choice, go to your first move', 'B', 'Escape'],
   ['Go to your active Pokémon\'s first move', 'Top left bumper', '1'],
   ['Go to their active Pokémon', 'Top right bumper', '2'],
   ['Open or close a move or Pokémon page', 'Y', 'I'],
@@ -813,14 +813,19 @@ async function init() {
     }
     if (action === 'cancel') {
       // B on the battle screen undoes: a pending choice (and its Tera), or a Tera that is switched on with no
-      // choice sent yet. On the controller check it only shows its number.
+      // choice sent yet. From either team row it then returns to the own row with the cursor on the active
+      // Pokémon's first move. With a menu, view or page open, B only closes it and leaves the team row as it is.
+      // On the controller check it only shows its number.
       // B closes a move or Pokémon page and the chat too; Y (or I) and X (or C) also close the one they opened.
       if (modal.open && modal.dataset.view === 'diagnostics') return;
       // A view opened from the Select menu goes back to that menu; a second B closes the menu.
       else if (modal.open && ['stats', 'controls', 'errors', 'setup'].includes(modal.dataset.view)) showMenu();
       else if (modal.open) closeModal();
-      else if (tera && !state.pending) { tera = false; render(); }
-      else $('undo')?.click();
+      else {
+        if (tera && !state.pending) { tera = false; render(); }
+        else $('undo')?.click();
+        showTeam('own'); focusFirstMove();
+      }
       return;
     }
     if (action === 'confirm') {

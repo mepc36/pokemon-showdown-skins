@@ -33,7 +33,7 @@ export function moveList(moves, placeholders = 0) {
   const entries = moves.map(m => {
     const move = moveInformation(m.id);
     const type = m.type || move.type;
-    return `<li class="compact-move" data-move="${escape(move.id)}" data-type="${escape(type)}" data-cue="${escape(m.cue || '')}" data-revealed="${!!m.revealed}" title="${escape(m.label || (m.revealed ? 'Revealed in battle' : ''))}"><strong>${escape(move.name)}${m.copied ? ' *' : ''}</strong>${typeBadges([type])}</li>`;
+    return `<li class="compact-move" data-move="${escape(move.id)}" data-type="${escape(type)}" data-cue="${escape(m.cue || '')}" data-revealed="${!!m.revealed}" data-candidate="${!!m.candidate}" title="${escape(m.label || (m.revealed ? 'Revealed in battle' : m.candidate ? 'Candidate move from the identified role' : ''))}"><strong>${escape(move.name)}${m.copied ? ' *' : ''}</strong>${typeBadges([type])}</li>`;
   });
   while (entries.length < placeholders) entries.push('<li class="compact-move unknown-move">Not revealed</li>');
   // Four to a row, like the battle screen's move row. A longer list wraps onto further rows; the last row may end early.
@@ -68,7 +68,8 @@ export function rolePages(store, name, level, statsInfo = '', inference, {known 
   const rank = move => [Number(!move.revealed), -(roleCount.get(move.id) || 0)];
   const order = (a, b) => { const [ra, rb] = [rank(a), rank(b)]; return ra[0] - rb[0] || ra[1] - rb[1] || a.id.localeCompare(b.id); };
   const groups = roles.map(({set, role}) => {
-    const moves = Object.keys(role.moves).map(name => { const id = moveInformation(name).id; return {id, revealed: revealed.has(id)}; }).sort(order);
+    // Once the role is identified, its unseen moves are candidates and carry 🔮, as in the battle screen's move row.
+    const moves = Object.keys(role.moves).map(name => { const id = moveInformation(name).id; return {id, revealed: revealed.has(id), candidate: identified && !revealed.has(id)}; }).sort(order);
     return `<div class="role-group"><h3 class="role-heading">${escape(role.name)}${set.levelMismatch ? `<small>snapshot level ${escape(set.level)}</small>` : ''}</h3>${moveList(moves)}</div>`;
   });
   const title = identified ? `${name} · Lv ${level} · ✅ ${roles[0]?.role.name || ''}` : `${name} · Lv ${level} · ❓ ${roles.length === 1 ? roles[0].role.name : `${roles.length} possible roles`}`;
