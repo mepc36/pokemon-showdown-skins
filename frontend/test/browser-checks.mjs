@@ -563,9 +563,19 @@ try {
   check((await cancel.locator('#test-commands').innerText()).includes('/choose move 1|1'), 'Battle choices still submit immediately');
   await cancel.keyboard.press('ArrowLeft'); await cancel.locator('#move-2').click();
   check(await cancel.evaluate(() => { const el = document.querySelector('#move-2'); return !el.disabled && el.dataset.locked === 'true' && document.activeElement === el; }) && !(await cancel.locator('#test-commands').innerText()).includes('/choose move 2'), 'Moves stay focusable for review while a choice is pending but cannot be chosen');
-  check(await cancel.evaluate(() => document.querySelector('#choices').dataset.pending === 'true' && getComputedStyle(document.querySelector('#switch-1')).backgroundColor === 'rgb(201, 237, 214)' && getComputedStyle(document.querySelector('#move-1')).backgroundColor === 'rgb(211, 216, 221)'), 'A sent choice grays the move row; the active Pokémon keeps its green shade');
+  check(await cancel.evaluate(() => document.querySelector('#choices').dataset.pending === 'true' && getComputedStyle(document.querySelector('#switch-1')).backgroundColor === 'rgb(201, 237, 214)' && getComputedStyle(document.querySelector('#move-2')).backgroundColor === 'rgb(211, 216, 221)'), 'A sent choice grays the move row; the active Pokémon keeps its green shade');
+  check(await cancel.evaluate(() => { const chosen = document.querySelector('#move-1'), other = document.querySelector('#move-2'), size = el => { const box = el.getBoundingClientRect(); return `${Math.round(box.width)}x${Math.round(box.height)}`; };
+    return chosen.dataset.chosen === 'true' && other.dataset.chosen === 'false' && getComputedStyle(chosen).backgroundColor === 'rgb(207, 227, 251)' && size(chosen) === size(other) && document.querySelectorAll('#choices [data-chosen="true"]').length === 1; }), 'The chosen move is light blue while the choice is pending, the same size as the other moves, and nothing else is marked chosen');
   await flip(cancel); await cancel.locator('#opponent-2').focus(); await cancel.keyboard.press('Escape');
   check((await cancel.locator('#test-commands').innerText()).includes('/undo |1') && await cancel.evaluate(() => !document.querySelector('.team-row[data-side="own"]').hidden && document.querySelector('.team-row[data-side="opponent"]').hidden && document.activeElement.id === 'move-1'), 'B / Escape from the foe roster invokes Showdown undo, flips to the own row and lands on the first move');
+  check(await cancel.evaluate(() => document.querySelectorAll('#choices [data-chosen="true"]').length === 0 && getComputedStyle(document.querySelector('#move-1')).backgroundColor !== 'rgb(207, 227, 251)'), 'After the undo no move is marked chosen');
+  // A chosen switch shades the incoming Pokémon's roster cell the same light blue, without resizing it.
+  const rosterSizes = () => cancel.evaluate(() => [...document.querySelectorAll('#roster button')].map(el => { const box = el.getBoundingClientRect(); return `${box.width}x${box.height}`; }).join('|'));
+  const sizesBeforeSwitch = await rosterSizes();
+  await cancel.locator('#switch-2').click();
+  check((await cancel.locator('#test-commands').innerText()).includes('/choose switch 2|1') && await cancel.evaluate(() => { const incoming = document.querySelector('#switch-2'); return incoming.dataset.chosen === 'true' && getComputedStyle(incoming).backgroundColor === 'rgb(207, 227, 251)' && getComputedStyle(document.querySelector('#switch-1')).backgroundColor === 'rgb(201, 237, 214)' && document.querySelectorAll('#choices [data-chosen="true"]').length === 1; }) && await rosterSizes() === sizesBeforeSwitch, 'The Pokémon chosen to come in is light blue while the choice is pending; the active one stays green and no roster cell changes size');
+  await cancel.keyboard.press('Escape');
+  check(await cancel.evaluate(() => document.querySelectorAll('#choices [data-chosen="true"]').length === 0 && document.querySelector('#choices').dataset.pending === 'false' && document.activeElement.id === 'move-1'), 'Undoing the switch clears the light blue cell');
   check(await cancel.locator('#foe-timer-value').innerText() === '—' && (await cancel.locator('#battle-timer .timer-who').allInnerTexts()).join(' ') === 'You: Them:', 'The opponent timer shows a dash until the server warns about them');
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|inactive|Offline preview has 20 seconds left.'}));
   check(await cancel.locator('#foe-timer-value').innerText() === '0:20', 'An opponent warning fills the Them timer');
@@ -609,6 +619,11 @@ try {
   check(await cancel.locator('#opponent-4').getAttribute('data-cue') === 'green', 'Identified opponent gets a green roster border');
   check(!(await fit(cancel)).length, `Inferred overview fits the smallest viewport: ${await fit(cancel)}`);
   check(await cancel.locator('.compact-move[data-revealed="true"]').count() >= 1 && await cancel.evaluate(() => getComputedStyle(document.querySelector('.compact-move[data-revealed="true"] strong'), '::after').content.includes('👀')), 'Seen moves on the role page carry the 👀 mark');
+  check(await cancel.evaluate(() => { const strong = document.querySelector('.overview-layout .compact-move[data-revealed="true"] strong'), name = strong.querySelector('.move-name'), widthBefore = strong.style.width;
+    strong.style.width = '60px';
+    const cut = name.scrollWidth > name.clientWidth && getComputedStyle(name).textOverflow === 'ellipsis', room = strong.getBoundingClientRect().width - name.getBoundingClientRect().width;
+    strong.style.width = widthBefore;
+    return cut && room >= 12; }), 'When a role page move name is cut off, only the name gets the ellipsis and the 👀 keeps its space after it');
   check(await cancel.evaluate(() => { const items = [...document.querySelectorAll('.role-group .compact-move[data-move]')]; const unseen = items.filter(li => li.dataset.revealed !== 'true'); return unseen.length >= 1 && unseen.every(li => li.dataset.candidate === 'true' && getComputedStyle(li.querySelector('strong'), '::after').content.includes('🔮')) && items.filter(li => li.dataset.revealed === 'true').every(li => li.dataset.candidate === 'false'); }), 'Once the role is identified, its unseen moves on the role page carry 🔮, as in the battle screen\'s move row');
   check(await cancel.evaluate(() => { const items = [...document.querySelectorAll('.compact-move:not(.unknown-move)')]; const firstUnseen = items.findIndex(li => li.dataset.revealed !== 'true'); return items[0]?.dataset.revealed === 'true' && items.slice(Math.max(firstUnseen, 0)).every(li => firstUnseen < 0 || li.dataset.revealed !== 'true'); }), 'Seen moves come first in the role page move list');
   await cancel.keyboard.press('i'); await cancel.locator('#opponent-3').focus(); await cancel.locator('#opponent-4').focus();
@@ -715,9 +730,21 @@ try {
   await cancel.waitForTimeout(300);
   await pad(cancel, 4);
   check(await moveRow() === 'Spore:— / — PP|Giga Drain:— / — PP|Sludge Bomb:— / — PP|Foul Play:— / — PP' && await cancel.evaluate(() => document.activeElement.id) === 'move-1', `A Pokémon that switched in mid-turn shows its own moves while waiting, PP unknown, and the top left bumper lands on its first move: ${await moveRow()}`);
+  // While the server has sent a wait request, a benched Pokémon's previewed moves look locked like the active one's.
+  const benchLook = () => cancel.evaluate(() => { const row = document.querySelector('#choices .moves'), preview = row.querySelector('.move-preview:not(.unknown-move)'), box = row.getBoundingClientRect();
+    return {waiting: document.querySelector('#choices').dataset.waiting, bench: row.dataset.bench, background: preview && getComputedStyle(preview).backgroundColor, name: preview && getComputedStyle(preview.querySelector('strong')).color, rowSize: `${box.width}x${box.height}`}; });
+  await cancel.locator('#switch-1').focus();
+  const benchWaiting = await benchLook();
+  const lockedLook = await cancel.evaluate(() => { const row = document.querySelector('#choices .moves'); row.dataset.preview = 'false'; const locked = row.querySelector('button[id^="move-"]'); const look = {background: getComputedStyle(locked).backgroundColor, name: getComputedStyle(locked.querySelector('strong')).color}; row.dataset.preview = 'true'; return look; });
+  check(benchWaiting.waiting === 'true' && benchWaiting.bench === 'true' && benchWaiting.background === 'rgb(211, 216, 221)' && benchWaiting.background === lockedLook.background && benchWaiting.name === lockedLook.name, `During a wait request a benched Pokémon's moves look locked, the same as the active Pokémon's: ${JSON.stringify(benchWaiting)} / ${JSON.stringify(lockedLook)}`);
+  await pad(cancel, 4);
   // Amoonguss gets a move request, then Grumpig switches back in mid-turn: Grumpig's moves come from its own earlier request.
   await requestWithActive('Amoonguss', 6, [['Spore', 'spore', 16], ['Giga Drain', 'gigadrain', 16], ['Sludge Bomb', 'sludgebomb', 16], ['Foul Play', 'foulplay', 24]].map(([move, id, maxpp]) => ({move, id, pp: maxpp - 1, maxpp})));
   await cancel.waitForTimeout(300);
+  await cancel.locator('#switch-1').focus();
+  const benchChoosing = await benchLook();
+  check(benchChoosing.waiting === 'false' && benchChoosing.bench === 'true' && benchChoosing.background !== 'rgb(211, 216, 221)' && benchChoosing.rowSize === benchWaiting.rowSize, `With a move request a benched Pokémon's moves keep their usual preview look, and the move row keeps its size: ${JSON.stringify(benchChoosing)}`);
+  await pad(cancel, 4);
   await requestWithActive('Grumpig', 7);
   await cancel.waitForTimeout(300);
   check(await moveRow() === 'Nasty Plot:32 / 32 PP|Shadow Ball:24 / 24 PP|Dazzling Gleam:16 / 16 PP|Psyshock:16 / 16 PP', `A Pokémon that had a move request earlier shows its moves with PP from that request: ${await moveRow()}`);
@@ -771,8 +798,27 @@ try {
   // Since last reset is the second column; the peak Elo is the third box of the first row.
   const recordShown = async () => [...await cancel.locator('.stats-columns > div:nth-child(2) dd').allInnerTexts(), await cancel.locator('#modal .info-facts').first().locator('dd').nth(2).innerText()].join('|');
   check(await cancel.locator('#modal-title').innerText() === 'Ladder stats' && /^0\|1\|\d+$/.test(await recordShown()) && Number((await recordShown()).split('|')[2]) >= 1432 && await cancel.evaluate(() => document.activeElement.id) === 'refresh-rating' && !await cancel.locator('#refresh-rating').isDisabled(), `Ladder stats shows the lost battle since the last reset and the peak Elo, with the cursor on Refresh: ${await recordShown()}`);
+  // The heading over those wins and losses names the time they count from; the view ends with the last 10 results.
+  const sinceHeading = () => cancel.locator('#record-since').innerText();
+  const recentShown = () => cancel.evaluate(() => { const row = document.querySelector('#recent-results'), box = row.getBoundingClientRect(); return {letters: [...row.children].map(el => `${el.textContent}:${getComputedStyle(el).color}`).join('|'), last: row === document.querySelector('#modal-body').lastElementChild, height: box.height}; });
+  const sinceBefore = await sinceHeading(), recentBefore = await recentShown();
+  check(/^Since (1[0-2]|[1-9]):[0-5]\d (AM|PM) on (1[0-2]|[1-9])\/([1-9]|[12]\d|3[01])$/.test(sinceBefore), `The wins and losses heading names when they started counting: ${sinceBefore}`);
+  check(recentBefore.letters === 'L:rgb(197, 30, 38)' && recentBefore.last, `The lost battle is a red L in the last row of Ladder stats: ${JSON.stringify(recentBefore)}`);
+  check(!(await fit(cancel)).length, `Ladder stats with a result row fits: ${await fit(cancel)}`);
   await cancel.locator('#reset-record').focus(); await cancel.keyboard.press('Enter');
   check(await cancel.evaluate(() => document.activeElement.id) === 'reset-record' && /^0\|0\|\d+$/.test(await recordShown()), `Reset clears the wins and losses and keeps the peak Elo: ${await recordShown()}`);
+  const recentAfter = await recentShown();
+  check(recentAfter.letters === recentBefore.letters && recentAfter.height === recentBefore.height && /^Since (1[0-2]|[1-9]):[0-5]\d (AM|PM) on /.test(await sinceHeading()), `Reset keeps the last results row and the heading still names a time: ${JSON.stringify(recentAfter)} / ${await sinceHeading()}`);
+  // Ten results fill the row oldest to newest, wins green; an empty row keeps the same height.
+  const rowHeights = await cancel.evaluate(async () => {
+    const saved = localStorage.getItem('ps-mve-record'), record = JSON.parse(saved), height = () => document.querySelector('#recent-results').getBoundingClientRect().height;
+    const redraw = recent => { localStorage.setItem('ps-mve-record', JSON.stringify({...record, recent})); document.querySelector('#reset-record').click(); };
+    redraw('WWWLLWWWLL'.split('')); const full = {height: height(), text: document.querySelector('#recent-results').textContent, win: getComputedStyle(document.querySelector('#recent-results [data-result="W"]')).color, wide: document.querySelector('#modal-body').scrollWidth > document.querySelector('#modal-body').clientWidth + 2};
+    redraw([]); const empty = height();
+    localStorage.setItem('ps-mve-record', saved); document.querySelector('#reset-record').click();
+    return {full, empty};
+  });
+  check(rowHeights.full.text === 'WWWLLWWWLL' && rowHeights.full.win === 'rgb(31, 138, 76)' && !rowHeights.full.wide && rowHeights.full.height === rowHeights.empty && rowHeights.empty === recentBefore.height, `Ten results read oldest to newest with green wins, and the row keeps its height when empty: ${JSON.stringify(rowHeights)}`);
   await cancel.keyboard.press('Escape'); await cancel.keyboard.press('Escape');
   check(await cancel.locator('dialog[open]').count() === 0, 'B closes Ladder stats');
   check(await cancel.locator('#tera').isVisible() && await cancel.locator('#tera').isDisabled(), 'Tera keeps its move-row cell after the battle, disabled');

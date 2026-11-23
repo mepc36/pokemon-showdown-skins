@@ -9,7 +9,7 @@ export class ShowdownSession {
     this.stopped = true;
     this.games = []; // battle rooms the server says we are in, from updatesearch
     this.state = {status: 'Offline', authenticated: false, challenge: '', room: '', request: null,
-      pending: false, recovering: false, searching: false, ended: false, notice: '', timer: '',
+      pending: false, chosen: null, recovering: false, searching: false, ended: false, notice: '', timer: '',
       timerOn: false, timerPending: false, timerSeconds: null, timerAt: 0, timerRunning: false,
       foeTimerSeconds: null, teraSides: []};
     const room = storage.getItem('ps-mve-room');
@@ -152,6 +152,10 @@ export class ShowdownSession {
           } catch { this.state.request = null; this.state.notice = 'Unreadable battle request. Reconnect to recover.'; }
         } else if (type === 'sentchoice') {
           this.state.pending = !!value;
+          // After a reconnect the server repeats the choice it holds: "switch 4", and a move as it was sent
+          // ("move 2 terastallize") or by its id ("move thunderbolt"); see getChoice() in sim/side.ts.
+          const sent = String(value || '').match(/^(move|switch) (\S+)/);
+          this.state.chosen = sent ? {kind: sent[1], ...(/^\d+$/.test(sent[2]) ? {index: Number(sent[2])} : {id: sent[2]})} : null;
         } else if (type === 'error') {
           this.state.notice = value;
           this.cancel(this.timerReply);
@@ -237,7 +241,7 @@ export class ShowdownSession {
   choose(kind, index, tera) {
     if (!this.state.authenticated || !this.state.room || this.state.pending || this.state.recovering || this.state.ended) throw new Error('Wait for the current battle request.');
     this.send(choiceCommand(this.state.request, kind, index, tera), this.state.room);
-    this.state.pending = true; this.state.notice = 'Choice sent. Waiting for the server.'; this.emit();
+    this.state.pending = true; this.state.chosen = {kind, index}; this.state.notice = 'Choice sent. Waiting for the server.'; this.emit();
   }
   undo() {
     if (!this.state.authenticated || !this.state.pending || !this.state.request || this.state.request.noCancel) return;

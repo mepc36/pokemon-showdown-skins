@@ -412,3 +412,16 @@ dialog[data-view=chat] .chat-turn{flex:1;min-height:0;overflow:auto}
 .controls-table{width:100%;border-collapse:collapse;font-size:17px}.controls-table th,.controls-table td{text-align:left;padding:5px 10px;border-bottom:1px solid #d0d8df}.controls-table thead th{font-size:14px;color:var(--muted)}.controls-table tbody th{font-weight:500}.controls-table td{font-weight:700;white-space:nowrap}
 /* Error views: the message large enough to read from the couch, the stack small, scrollable within the view. */
 .error-entry{background:#fff;border:1px solid #e0b4b4;border-left:4px solid #c23b3b;border-radius:6px;padding:10px 14px;margin-bottom:10px}.error-entry small{color:var(--muted);font-size:13px}.error-entry p{margin:4px 0 0;font-size:18px;font-weight:600;overflow-wrap:anywhere}.error-stack{margin:8px 0 0;max-height:180px;overflow:auto;font-size:12px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere}dialog[data-view=errors] #modal-body{max-height:70vh;overflow:auto}
+/* v1.31.0: Ladder stats ends with the last 10 results, newest on the right: green W, red L. The row keeps its height when empty. */
+.recent-results{display:flex;justify-content:center;gap:10px;margin:14px 0 0;min-height:34px;font-size:28px;line-height:34px;font-weight:700}
+.recent-results [data-result=W]{color:#1f8a4c}.recent-results [data-result=L]{color:#c51e26}
+/* v1.31.0: on role pages only the move's name is cut off by the ellipsis; 👀 and 🔮 keep their space after it. */
+.overview-layout .compact-move strong{display:flex;text-overflow:clip}
+.overview-layout .compact-move .move-name{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.overview-layout .compact-move strong::after{flex:none;white-space:pre}
+/* v1.31.0: during a wait request a benched Pokémon's previewed moves look locked, like the active Pokémon's. */
+#choices[data-waiting="true"] .moves[data-bench="true"] .move-preview{background:#d3d8dd;border-color:#b3bbc3;color:#6b737c;box-shadow:none}
+#choices[data-waiting="true"] .moves[data-bench="true"] .move-preview strong,#choices[data-waiting="true"] .moves[data-bench="true"] .move-preview small,#choices[data-waiting="true"] .moves[data-bench="true"] .move-preview .move-type{color:#6b737c}
+/* v1.31.0: the move or the incoming Pokémon chosen this turn is light blue until the server answers. Color only, never size. */
+#choices[data-pending="true"] .moves > button[data-chosen="true"],#choices[data-pending="true"] .team button[data-chosen="true"]{background:#cfe3fb;border-color:#8fb8ea}
+#choices[data-pending="true"] .moves > button[data-chosen="true"] strong,#choices[data-pending="true"] .moves > button[data-chosen="true"] small,#choices[data-pending="true"] .moves > button[data-chosen="true"] .move-type,#choices[data-pending="true"] .team button[data-chosen="true"] strong{color:#27303b}

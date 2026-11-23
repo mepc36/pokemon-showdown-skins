@@ -33,7 +33,7 @@ export function moveList(moves, placeholders = 0) {
   const entries = moves.map(m => {
     const move = moveInformation(m.id);
     const type = m.type || move.type;
-    return `<li class="compact-move" data-move="${escape(move.id)}" data-type="${escape(type)}" data-cue="${escape(m.cue || '')}" data-revealed="${!!m.revealed}" data-candidate="${!!m.candidate}" title="${escape(m.label || (m.revealed ? 'Revealed in battle' : m.candidate ? 'Candidate move from the identified role' : ''))}"><strong>${escape(move.name)}${m.copied ? ' *' : ''}</strong>${typeBadges([type])}</li>`;
+    return `<li class="compact-move" data-move="${escape(move.id)}" data-type="${escape(type)}" data-cue="${escape(m.cue || '')}" data-revealed="${!!m.revealed}" data-candidate="${!!m.candidate}" title="${escape(m.label || (m.revealed ? 'Revealed in battle' : m.candidate ? 'Candidate move from the identified role' : ''))}"><strong><span class="move-name">${escape(move.name)}${m.copied ? ' *' : ''}</span></strong>${typeBadges([type])}</li>`;
   });
   while (entries.length < placeholders) entries.push('<li class="compact-move unknown-move">Not revealed</li>');
   // Four to a row, like the battle screen's move row. A longer list wraps onto further rows; the last row may end early.

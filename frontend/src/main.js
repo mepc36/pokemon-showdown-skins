@@ -5,7 +5,7 @@ import {ShowdownAuth} from './auth.mjs';
 import {availableChoices} from './protocol.mjs';
 import {startController, navigate} from './controller.mjs';
 import {PlayerRating} from './rating.mjs';
-import {readRecord, recordElo, resetRecord} from './record.mjs';
+import {readRecord, recordElo, resetRecord, sinceLabel} from './record.mjs';
 import {Music, cryFile, musicActive, replayMusicOver, timerToneDue} from './music.js';
 import {PossibleSets, possibleSets, narrowSets} from './possible-sets.mjs';
 import {escapeHtml, facts, typeBadges, moveList, rolePages, roleSplit, movePages, abilityPage, fitMoveDescription, itemIcon, regionalForm} from './info-components.mjs';
@@ -257,6 +257,7 @@ function refreshMoveHints() {
 // Ladder stats: the ladder's own numbers from Showdown's public data (GXE, Elo, all-time wins and losses), and what
 // this browser keeps (the peak Elo it has seen, and the wins and losses since the last reset). Reset clears those
 // wins and losses only. Opening the view looks the rating up, so the peak is known before the first rated battle.
+// The last row of the view is the last 10 results, oldest on the left, newest on the right; Reset keeps them.
 function showStats(load = true, force = false) {
   if (load) void rating.load(force).then(() => {
     if (rating.status === 'ready') recordElo(localStorage, Math.round(rating.value.elo));
@@ -269,9 +270,10 @@ function showStats(load = true, force = false) {
   showModal('Ladder stats', `<p class="info-kicker">${escape(config.username)} · Gen 9 Random Battle${status ? ` · ${escape(status)}` : ''}</p>
     ${facts([['GXE', value ? value.gxe === null ? 'Unknown' : `${value.gxe}%` : '—'], ['Elo', value ? Math.round(value.elo) : '—'], ['Peak Elo', record.peak ?? '—']])}
     <div class="stats-columns"><div><h3>All time</h3>${facts([['Wins', value ? value.wins ?? 'Unknown' : '—'], ['Losses', value ? value.losses ?? 'Unknown' : '—']])}</div>
-      <div><h3>Since last reset</h3>${facts([['Wins', record.wins], ['Losses', record.losses]])}</div></div>
+      <div><h3 id="record-since">${escape(sinceLabel(record.since))}</h3>${facts([['Wins', record.wins], ['Losses', record.losses]])}</div></div>
     ${rating.checkedAt ? `<p class="small">Last successful check: ${escape(new Date(rating.checkedAt).toLocaleString())}.</p>` : ''}
-    <div class="modal-actions">${btn('refresh-rating', 'Refresh', 'rating-actions')}${btn('reset-record', 'Reset wins and losses', 'rating-actions')}</div>`, 'stats');
+    <div class="modal-actions">${btn('refresh-rating', 'Refresh', 'rating-actions')}${btn('reset-record', 'Reset wins and losses', 'rating-actions')}</div>
+    <p id="recent-results" class="recent-results" aria-label="Last 10 games, newest on the right">${record.recent.map(result => `<span data-result="${result}">${result}</span>`).join('')}</p>`, 'stats');
   // The view opens with the cursor on Refresh. Refresh is never disabled, so it can hold the cursor while a lookup
   // runs; a press during a lookup joins that lookup.
   if (load && !force) $('refresh-rating').focus({preventScroll: true});
@@ -496,6 +498,7 @@ function renderMovePreview() {
   if (!row) return;
   for (const el of row.querySelectorAll('.move-preview')) el.remove();
   row.dataset.preview = String(!!previewIndex);
+  row.dataset.bench = String(!!previewIndex && !foeMoveIndex);
   // The Tera button follows the previewed Pokémon too, and returns to the active one's type.
   const previewed = previewIndex ? ownTeam()[previewIndex - 1] : null;
   // Once anyone on the team has Terastallized, the previewed Pokémon's Tera button is grayed out too.
@@ -569,6 +572,8 @@ function renderRoster() {
   const request = currentRequest();
   const disabled = choicesDisabled(request);
   const choices = availableChoices(request);
+  // The Pokémon chosen to come in is shaded until the server answers.
+  const chosenSwitch = !fixture && state.pending && state.chosen?.kind === 'switch' ? state.chosen.index ?? null : null;
   for (const rosterSide of ['own', 'opponent']) {
     const roster = $(rosterSide === 'own' ? 'roster' : 'opponent-roster');
     const team = rosterSide === 'own' ? ownTeam().map((p, i) => {
@@ -601,7 +606,7 @@ function renderRoster() {
       const teraBadge = teraType ? `<span class="type-badge roster-tera${!p.teraType && inference?.teraType ? ' inferred' : ''}" data-type="${escape(teraType)}" title="Tera ${escape(teraType)}">${escape(teraType)}</span>` : '';
       const details = ability || held || teraBadge ? `<span class="roster-details" aria-hidden="true"><small class="roster-ability${abilityInferred ? ' inferred' : ''}">${escape(ability)}</small><span class="roster-held">${held}${teraBadge}</span></span>` : '';
       return btn(`${rosterSide === 'own' ? 'switch' : 'opponent'}-${p.index}`, `${icon}<strong>${p.revealed ? nameTag(p.name) : '<span class="mon-name">Unknown</span>'}${status ? `<small class="status-tag">${escape(status)}</small>` : ''}</strong>${details}${p.percent != null ? `<span class="team-hp" aria-hidden="true" data-health="${p.percent <= 20 ? 'critical' : p.percent <= 50 ? 'low' : 'healthy'}"><span style="width:${p.percent}%"></span></span>` : ''}`, `team-${rosterSide}`, false,
-        `data-unavailable="${!p.canSwitch}" data-fainted="${!!p.fainted}" data-active="${!!p.active}" data-cue="${speed.cue || ''}" title="${escape(speed.label || '')}" aria-label="${rosterSide === 'opponent' ? `Opponent slot ${p.index}, ` : ''}${escape(p.name)}, ${escape(spoken)}.${ability ? ` ${abilityInferred ? 'Likely ' : ''}${escape(ability)}.` : ''}${itemName ? ` ${itemInferred ? 'Likely ' : ''}${escape(itemName)}.` : ''}${teraType ? ` Tera ${escape(teraType)}.` : ''} ${escape(speed.label || '')} ${p.canSwitch ? 'Switch Pokémon' : ''}"`);
+        `data-unavailable="${!p.canSwitch}" data-chosen="${rosterSide === 'own' && chosenSwitch !== null && p.serverIndex === chosenSwitch}" data-fainted="${!!p.fainted}" data-active="${!!p.active}" data-cue="${speed.cue || ''}" title="${escape(speed.label || '')}" aria-label="${rosterSide === 'opponent' ? `Opponent slot ${p.index}, ` : ''}${escape(p.name)}, ${escape(spoken)}.${ability ? ` ${abilityInferred ? 'Likely ' : ''}${escape(ability)}.` : ''}${itemName ? ` ${itemInferred ? 'Likely ' : ''}${escape(itemName)}.` : ''}${teraType ? ` Tera ${escape(teraType)}.` : ''} ${escape(speed.label || '')} ${p.canSwitch ? 'Switch Pokémon' : ''}"`);
     }).join('');
     // A on a roster button only switches. The Pokémon's page opens with R3 alone, so A does nothing on the active
     // Pokémon, a fainted one, or an opponent.
@@ -687,6 +692,11 @@ function render() {
   $('arena-wrap').dataset.room = state.room || '';
   // A sent choice (move or switch) grays the move row and the active Pokémon until the server answers.
   $('choices').dataset.pending = String(!fixture && !!state.pending);
+  // A wait request (the opponent is choosing, for example their switch-in after Volt Switch) locks the active
+  // Pokémon's moves; a benched Pokémon's previewed moves take the same locked look.
+  $('choices').dataset.waiting = String(!fixture && !disabled && !!request.wait);
+  // The move chosen this turn is shaded until the server answers.
+  const chosenMove = !fixture && state.pending && state.chosen?.kind === 'move' ? state.chosen : null;
   // The heading row is gone; the few states worth words share the notice strip.
   const prompt = fixture || state.ended ? '' : state.recovering ? 'Restoring your battle…' : state.pending || request?.wait ? '' : request?.forceSwitch ? 'Choose a Pokémon' : '';
   // Searching shows as an overlay on the field, so nothing below it moves.
@@ -702,7 +712,7 @@ function render() {
   const reviewOnly = !fixture && state.ended;
   $('choices').innerHTML = `${endControls}<div class="moves" role="group" aria-label="Moves">${choices.moves.map(move => {
     const type = window.BattleMovedex[move.id]?.type || '';
-    return btn(`move-${move.index}`, `<strong>${escape(move.move)}</strong><small><span class="move-type">${escape(type)}</span><span>${escape(move.pp ?? '—')} / ${escape(move.maxpp ?? '—')} PP</span></small>`, 'moves', !reviewOnly && (disabled || !waiting && !move.enabled), `data-type="${escape(type)}" data-locked="${reviewOnly || waiting || !move.enabled}" aria-description="Y or I for move information"`);
+    return btn(`move-${move.index}`, `<strong>${escape(move.move)}</strong><small><span class="move-type">${escape(type)}</span><span>${escape(move.pp ?? '—')} / ${escape(move.maxpp ?? '—')} PP</span></small>`, 'moves', !reviewOnly && (disabled || !waiting && !move.enabled), `data-type="${escape(type)}" data-locked="${reviewOnly || waiting || !move.enabled}" data-chosen="${!!chosenMove && (move.index === chosenMove.index || move.id === chosenMove.id)}" aria-description="Y or I for move information"`);
   }).join('')}</div>
     <div class="team-row" data-side="own" ${shownTeam === 'own' ? '' : 'hidden'}><span class="team-label">You</span><div id="roster" class="team" role="group" aria-label="Your six Pokémon"></div></div>
     <div class="team-row" data-side="opponent" ${shownTeam === 'opponent' ? '' : 'hidden'}><span class="team-label">Foe</span><div id="opponent-roster" class="team" role="group" aria-label="Opponent’s six Pokémon"></div></div>`;

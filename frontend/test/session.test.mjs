@@ -123,6 +123,14 @@ test('restored request + sentchoice is exposed atomically as pending', () => {
   assert.equal(f.snapshots.length, before + 1); assert.equal(f.snapshots.at(-1).pending, true);
   assert.throws(() => f.session.choose('move', 1));
 });
+test('the chosen move or switch is kept while the choice is pending, and read back after a reconnect', () => {
+  const live = fixture(); live.authenticate(); live.battle(); live.session.choose('move', 2);
+  assert.deepEqual(live.session.state.chosen, {kind: 'move', index: 2});
+  const chosenAfterReconnect = sentchoice => { const restored = fixture(); restored.authenticate(); restored.battle(`\n|sentchoice|${sentchoice}`); return restored.session.state.chosen; };
+  assert.deepEqual(chosenAfterReconnect('move 2 terastallize'), {kind: 'move', index: 2});
+  assert.deepEqual(chosenAfterReconnect('move thunderbolt'), {kind: 'move', id: 'thunderbolt'});
+  assert.deepEqual(chosenAfterReconnect('switch 4'), {kind: 'switch', index: 4});
+});
 test('invalid choice unlocks a revised same-rqid request', () => {
   const f = fixture(); f.authenticate(); f.battle(); f.session.choose('move', 1);
   const revised = request(); revised.active[0].moves[0].disabled = true;
