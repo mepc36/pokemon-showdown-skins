@@ -61,6 +61,16 @@ try {
     const page = await browser.newPage({viewport, hasTouch: true, isMobile: true}); await gamepad(page);
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     await page.goto(base); await page.waitForSelector('#switch-1');
+    // The Foe row is shaded by state: revealed yellow, active green, not revealed dark slate with one large "?".
+    const foeRow = await page.evaluate(() => { const look = id => { const el = document.querySelector(id), box = el.getBoundingClientRect(); return {background: getComputedStyle(el).backgroundColor, size: `${Math.round(box.width)}x${Math.round(box.height)}`}; };
+      const row = document.querySelector('.team-row[data-side="opponent"]'), wasHidden = row.hidden, ownHeight = document.querySelector('#switch-1').getBoundingClientRect().height; row.hidden = false;
+      const unknown = document.querySelector('#opponent-5'), mark = unknown.querySelector('.unknown-pokemon'), markBox = mark.getBoundingClientRect(), cellBox = unknown.getBoundingClientRect();
+      const result = {active: look('#opponent-1'), revealed: look('#opponent-3'), unknown: look('#opponent-5'), ownHeight: Math.round(ownHeight), wordShown: !!unknown.querySelector('strong').getClientRects().length, markColor: getComputedStyle(mark).color, markSize: parseFloat(getComputedStyle(mark).fontSize),
+        centered: Math.abs((markBox.left + markBox.right) / 2 - (cellBox.left + cellBox.right) / 2) <= 2 && Math.abs((markBox.top + markBox.bottom) / 2 - (cellBox.top + cellBox.bottom) / 2) <= 6};
+      row.hidden = wasHidden; return result; });
+    check(foeRow.active.background === 'rgb(201, 237, 214)' && foeRow.revealed.background === 'rgb(251, 238, 181)' && foeRow.unknown.background === 'rgb(74, 85, 96)', `Foe row cells are green when active, yellow when revealed and dark slate when not revealed: ${JSON.stringify(foeRow)}`);
+    check(!foeRow.wordShown && foeRow.markColor === 'rgb(255, 255, 255)' && foeRow.markSize >= 40 && foeRow.centered, `An unrevealed Foe cell shows one large centered white "?" and no "Unknown" word: ${JSON.stringify(foeRow)}`);
+    check(foeRow.active.size === foeRow.revealed.size && foeRow.revealed.size === foeRow.unknown.size && Number(foeRow.unknown.size.split('x')[1]) === foeRow.ownHeight, `The shaded Foe cells keep one size, as tall as the own row's cells: ${JSON.stringify(foeRow)}`);
     check(await page.locator('#all-moves, #info, #move-details').count() === 0, 'Duplicate menus and separate Move info button are removed');
     check(await page.evaluate(async () => { const source = await fetch('/vendor/pokemon-showdown/battle-animations.ts').then(r => r.text()); return /pokemonshowdown\.com\/fx\/["'] \+ BattleEffects\[id\]\.url/.test(source) && !source.includes('window.Dex'); }), 'Effect sprite URLs are prefixed with the Showdown fx folder regardless of window.Dex');
     check(await page.locator('#roster button').count() === 6 && await page.locator('#opponent-roster button').count() === 6 && await page.locator('#roster').isVisible() && !await page.locator('#opponent-roster').isVisible(), 'Six slots per team; your row shows first, one row at a time');
@@ -714,6 +724,7 @@ try {
     window.testSocket.onmessage({data: `>battle-gen9randombattle-12345\n|request|${JSON.stringify(waiting)}`});
   });
   await cancel.waitForFunction(() => document.querySelector('#matchup-foe .matchup-names span:first-child')?.textContent === '—', null, {timeout: 15000});
+  check(await cancel.evaluate(() => { const fainted = [...document.querySelectorAll('#opponent-roster button[data-fainted="true"]')]; return fainted.length >= 1 && fainted.every(el => getComputedStyle(el).backgroundColor === 'rgb(243, 196, 196)'); }), 'A fainted Pokémon on the Foe row is red');
   await cancel.locator('#switch-2').focus();
   check(await cancel.locator('#matchup-own').isVisible() && await cancel.locator('#matchup-foe').isVisible() && await cancel.locator('#matchup-own .matchup-names span').first().innerText() === 'Palossand' && /^\d+$/.test(await cancel.locator('#matchup-own .stat-box strong').first().innerText()) && (await cancel.locator('#matchup-foe .stat-box strong').first().innerText()) === '—', 'Side panels stay while the opponent picks a replacement, keeping my columns');
   // You switch mid-turn and the opponent's U-turn makes the server send a wait request: the locked move row shows the
