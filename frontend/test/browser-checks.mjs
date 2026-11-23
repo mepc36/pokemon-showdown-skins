@@ -61,6 +61,7 @@ try {
     const page = await browser.newPage({viewport, hasTouch: true, isMobile: true}); await gamepad(page);
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     await page.goto(base); await page.waitForSelector('#switch-1');
+    check(await page.evaluate(() => { const own = getComputedStyle(document.querySelector('#matchup-own')), foe = getComputedStyle(document.querySelector('#matchup-foe')); return own.borderRightColor === 'rgba(0, 0, 0, 0)' && foe.borderLeftColor === 'rgba(0, 0, 0, 0)' && own.borderRightWidth === '1px' && foe.borderLeftWidth === '1px'; }), 'No visible line where a side panel meets the battle scene; each border keeps its 1px width so nothing moves');
     // The Foe row is shaded by state: revealed yellow, active green, not revealed dark slate with one large "?".
     const foeRow = await page.evaluate(() => { const look = id => { const el = document.querySelector(id), box = el.getBoundingClientRect(); return {background: getComputedStyle(el).backgroundColor, size: `${Math.round(box.width)}x${Math.round(box.height)}`}; };
       const row = document.querySelector('.team-row[data-side="opponent"]'), wasHidden = row.hidden, ownHeight = document.querySelector('#switch-1').getBoundingClientRect().height; row.hidden = false;
