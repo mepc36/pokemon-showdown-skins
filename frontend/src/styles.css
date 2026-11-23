@@ -433,5 +433,3 @@ dialog[data-view=chat] .chat-turn{flex:1;min-height:0;overflow:auto}
 #opponent-roster button:has(.unknown-pokemon){background:#4a5560;border-color:#39424c;padding:0;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);align-content:stretch;place-items:center}
 #opponent-roster button:has(.unknown-pokemon) strong{display:none}
 #opponent-roster button:has(.unknown-pokemon) .unknown-pokemon{grid-row:1;grid-column:1;width:auto;height:auto;color:#fff;font-size:44px;line-height:1}
-/* v1.31.0: no light gray line where a side panel meets the battle scene. The border keeps its width, transparent, so nothing moves. */
-#matchup-own{border-right-color:transparent}#matchup-foe{border-left-color:transparent}
