@@ -777,7 +777,9 @@ try {
   await cancel.keyboard.press('Escape');
   await cancel.keyboard.press('c');
   const openedOn = await cancel.locator('#modal-title').innerText();
-  await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|move|p2a: Raichu|Thunderbolt|p1a: Palossand\n|turn|18'}));
+  // The empty Turn 22 heading comes from the switch sent above. Nothing else is queued here, so Turn 22 stays empty
+  // for the next three checks however fast the battle animation runs. (Before v1.31.1 a move was sent here first;
+  // its line landed under Turn 22 whenever the animation outran the checks, which failed CI.)
   await cancel.waitForFunction(() => [...document.querySelectorAll('#hidden-log h2')].some(el => el.textContent === 'Turn 22'));
   check(await cancel.locator('#modal-title').innerText() === openedOn && await cancel.evaluate(() => document.querySelector('#modal').dataset.view) === 'chat', `A new turn arriving keeps the chat on ${openedOn}`);
   const shownTurn = () => cancel.locator('#modal-title').innerText();
@@ -785,8 +787,11 @@ try {
   check(await shownTurn() === 'Battle start', `Down from ${openedOn}, the newest turn with lines, skips the empty Turn 22 and wraps to Battle start: ${await shownTurn()}`);
   await pad(cancel, 12);
   check(await shownTurn() === openedOn, `Up from Battle start wraps back to ${openedOn}: ${await shownTurn()}`);
+  await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|move|p2a: Raichu|Thunderbolt|p1a: Palossand\n|turn|18'}));
   await cancel.evaluate(() => window.testSocket.onmessage({data: '>battle-gen9randombattle-12345\n|move|p2a: Raichu|Thunderbolt|p1a: Palossand'}));
-  await cancel.waitForFunction(() => document.querySelector('#hidden-log .inner > :last-child')?.tagName !== 'H2');
+  // Wait for Turn 22's own first line, not for any line: later turns' lines arrive after it.
+  await cancel.waitForFunction(() => { const heading = [...document.querySelectorAll('#hidden-log h2')].find(el => el.textContent === 'Turn 22'); return !!heading?.nextElementSibling && heading.nextElementSibling.tagName !== 'H2'; });
+  check(await shownTurn() === openedOn, `Lines arriving while the chat is open keep it on ${openedOn}: ${await shownTurn()}`);
   await pad(cancel, 13);
   check(await shownTurn() === 'Turn 22', `Once the current turn gets a line, Down reaches it: ${await shownTurn()}`);
   await cancel.keyboard.press('c');
