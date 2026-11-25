@@ -713,7 +713,10 @@ try {
   const names = id => cancel.evaluate(sel => [...document.querySelectorAll(`${sel} strong`)].map(el => el.firstChild.textContent), id);
   check(JSON.stringify(await names('#roster')) === JSON.stringify(['Grumpig', 'Palossand', 'Excadrill', 'Breloom', 'Amoonguss', 'Iron Hands']), 'Own roster keeps the lead first after a switch');
   check(await cancel.locator('#switch-2').getAttribute('data-active') === 'true' && await cancel.locator('#switch-1').getAttribute('data-active') === 'false', 'The active marker follows the Pokémon, not the slot');
-  check(JSON.stringify(await names('#opponent-roster')) === JSON.stringify(['Landorus', 'Corviknight', 'Rotom-Wash', 'Raichu', 'Unknown', 'Unknown']), 'Opponent roster stays in order of first reveal after a switch');
+  await cancel.waitForFunction(() => document.querySelector('#opponent-3')?.dataset.active === 'true', null, {timeout: 15000});
+  const foeNames = await names('#opponent-roster');
+  check(JSON.stringify(foeNames) === JSON.stringify(['Rotom-Wash', 'Landorus', 'Raichu', 'Corviknight', 'Unknown', 'Unknown']), `After a switch the opponent's active Pokémon is first, then alive in reveal order, then fainted, then not revealed: ${foeNames}`);
+  check(await cancel.evaluate(() => document.querySelector('#opponent-roster button').id) === 'opponent-3', 'A Foe button keeps its id when it moves, so the id still names the same Pokémon');
 
   // The opponent's Pokémon faints and they pick the next one: the side panels stay, with my numbers and dashes for theirs.
   await cancel.evaluate(async () => {
@@ -725,6 +728,13 @@ try {
   });
   await cancel.waitForFunction(() => document.querySelector('#matchup-foe .matchup-names span:first-child')?.textContent === '—', null, {timeout: 15000});
   check(await cancel.evaluate(() => { const fainted = [...document.querySelectorAll('#opponent-roster button[data-fainted="true"]')]; return fainted.length >= 1 && fainted.every(el => getComputedStyle(el).backgroundColor === 'rgb(243, 196, 196)'); }), 'A fainted Pokémon on the Foe row is red');
+  await cancel.waitForFunction(() => { const rotom = document.querySelector('#opponent-3'); return rotom?.dataset.fainted === 'true' && rotom.dataset.active === 'false'; }, null, {timeout: 15000});
+  const foeOrder = await cancel.evaluate(() => [...document.querySelectorAll('#opponent-roster button')].map(el => el.dataset.active === 'true' ? 0 : el.querySelector('.unknown-pokemon') ? 3 : el.dataset.fainted === 'true' ? 2 : 1));
+  // No opponent is on the field here: their active Pokémon just fainted, and it keeps the first cell until the replacement comes in.
+  check(!foeOrder.includes(0) && foeOrder[0] === 2 && foeOrder.slice(1).includes(2) && foeOrder.slice(1).every((group, at, rest) => at === 0 || rest[at - 1] <= group), `The Pokémon that just fainted on the field stays first; after it come alive, fainted, then not revealed: ${foeOrder.join('')}`);
+  await flip(cancel);
+  check(await cancel.locator('#opponent-roster').isVisible() && await cancel.evaluate(() => document.activeElement.id) === 'opponent-3', `With no opponent on the field, flipping to their side lands on the Pokémon that just fainted: ${await cancel.evaluate(() => document.activeElement.id)}`);
+  await flip(cancel);
   await cancel.locator('#switch-2').focus();
   check(await cancel.locator('#matchup-own').isVisible() && await cancel.locator('#matchup-foe').isVisible() && await cancel.locator('#matchup-own .matchup-names span').first().innerText() === 'Palossand' && /^\d+$/.test(await cancel.locator('#matchup-own .stat-box strong').first().innerText()) && (await cancel.locator('#matchup-foe .stat-box strong').first().innerText()) === '—', 'Side panels stay while the opponent picks a replacement, keeping my columns');
   // You switch mid-turn and the opponent's U-turn makes the server send a wait request: the locked move row shows the
@@ -890,7 +900,7 @@ try {
   await cancel.waitForTimeout(600); // the rosters refresh every 250 ms after a seek
   const paused = await rosters();
   check(paused.own[0] === 'Grumpig:A:100' && paused.own[1] === 'Palossand::36', `Paused at the first turn, your roster shows who was on the field then, at the HP it had then: ${paused.own}`);
-  check(paused.foe[0] === 'Landorus:A:31' && paused.foe[2] === 'Rotom-Wash::34' && paused.foe[3] === 'Unknown::0', `Paused at the first turn, the foe roster shows that turn too: ${paused.foe}`);
+  check(paused.foe[0] === 'Landorus:A:31' && paused.foe[1] === 'Rotom-Wash::34' && paused.foe[2] === 'Corviknight:F:0' && paused.foe[3] === 'Unknown::0', `Paused at the first turn, the foe roster shows that turn too: ${paused.foe}`);
   const pausedTurn = (await earliestTurn()).shown;
   const beforePlay = engineName === 'chromium' ? await tune() : null;
   await cancel.locator('#play').click();
@@ -917,7 +927,7 @@ try {
     await cancel.locator('#end-turn').click(); await cancel.waitForFunction(() => !window.tuneLog.playing, null, {timeout: 15000});
   }
   const finished = await rosters();
-  check(finished.own[0] === 'Grumpig::51' && finished.own[1] === 'Palossand:A:36' && finished.foe[2] === 'Rotom-Wash:F:0' && finished.foe[4] === 'Ninetales:A:100', `At the last turn both rosters show the final result again: ${finished.own} / ${finished.foe}`);
+  check(finished.own[0] === 'Grumpig::51' && finished.own[1] === 'Palossand:A:36' && finished.foe[0] === 'Ninetales:A:100' && finished.foe[4] === 'Rotom-Wash:F:0', `At the last turn both rosters show the final result again: ${finished.own} / ${finished.foe}`);
   await cancel.locator('#next-turn').click(); await cancel.locator('#end-turn').click();
   check(await cancel.locator('.replay-row #first-turn').count() === 1, 'Next turn and Last turn seek without error');
   check((await cancel.locator('.replay-row > button').allInnerTexts()).every((t, i) => t.trim().startsWith(['🔁', '⏮️', '◀️', '⏯️', '▶️', '⏭️', '🔗'][i])), 'Replay controls lead with their emojis');

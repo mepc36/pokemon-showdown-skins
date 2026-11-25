@@ -151,6 +151,9 @@ export function opponentSlots(side) {
       Math.max(0, Math.min(100, pokemon.hp / pokemon.maxhp * 100)) : null;
     return {...base, name: pokemon.getSpeciesForme?.() || pokemon.speciesForme, level: pokemon.level, gender: pokemon.gender || '',
       active: !!side.active?.includes(pokemon), fainted: !!pokemon.fainted, percent,
+      // The Pokémon that just fainted on the field, until its replacement comes in. Showdown empties the active
+      // slot on a faint and keeps the Pokémon in lastPokemon (the same test battle.ts uses).
+      faintedOnField: !!pokemon.fainted && side.lastPokemon === pokemon && !side.active?.some(Boolean),
       health: pokemon.fainted ? 'Fainted' : percent === null ? 'HP unknown' : `~${Math.round(percent)}% HP`,
       status: pokemon.status || '', types: pokemon.getTypeList?.() || Dex.species.get(pokemon.speciesForme).types,
       ability: pokemon.ability || pokemon.baseAbility || '', item: pokemon.item || '',
@@ -161,4 +164,12 @@ export function opponentSlots(side) {
       moves: (pokemon.moveTrack || []).map(([name]) => ({id: Dex.moves.get(name.replace(/^\*/, '')).id,
         name: Dex.moves.get(name.replace(/^\*/, '')).name, copied: name.startsWith('*')}))};
   });
+}
+
+// Left-to-right order of the Foe row: the Pokémon on the field (also one that just fainted there, until its
+// replacement comes in), then revealed and alive, then revealed and fainted, then not revealed. Reveal order
+// decides inside a group. Each slot keeps its `index`, so a button's id still names the same Pokémon.
+export function foeRosterOrder(slots) {
+  const group = slot => slot.active || slot.faintedOnField ? 0 : !slot.revealed ? 3 : slot.fainted ? 2 : 1;
+  return [...slots].sort((first, second) => group(first) - group(second) || first.index - second.index);
 }
