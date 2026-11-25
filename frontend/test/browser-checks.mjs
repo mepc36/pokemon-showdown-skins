@@ -813,7 +813,7 @@ try {
   await cancel.keyboard.press('Tab'); await cancel.locator('#stats').click();
   // Since last reset is the second column; the peak Elo is the third box of the first row.
   const recordShown = async () => [...await cancel.locator('.stats-columns > div:nth-child(2) dd').allInnerTexts(), await cancel.locator('#modal .info-facts').first().locator('dd').nth(2).innerText()].join('|');
-  check(await cancel.locator('#modal-title').innerText() === 'Ladder stats' && /^0\|1\|\d+$/.test(await recordShown()) && Number((await recordShown()).split('|')[2]) >= 1432 && await cancel.evaluate(() => document.activeElement.id) === 'refresh-rating' && !await cancel.locator('#refresh-rating').isDisabled(), `Ladder stats shows the lost battle since the last reset and the peak Elo, with the cursor on Refresh: ${await recordShown()}`);
+  check(await cancel.locator('#modal-title').innerText() === 'Ladder stats' && /^0\|1\|\d+$/.test(await recordShown()) && Number((await recordShown()).split('|')[2]) >= 1432 && await cancel.evaluate(() => document.activeElement.id) === 'modal-close' && await cancel.locator('#refresh-rating').count() === 0 && (await cancel.locator('#modal .modal-actions button').allInnerTexts()).join('|') === 'Reset wins and losses', `Ladder stats shows the lost battle since the last reset and the peak Elo, with the cursor on close and no Refresh button: ${await recordShown()}`);
   // The heading over those wins and losses names the time they count from; the view ends with the last 10 results.
   const sinceHeading = () => cancel.locator('#record-since').innerText();
   const recentShown = () => cancel.evaluate(() => { const row = document.querySelector('#recent-results'), box = row.getBoundingClientRect(); return {letters: [...row.children].map(el => `${el.textContent}:${getComputedStyle(el).color}`).join('|'), last: row === document.querySelector('#modal-body').lastElementChild, height: box.height}; });
@@ -824,17 +824,17 @@ try {
   await cancel.locator('#reset-record').focus(); await cancel.keyboard.press('Enter');
   check(await cancel.evaluate(() => document.activeElement.id) === 'reset-record' && /^0\|0\|\d+$/.test(await recordShown()), `Reset clears the wins and losses and keeps the peak Elo: ${await recordShown()}`);
   const recentAfter = await recentShown();
-  check(recentAfter.letters === recentBefore.letters && recentAfter.height === recentBefore.height && /^Since (1[0-2]|[1-9]):[0-5]\d (AM|PM) on /.test(await sinceHeading()), `Reset keeps the last results row and the heading still names a time: ${JSON.stringify(recentAfter)} / ${await sinceHeading()}`);
-  // Ten results fill the row oldest to newest, wins green; an empty row keeps the same height.
-  const rowHeights = await cancel.evaluate(async () => {
-    const saved = localStorage.getItem('ps-mve-record'), record = JSON.parse(saved), height = () => document.querySelector('#recent-results').getBoundingClientRect().height;
-    const redraw = recent => { localStorage.setItem('ps-mve-record', JSON.stringify({...record, recent})); document.querySelector('#reset-record').click(); };
-    redraw('WWWLLWWWLL'.split('')); const full = {height: height(), text: document.querySelector('#recent-results').textContent, win: getComputedStyle(document.querySelector('#recent-results [data-result="W"]')).color, wide: document.querySelector('#modal-body').scrollWidth > document.querySelector('#modal-body').clientWidth + 2};
-    redraw([]); const empty = height();
-    localStorage.setItem('ps-mve-record', saved); document.querySelector('#reset-record').click();
-    return {full, empty};
-  });
-  check(rowHeights.full.text === 'WWWLLWWWLL' && rowHeights.full.win === 'rgb(31, 138, 76)' && !rowHeights.full.wide && rowHeights.full.height === rowHeights.empty && rowHeights.empty === recentBefore.height, `Ten results read oldest to newest with green wins, and the row keeps its height when empty: ${JSON.stringify(rowHeights)}`);
+  check(recentAfter.letters === '' && recentAfter.last && recentAfter.height === recentBefore.height && /^Since (1[0-2]|[1-9]):[0-5]\d (AM|PM) on /.test(await sinceHeading()), `Reset clears the last results row, the row keeps its height, and the heading still names a time: ${JSON.stringify(recentAfter)} / ${await sinceHeading()}`);
+  // Ten results fill the row oldest to newest, wins green. The view reads the record when it opens, so the ten
+  // results are stored and the view is opened again from the menu. Reset then empties the row at the same height.
+  await cancel.evaluate(() => { const record = JSON.parse(localStorage.getItem('ps-mve-record')); localStorage.setItem('ps-mve-record', JSON.stringify({...record, wins: 6, losses: 4, recent: 'WWWLLWWWLL'.split('')})); });
+  await cancel.keyboard.press('Escape'); await cancel.locator('#stats').click();
+  await cancel.waitForFunction(() => document.querySelector('#recent-results')?.textContent === 'WWWLLWWWLL');
+  const rowFull = await cancel.evaluate(() => ({height: document.querySelector('#recent-results').getBoundingClientRect().height, text: document.querySelector('#recent-results').textContent, win: getComputedStyle(document.querySelector('#recent-results [data-result="W"]')).color, wide: document.querySelector('#modal-body').scrollWidth > document.querySelector('#modal-body').clientWidth + 2}));
+  await cancel.locator('#reset-record').focus(); await cancel.keyboard.press('Enter');
+  const rowEmpty = await cancel.evaluate(() => ({height: document.querySelector('#recent-results').getBoundingClientRect().height, text: document.querySelector('#recent-results').textContent, stored: JSON.parse(localStorage.getItem('ps-mve-record')).recent.length}));
+  check(rowFull.text === 'WWWLLWWWLL' && rowFull.win === 'rgb(31, 138, 76)' && !rowFull.wide && rowFull.height === recentBefore.height, `Ten results read oldest to newest with green wins: ${JSON.stringify(rowFull)}`);
+  check(rowEmpty.text === '' && rowEmpty.stored === 0 && rowEmpty.height === rowFull.height && /^0\|0\|\d+$/.test(await recordShown()), `Reset clears ten results with the wins and losses, and the row keeps its height when empty: ${JSON.stringify(rowEmpty)} / ${await recordShown()}`);
   await cancel.keyboard.press('Escape'); await cancel.keyboard.press('Escape');
   check(await cancel.locator('dialog[open]').count() === 0, 'B closes Ladder stats');
   check(await cancel.locator('#tera').isVisible() && await cancel.locator('#tera').isDisabled(), 'Tera keeps its move-row cell after the battle, disabled');

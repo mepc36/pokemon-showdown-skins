@@ -23,15 +23,15 @@ test('each battle room counts once, as a win or a loss', () => {
   assert.equal(record.wins, 1); assert.equal(record.losses, 1);
 });
 
-test('reset clears wins and losses, keeps the peak, and a counted battle stays counted', () => {
+test('reset clears wins, losses and the last results, keeps the peak, and a counted battle stays counted', () => {
   const store = storage();
   recordResult(store, 'battle-gen9randombattle-1', true); recordElo(store, 1456);
   resetRecord(store);
   recordResult(store, 'battle-gen9randombattle-1', true);
-  assert.deepEqual({...readRecord(store), counted: undefined, since: undefined}, {wins: 0, losses: 0, peak: 1456, counted: undefined, recent: ['W'], since: undefined});
+  assert.deepEqual({...readRecord(store), counted: undefined, since: undefined}, {wins: 0, losses: 0, peak: 1456, counted: undefined, recent: [], since: undefined});
 });
 
-test('the last 10 results are kept oldest first, and reset keeps them', () => {
+test('the last 10 results are kept oldest first, and reset clears them', () => {
   const store = storage();
   const results = [true, true, false, true, false, false, true, true, true, false, false, true];
   results.forEach((won, game) => recordResult(store, `battle-gen9randombattle-${game}`, won));
@@ -39,7 +39,9 @@ test('the last 10 results are kept oldest first, and reset keeps them', () => {
   recordResult(store, 'battle-gen9randombattle-11', false);
   assert.equal(readRecord(store).recent.join(''), 'LWLLWWWLLW');
   resetRecord(store);
-  assert.equal(readRecord(store).recent.join(''), 'LWLLWWWLLW');
+  assert.deepEqual(readRecord(store).recent, []);
+  recordResult(store, 'battle-gen9randombattle-12', true);
+  assert.equal(readRecord(store).recent.join(''), 'W');
 });
 
 test('the wins and losses count from the first result or from the last reset', () => {

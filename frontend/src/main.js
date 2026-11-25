@@ -256,28 +256,26 @@ function refreshMoveHints() {
 
 // Ladder stats: the ladder's own numbers from Showdown's public data (GXE, Elo, all-time wins and losses), and what
 // this browser keeps (the peak Elo it has seen, and the wins and losses since the last reset). Reset clears those
-// wins and losses only. Opening the view looks the rating up, so the peak is known before the first rated battle.
-// The last row of the view is the last 10 results, oldest on the left, newest on the right; Reset keeps them.
-function showStats(load = true, force = false) {
-  if (load) void rating.load(force).then(() => {
+// wins and losses and the last 10 results; it keeps the peak. Opening the view looks the rating up, so the peak is
+// known before the first rated battle. There is no Refresh button: closing and opening the view looks it up again.
+// The last row of the view is the last 10 results, oldest on the left, newest on the right.
+function showStats(load = true) {
+  if (load) void rating.load().then(() => {
     if (rating.status === 'ready') recordElo(localStorage, Math.round(rating.value.elo));
     if (modal.open && modal.dataset.view === 'stats') showStats(false);
   });
   const value = rating.status === 'ready' ? rating.value : null, record = readRecord(localStorage);
   const status = rating.status === 'loading' ? 'Loading your public ladder rating…' :
-    rating.status === 'error' ? 'Could not load your rating. Try Refresh.' :
+    rating.status === 'error' ? 'Could not load your rating. Open Ladder stats again to retry.' :
     rating.status === 'unrated' ? 'No Gen 9 Random Battle rating was returned for this account.' : '';
   showModal('Ladder stats', `<p class="info-kicker">${escape(config.username)} · Gen 9 Random Battle${status ? ` · ${escape(status)}` : ''}</p>
     ${facts([['GXE', value ? value.gxe === null ? 'Unknown' : `${value.gxe}%` : '—'], ['Elo', value ? Math.round(value.elo) : '—'], ['Peak Elo', record.peak ?? '—']])}
     <div class="stats-columns"><div><h3>All time</h3>${facts([['Wins', value ? value.wins ?? 'Unknown' : '—'], ['Losses', value ? value.losses ?? 'Unknown' : '—']])}</div>
       <div><h3 id="record-since">${escape(sinceLabel(record.since))}</h3>${facts([['Wins', record.wins], ['Losses', record.losses]])}</div></div>
     ${rating.checkedAt ? `<p class="small">Last successful check: ${escape(new Date(rating.checkedAt).toLocaleString())}.</p>` : ''}
-    <div class="modal-actions">${btn('refresh-rating', 'Refresh', 'rating-actions')}${btn('reset-record', 'Reset wins and losses', 'rating-actions')}</div>
+    <div class="modal-actions">${btn('reset-record', 'Reset wins and losses', 'rating-actions')}</div>
     <p id="recent-results" class="recent-results" aria-label="Last 10 games, newest on the right">${record.recent.map(result => `<span data-result="${result}">${result}</span>`).join('')}</p>`, 'stats');
-  // The view opens with the cursor on Refresh. Refresh is never disabled, so it can hold the cursor while a lookup
-  // runs; a press during a lookup joins that lookup.
-  if (load && !force) $('refresh-rating').focus({preventScroll: true});
-  $('refresh-rating').onclick = () => showStats(true, true);
+  // The view opens with the cursor on the close button (showModal's default), so a stray A never resets.
   $('reset-record').onclick = () => { resetRecord(localStorage); showStats(false); };
 }
 

@@ -1,7 +1,7 @@
 // Wins, losses and peak Elo, kept in local storage under one key.
 // `counted` remembers the battle rooms already counted, so a battle whose result line arrives again
-// (a reconnect replays the room's log) is not counted twice. Reset clears the wins and losses only.
-// `recent` holds the last 10 results, oldest first ('W' or 'L'); Reset keeps it. `since` is the time (ms) the
+// (a reconnect replays the room's log) is not counted twice. Reset clears the wins, the losses and `recent`; it keeps
+// the peak. `recent` holds the last 10 results, oldest first ('W' or 'L'). `since` is the time (ms) the
 // wins and losses started counting from: the last Reset, or the first result on a record that had none. It is
 // null for a record saved before `since` existed, until the next Reset.
 const KEY = 'ps-mve-record';
@@ -36,7 +36,7 @@ export function recordElo(storage, elo) {
   write(storage, {...record, peak: elo});
 }
 export function resetRecord(storage, now = Date.now()) {
-  write(storage, {...readRecord(storage), wins: 0, losses: 0, since: now});
+  write(storage, {...readRecord(storage), wins: 0, losses: 0, recent: [], since: now});
 }
 // "Since 10:15 AM on 11/26": the heading over the wins and losses, from the stored time, in the device's time zone.
 export function sinceLabel(since) {
