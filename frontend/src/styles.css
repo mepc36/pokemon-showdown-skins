@@ -422,8 +422,8 @@ dialog[data-view=chat] .chat-turn{flex:1;min-height:0;overflow:auto}
 /* v1.31.0: during a wait request a benched Pokémon's previewed moves look locked, like the active Pokémon's. */
 #choices[data-waiting="true"] .moves[data-bench="true"] .move-preview{background:#d3d8dd;border-color:#b3bbc3;color:#6b737c;box-shadow:none}
 #choices[data-waiting="true"] .moves[data-bench="true"] .move-preview strong,#choices[data-waiting="true"] .moves[data-bench="true"] .move-preview small,#choices[data-waiting="true"] .moves[data-bench="true"] .move-preview .move-type{color:#6b737c}
-/* v1.31.0: the move or the incoming Pokémon chosen this turn is light blue until the server answers. Color only, never size. */
-#choices[data-pending="true"] .moves > button[data-chosen="true"],#choices[data-pending="true"] .team button[data-chosen="true"]{background:#cfe3fb;border-color:#8fb8ea}
+/* v1.31.0: the move or the incoming Pokémon chosen this turn is blue until the server answers. Color only, never size. v1.33.1: a stronger blue, because the light blue was hard to see. */
+#choices[data-pending="true"] .moves > button[data-chosen="true"],#choices[data-pending="true"] .team button[data-chosen="true"]{background:#8fc0ff;border-color:#2f6fd0}
 #choices[data-pending="true"] .moves > button[data-chosen="true"] strong,#choices[data-pending="true"] .moves > button[data-chosen="true"] small,#choices[data-pending="true"] .moves > button[data-chosen="true"] .move-type,#choices[data-pending="true"] .team button[data-chosen="true"] strong{color:#27303b}
 /* v1.31.0: the Foe row is shaded by state, so the Pokémon the opponent has left can be counted at a glance: fainted red, revealed yellow,
    active green (as before), not revealed dark slate with one large centered "?" and no "Unknown" word. Color only; no cell changes size. */
