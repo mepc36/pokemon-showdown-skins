@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {moveInformation, opponentSlots, pokemonSpeed} from '../src/information.mjs';
+import {moveInformation, opponentSlots, foeRosterOrder, pokemonSpeed} from '../src/information.mjs';
 
 test('unrevealed opponent slots stay unknown without inferred sets', () => {
   const slots = opponentSlots({pokemon: []});
@@ -198,4 +198,24 @@ test('own roster HP follows the renderer copy and falls back to the request when
   assert.deepEqual(ownDisplayedHealth(battle, {ident: 'p1: Breloom', condition: '0 fnt par'}, true), {percent: 100, fainted: false, condition: ''}, 'a replay shows unseen Pokémon at full health with no status');
   assert.deepEqual(ownDisplayedHealth(battle, {ident: 'p1: Breloom', condition: '12/324 par'}, true), {percent: 100, fainted: false, condition: '324/324'});
   assert.equal(ownDisplayedHealth(null, {ident: 'p1: Breloom', condition: '0 fnt'}).percent, 0);
+});
+
+test('the Foe row runs active, revealed and alive, revealed and fainted, then not revealed', () => {
+  const lead = {speciesForme: 'Landorus', hp: 0, maxhp: 100, fainted: true};
+  const second = {speciesForme: 'Rotom-Wash', hp: 50, maxhp: 100};
+  const third = {speciesForme: 'Raichu', hp: 80, maxhp: 100};
+  const fourth = {speciesForme: 'Breloom', hp: 100, maxhp: 100};
+  const side = {pokemon: [lead, second, third, fourth], active: [third], lastPokemon: second};
+  const order = slots => foeRosterOrder(slots).map(slot => slot.index);
+  assert.deepEqual(order(opponentSlots(side)), [3, 2, 4, 1, 5, 6]);
+  // Reveal order decides inside a group, and the slots keep their own index.
+  assert.deepEqual(opponentSlots(side).map(slot => slot.index), [1, 2, 3, 4, 5, 6]);
+  // The active Pokémon faints: it stays first until the replacement comes in.
+  third.fainted = true; third.hp = 0; side.active = [null]; side.lastPokemon = third;
+  assert.equal(opponentSlots(side)[2].active, false);
+  assert.deepEqual(order(opponentSlots(side)), [3, 2, 4, 1, 5, 6]);
+  // The replacement comes in: the fainted one joins the other fainted Pokémon.
+  side.active = [fourth];
+  assert.deepEqual(order(opponentSlots(side)), [4, 2, 1, 3, 5, 6]);
+  assert.deepEqual(order(opponentSlots(null)), [1, 2, 3, 4, 5, 6]);
 });

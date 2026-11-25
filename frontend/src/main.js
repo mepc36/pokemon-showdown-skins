@@ -10,7 +10,7 @@ import {Music, cryFile, musicActive, replayMusicOver, timerToneDue} from './musi
 import {PossibleSets, possibleSets, narrowSets} from './possible-sets.mjs';
 import {escapeHtml, facts, typeBadges, moveList, rolePages, roleSplit, movePages, abilityPage, fitMoveDescription, itemIcon, regionalForm} from './info-components.mjs';
 import {demoLines, demoRequest} from './demo.mjs';
-import {moveInformation, abilityInformation, effectName, knownOwnMoves, speciesInformation, stableOwnOrder} from './information.mjs';
+import {moveInformation, abilityInformation, effectName, knownOwnMoves, speciesInformation, stableOwnOrder, foeRosterOrder} from './information.mjs';
 
 const $ = id => document.getElementById(id);
 const escape = escapeHtml;
@@ -389,7 +389,9 @@ function navigateInfo(direction) {
   }
   if (direction === 'up' || direction === 'down') { turnPage(step); return; }
   // Only revealed Pokémon: the opponent's unknown slots are skipped, so the page after their last known Pokémon is their first.
-  const revealed = teamSlots(infoPage.side).flatMap((slot, position) => slot.revealed ? [position + 1] : []);
+  // The opponent's pages follow the Foe row's left-to-right order.
+  const slots = infoPage.side === 'opponent' ? foeRosterOrder(teamSlots('opponent')) : teamSlots(infoPage.side);
+  const revealed = slots.flatMap(slot => slot.revealed ? [slot.index] : []);
   const index = revealed.length ? wrap(revealed, infoPage.index) : infoPage.index;
   if (index !== infoPage.index) showInfo({...infoPage, index, tab: 0});
 }
@@ -580,7 +582,7 @@ function renderRoster() {
         ability: effectName('abilities', p.ability || p.baseAbility) || '', teraType: p.terastallized || p.teraType || '',
         percent: shown.percent, health: shown.fainted ? 'Fainted' : shown.condition, status: shown.condition.match(/ (\w{3})$/)?.[1] || '',
         canSwitch: !disabled && choices.switches.some(choice => choice.index === p.serverIndex && choice.enabled)};
-    }) : arena.opponents();
+    }) : foeRosterOrder(arena.opponents());
     // Between battles your row keeps six empty slots so the field above never resizes.
     if (rosterSide === 'own' && !fixture && !team.length) for (let slot = 1; slot <= 6; slot++) team.push({index: slot, serverIndex: null, name: '', revealed: false, fainted: false, active: false, item: '', ability: '', teraType: '', percent: null, health: '', status: '', canSwitch: false});
     roster.innerHTML = team.map(p => {
@@ -622,7 +624,9 @@ function showTeam(side) {
   shownTeam = side;
   const focused = document.activeElement?.id.match(/^(switch|opponent)-(\d+)$/);
   for (const row of document.querySelectorAll('.team-row')) row.hidden = row.dataset.side !== side;
-  const active = document.querySelector(`.team-row[data-side="${side}"] [data-active="true"]`) || $(`${side === 'own' ? 'switch' : 'opponent'}-${focused?.[2] || 1}`);
+  // Their active Pokémon just fainted and no replacement is in yet: nobody is active, so the cursor lands on the fainted one in the first cell.
+  const justFainted = side === 'opponent' ? document.querySelector('#opponent-roster button:first-child[data-fainted="true"]') : null;
+  const active = document.querySelector(`.team-row[data-side="${side}"] [data-active="true"]`) || justFainted || $(`${side === 'own' ? 'switch' : 'opponent'}-${focused?.[2] || 1}`);
   // Flipping to the opponent lands on their active Pokémon's roster button; the move row shows that Pokémon's moves.
   const foeIndex = Number(active?.id.match(/^opponent-(\d+)$/)?.[1]);
   if (foeIndex) { setFoePreview(foeIndex); setFoeMovePreview(foeIndex); }
