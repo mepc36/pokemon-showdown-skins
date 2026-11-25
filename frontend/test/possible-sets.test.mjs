@@ -93,6 +93,20 @@ test('unknown, regional, cosmetic, battle-only and ambiguous forms stay distinct
   assert.equal(possibleSets(snapshot, 'Gastrodon-East', 80)[0].name, 'Gastrodon');
 });
 
+test('a form the generator hands out at random gets its base species sets', () => {
+  const forms = {'Maushold-Four': 'Maushold', 'Magearna-Original': 'Magearna', 'Dudunsparce-Three-Segment': 'Dudunsparce',
+    'Polteageist-Antique': 'Polteageist', 'Sinistcha-Masterpiece': 'Sinistcha', 'Zarude-Dada': 'Zarude', 'Basculin-Blue-Striped': 'Basculin'};
+  for (const [form, base] of Object.entries(forms)) {
+    const level = snapshot.pokemon[base].level, sets = possibleSets(snapshot, form, level);
+    assert.deepEqual(sets.map(set => [set.name, set.levelMismatch]), [[base, false]], form);
+    assert.deepEqual(sets, possibleSets(snapshot, base, level), form);
+    assert.deepEqual(narrowSets(snapshot, form, level), narrowSets(snapshot, base, level), form);
+    assert.notEqual(narrowSets(snapshot, form, level).status, 'unavailable', form);
+  }
+  // A form outside that list is not guessed.
+  assert.deepEqual(possibleSets(snapshot, 'Basculin-White-Striped', snapshot.pokemon.Basculin.level), []);
+});
+
 test('malformed metadata, counts and missing role fields are rejected', () => {
   for (const mutate of [s => s.format = 'gen8randombattle', s => s.source.commit = 'main',
     s => s.source.updatedAt = 'yesterday', s => s.pokemon.Raikou.roles['Fast Support'].weight = 3402,

@@ -55,8 +55,14 @@ export class PossibleSets {
   }
 }
 
+// The generator builds these sets from the base species and then hands out one of its forms at random (`getForme()`
+// in data/random-battles/gen9/teams.ts), so the snapshot only has the base name. Each form is listed by name.
+const GENERATOR_FORMS = new Set(['Basculin-Blue-Striped', 'Dudunsparce-Three-Segment', 'Magearna-Original', 'Maushold-Four',
+  'Polteageist-Antique', 'Sinistcha-Masterpiece', 'Zarude-Dada']);
+
 function formKey(species) {
   const base = Dex.species.get(species.baseSpecies);
+  if (GENERATOR_FORMS.has(species.name)) return id(base.name);
   if (base.cosmeticFormes?.includes(species.name)) return id(base.name);
   if (species.baseSpecies === 'Pikachu') return 'pikachu';
   return id(typeof species.battleOnly === 'string' ? species.battleOnly : species.name);
