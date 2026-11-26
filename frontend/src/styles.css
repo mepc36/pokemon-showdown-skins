@@ -254,7 +254,7 @@ footer{display:none}
 
 /* Previewed bench moves read like real moves; they take focus but cannot be chosen. */
 .move-preview{opacity:1;cursor:default;font:inherit;color:#27303b}.move-preview strong{font-weight:600}
-.stat-box[data-stat=high]{background:#238c4f;color:#fff}.stat-box[data-stat=high] small{color:#e6f4ea}.stat-box[data-stat=low]{background:#c51e26;color:#fff}.stat-box[data-stat=low] small{color:#fbe3e4}
+.stat-box[data-stat=high]{background:#c9edd6}.stat-box[data-stat=low]{background:#f3c4c4;color:#7a2a2a}.stat-box[data-stat=low] small{color:#7a2a2a}
 
 /* End-of-battle controls in their own row above the move slots, menu rows, region tags, inferred roster details. */
 .replay-row .end-control{min-width:0;min-height:44px;padding:4px 8px;display:flex;justify-content:center;align-items:center;font-size:15px;white-space:nowrap;background:linear-gradient(#fff,#e2e1dc);border-color:#b7b3a7}
@@ -266,8 +266,8 @@ footer{display:none}
 #battle-timer{right:8px;bottom:8px;max-width:calc(16% - 16px);font-size:17px;padding:2px 8px;gap:5px}#battle-timer .timer-icon{width:14px;height:17px}
 
 /* Own-side cue colors must outrank the white own-column background above. */
-#matchup-own .stat-pair>.stat-box[data-stat=high],#matchup-foe .stat-pair>.stat-box[data-stat=high]{background:#238c4f;border-color:#238c4f}
-#matchup-own .stat-pair>.stat-box[data-stat=low],#matchup-foe .stat-pair>.stat-box[data-stat=low]{background:#c51e26;border-color:#c51e26}
+#matchup-own .stat-pair>.stat-box[data-stat=high],#matchup-foe .stat-pair>.stat-box[data-stat=high]{background:#c9edd6;border-color:#8fcfa8}
+#matchup-own .stat-pair>.stat-box[data-stat=low],#matchup-foe .stat-pair>.stat-box[data-stat=low]{background:#f3c4c4;border-color:#dc9a9a}
 
 /* Searching overlay sits on the field like the chat drawer; nothing around it resizes. */
 #search-overlay{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#1f2731cc;color:#fff;font-size:clamp(20px,3vw,34px);font-weight:600;letter-spacing:.02em}
